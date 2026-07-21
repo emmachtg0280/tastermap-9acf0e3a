@@ -305,7 +305,7 @@ function Index() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => mutation.mutate({ cuisine, minRating, city })}
+              onClick={() => mutation.mutate({ minRating })}
               disabled={mutation.isPending}
             >
               {mutation.isPending ? (
