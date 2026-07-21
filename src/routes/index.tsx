@@ -277,7 +277,7 @@ function Index() {
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
     };
-  }, [pull, minRating, mutation]);
+  }, [pull, minRating, mutation, city]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
@@ -300,7 +300,11 @@ function Index() {
             <div className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
             <h1 className="text-sm font-semibold tracking-tight truncate">
               Tastemap
-              <span className="text-muted-foreground font-normal ml-1.5">· Toulouse</span>
+              {currentCity && (
+                <span className="text-muted-foreground font-normal ml-1.5">
+                  · {currentCity.label}
+                </span>
+              )}
             </h1>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
@@ -322,10 +326,23 @@ function Index() {
               <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
                 Ville
               </h2>
-              <div className="text-sm px-3 py-2 rounded-md border border-border/60 bg-background/60 text-foreground/80">
-                Toulouse
-              </div>
+              <select
+                value={city ?? ""}
+                onChange={(e) =>
+                  setCity((e.target.value || null) as CityKey | null)
+                }
+                className="w-full text-sm px-3 py-2 rounded-md border border-border/60 bg-background/60 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
+              >
+                <option value="">Sélectionnez une ville…</option>
+                {CITIES.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
             </div>
+
+
 
 
             <div>
@@ -374,8 +391,10 @@ function Index() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => mutation.mutate({ minRating, force: true })}
-              disabled={mutation.isPending}
+              onClick={() =>
+                city && mutation.mutate({ city, minRating, force: true })
+              }
+              disabled={mutation.isPending || !city}
             >
               {mutation.isPending ? (
                 <>
