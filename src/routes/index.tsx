@@ -574,30 +574,30 @@ function Index() {
         }`}
       >
         <button
-          onClick={() => { setListMode(null); setShowFilters(true); }}
+          onClick={() => { haptic(20); setListMode(null); setShowFilters(true); }}
           aria-label="Filtres"
-          className="h-12 w-12 rounded-full bg-[color:var(--duo-green)] text-white btn-pop grid place-items-center hover:brightness-105 transition"
+          className="h-12 w-12 rounded-full bg-[color:var(--duo-green)] text-white btn-pop grid place-items-center hover:brightness-105 tap-bounce transition"
         >
           <SlidersHorizontal className="h-5 w-5" />
         </button>
         <button
-          onClick={() => { setShowFilters(false); setListMode("favorites"); }}
+          onClick={() => { haptic(20); setShowFilters(false); setListMode("favorites"); }}
           aria-label="Favoris"
-          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-rose-500 grid place-items-center hover:bg-muted transition"
+          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-rose-500 grid place-items-center hover:bg-muted tap-bounce transition"
         >
           <Heart className="h-5 w-5" />
         </button>
         <button
-          onClick={() => { setShowFilters(false); setListMode("done"); }}
+          onClick={() => { haptic(20); setShowFilters(false); setListMode("done"); }}
           aria-label="Restaurants faits"
-          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-[color:var(--duo-green-dark)] grid place-items-center hover:bg-muted transition"
+          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-[color:var(--duo-green-dark)] grid place-items-center hover:bg-muted tap-bounce transition"
         >
           <Check className="h-5 w-5" strokeWidth={3} />
         </button>
         <button
-          onClick={() => { setShowFilters(false); setListMode("all"); }}
+          onClick={() => { haptic(20); setShowFilters(false); setListMode("all"); }}
           aria-label="Liste des restaurants"
-          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-foreground grid place-items-center hover:bg-muted transition"
+          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-foreground grid place-items-center hover:bg-muted tap-bounce transition"
         >
           <Utensils className="h-5 w-5" />
         </button>
