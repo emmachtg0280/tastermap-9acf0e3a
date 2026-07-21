@@ -72,7 +72,7 @@ const DEFAULT_ZOOM = 13;
 const CITY_ZOOM = 13;
 
 
-type Tab = "all" | "todo" | "done" | "favorites";
+
 
 type VisitEntry = { done: boolean; comment: string; favorite: boolean; personalRating?: number };
 type VisitMap = Record<string, VisitEntry>;
@@ -338,8 +338,8 @@ function Index() {
 
   const [cuisine, setCuisine] = useState<Cuisine>("any");
   const [minRating, setMinRating] = useState(4);
-  const [tab, setTab] = useState<Tab>("all");
   const [selected, setSelected] = useState<Restaurant | null>(null);
+
   const [results, setResults] = useState<Restaurant[]>([]);
   const [searchText, setSearchText] = useState("");
   const [onlyOpenNow, setOnlyOpenNow] = useState(false);
@@ -389,24 +389,15 @@ function Index() {
     return list;
   }, [results, cuisine, searchText, onlyOpenNow]);
 
-  const cuisineScoped = baseFiltered;
   const doneInScope = useMemo(
-    () => cuisineScoped.filter((r) => visits[r.id]?.done).length,
-    [cuisineScoped, visits],
-  );
-  const todoCount = cuisineScoped.length - doneInScope;
-  const favoritesInScope = useMemo(
-    () => cuisineScoped.filter((r) => visits[r.id]?.favorite).length,
-    [cuisineScoped, visits],
+    () => baseFiltered.filter((r) => visits[r.id]?.done).length,
+    [baseFiltered, visits],
   );
 
   const filtered = useMemo(() => {
-    let list = baseFiltered;
-    if (tab === "done") list = list.filter((r) => visits[r.id]?.done);
-    if (tab === "todo") list = list.filter((r) => !visits[r.id]?.done);
-    if (tab === "favorites") list = list.filter((r) => visits[r.id]?.favorite);
-    return [...list].sort((a, b) => sortRestaurants(a, b, sortBy, userLocation, currentCity));
-  }, [baseFiltered, tab, visits, sortBy, userLocation, currentCity]);
+    return [...baseFiltered].sort((a, b) => sortRestaurants(a, b, sortBy, userLocation, currentCity));
+  }, [baseFiltered, sortBy, userLocation, currentCity]);
+
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstance.current) return;
@@ -497,8 +488,8 @@ function Index() {
 
       {/* Floating top bar */}
       <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto px-3 pt-1.5 flex items-center justify-between gap-2 max-w-3xl">
-          <div className="flex items-center gap-2 rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm pl-3 pr-2 py-1.5 min-w-0">
+        <div className="mx-auto px-3 pt-0.5 flex items-center justify-between gap-2 max-w-3xl">
+          <div className="flex items-center gap-2 rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm pl-3 pr-2 py-1 min-w-0">
             <span className="text-base leading-none">🍽️</span>
             <h1 className="font-display text-sm font-extrabold tracking-tight truncate">
               Tastemap
@@ -518,40 +509,8 @@ function Index() {
           </div>
         </div>
 
-        {/* Small pill tabs */}
-        <div className="mx-auto px-3 mt-1 flex justify-center">
-          <div className="inline-flex rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm p-0.5 gap-0.5">
-            {(
-              [
-                { key: "all", label: "Tous", count: cuisineScoped.length },
-                { key: "todo", label: "À faire", count: todoCount },
-                { key: "done", label: "Faits", count: doneInScope },
-                { key: "favorites", label: "Favoris", count: favoritesInScope },
-              ] as { key: Tab; label: string; count: number }[]
-            ).map((t) => {
-              const active = tab === t.key;
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`text-[11px] px-2.5 py-1 rounded-full transition flex items-center gap-1 whitespace-nowrap ${
-                    active
-                      ? "bg-[color:var(--duo-green)] text-white font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t.label}
-                  <span className={`tabular-nums text-[10px] ${active ? "opacity-90" : "opacity-60"}`}>
-                    {t.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Cuisine strip */}
-        <div className="mx-auto px-2 mt-2 max-w-3xl">
+        <div className="mx-auto px-2 mt-1 max-w-3xl">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-1 pb-1 -mx-1">
             {CUISINES.filter((c) => c.value !== "any").map((c) => {
               const active = c.value === cuisine;
@@ -573,6 +532,7 @@ function Index() {
           </div>
         </div>
       </div>
+
 
 
       {/* Floating action buttons — bottom right */}
@@ -750,15 +710,10 @@ function Index() {
                 <div className="p-6 text-center text-sm text-muted-foreground">
                   {!city
                     ? "Sélectionnez une ville pour lancer la recherche."
-                    : tab === "done"
-                      ? "Aucun restaurant marqué comme fait."
-                      : tab === "todo"
-                        ? "Vous avez tout fait ! 🎉"
-                        : tab === "favorites"
-                          ? "Aucun favori pour le moment."
-                          : "Aucun restaurant trouvé."}
+                    : "Aucun restaurant trouvé."}
                 </div>
               )}
+
               {filtered.map((r) => {
                 const done = !!visits[r.id]?.done;
                 const favorite = !!visits[r.id]?.favorite;
