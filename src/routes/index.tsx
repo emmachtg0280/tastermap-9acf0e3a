@@ -579,7 +579,11 @@ function Index() {
 
 
       {/* Floating action buttons — bottom right */}
-      <div className="absolute right-3 bottom-3 z-30 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)]">
+      <div
+        className={`absolute right-3 z-30 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] transition-[bottom] duration-300 ease-out ${
+          selected ? "bottom-[calc(52vh+16px)] lg:bottom-3" : "bottom-3"
+        }`}
+      >
         <button
           onClick={() => { setListMode(null); setShowFilters(true); }}
           aria-label="Filtres"
