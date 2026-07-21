@@ -952,16 +952,16 @@ function DetailCard({
           <div className="mt-2">
             <button
               onClick={() => setShowHours((v) => !v)}
-              className="flex items-center gap-1.5 text-xs text-foreground/80 hover:text-foreground"
+              className="flex items-center gap-1 text-[11px] text-foreground/80 hover:text-foreground"
             >
-              <Clock className="h-3.5 w-3.5" />
-              Horaires d'ouverture
+              <Clock className="h-3 w-3" />
+              Horaires
               <ChevronDown
-                className={`h-3.5 w-3.5 transition-transform ${showHours ? "rotate-180" : ""}`}
+                className={`h-3 w-3 transition-transform ${showHours ? "rotate-180" : ""}`}
               />
             </button>
             {showHours && (
-              <ul className="mt-1.5 space-y-0.5 text-[11px] text-muted-foreground">
+              <ul className="mt-1 space-y-0 text-[10px] text-muted-foreground leading-tight">
                 {r.weekdayDescriptions.map((d) => (
                   <li key={d}>{d}</li>
                 ))}
