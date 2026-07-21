@@ -159,7 +159,7 @@ function Index() {
       disableDefaultUI: true,
       zoomControl: true,
       clickableIcons: false,
-      backgroundColor: "#eef3ee",
+      backgroundColor: "#1a1d21",
       gestureHandling: "greedy",
       styles: minimalMapStyle,
     });
@@ -392,7 +392,7 @@ function Index() {
           <div
             ref={mapRef}
             className="w-full h-[65vh] lg:h-[calc(100vh-7rem)] rounded-xl border border-border/60 overflow-hidden touch-pan-y touch-pan-x"
-            style={{ backgroundColor: "#eef3ee" }}
+            style={{ backgroundColor: "#1a1d21" }}
           />
           {!mapReady && (
             <div className="absolute inset-0 grid place-items-center pointer-events-none">
