@@ -19,8 +19,10 @@ import {
 
 import {
   searchRestaurants,
+  CITIES,
   type Cuisine,
   type Restaurant,
+  type CityKey,
 } from "@/lib/places.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,8 +44,9 @@ const CUISINES: { value: Cuisine; label: string }[] = [
   { value: "vegetarian", label: "Végétarien" },
 ];
 
-const TOULOUSE_CENTER = { lat: 43.6047, lng: 1.4442 };
-const TOULOUSE_ZOOM = 13;
+const DEFAULT_CENTER = { lat: 46.6, lng: 2.4 };
+const DEFAULT_ZOOM = 6;
+const CITY_ZOOM = 13;
 
 
 type Tab = "all" | "todo" | "done";
