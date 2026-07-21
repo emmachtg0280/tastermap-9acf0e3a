@@ -235,11 +235,42 @@ export const searchRestaurants = createServerFn({ method: "POST" })
       return Array.from(seen.values()).map(toRestaurant);
     }
 
-    // Single city: paginate up to 3 pages for a broader set.
+    // Single city
     const cityEntry =
       FRENCH_CITIES.find((c) => c.key === data.city) ?? FRENCH_CITIES[3];
-    const query = `${cuisineLabel} à ${cityEntry.label}`;
     const seen = new Map<string, PlaceRaw>();
+
+    // "Tous" → agrège plusieurs cuisines pour dépasser la limite de 60 par requête.
+    if (data.cuisine === "any") {
+      const cuisineKeys: Cuisine[] = [
+        "french", "italian", "japanese", "chinese", "indian",
+        "thai", "spanish", "mexican", "greek", "american", "vegetarian",
+      ];
+      const pages = await Promise.all(
+        cuisineKeys.map((k) =>
+          fetchPage(
+            `${CUISINE_LABEL[k]} à ${cityEntry.label}`,
+            data.minRating,
+            { lat: cityEntry.lat, lng: cityEntry.lng },
+            8000,
+            undefined,
+            auth,
+          ).catch((e) => {
+            console.error(`Cuisine fetch failed for ${k}`, e);
+            return { places: [] as PlaceRaw[] };
+          }),
+        ),
+      );
+      pages.forEach((page) => {
+        for (const p of page.places ?? []) if (p.id) seen.set(p.id, p);
+      });
+      return Array.from(seen.values())
+        .filter((p) => p.location)
+        .map(toRestaurant);
+    }
+
+    // Cuisine spécifique : paginer jusqu'à 3 pages.
+    const query = `${cuisineLabel} à ${cityEntry.label}`;
     let token: string | undefined;
     for (let i = 0; i < 3; i++) {
       const page: { places?: PlaceRaw[]; nextPageToken?: string } =
