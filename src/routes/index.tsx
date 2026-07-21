@@ -146,10 +146,10 @@ function Index() {
 
   const search = useServerFn(searchRestaurants);
   const mutation = useMutation({
-    mutationFn: (vars: { minRating: number }) => search({ data: vars }),
+    mutationFn: (vars: { minRating: number; force?: boolean }) =>
+      search({ data: vars }),
     onSuccess: (data) => {
       setResults(data);
-      setSelected(null);
     },
   });
 
