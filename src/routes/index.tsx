@@ -623,30 +623,6 @@ function Index() {
                 </select>
               </div>
 
-              <div>
-                <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">
-                  Cuisine
-                </h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {CUISINES.map((c) => {
-                    const active = c.value === cuisine;
-                    return (
-                      <button
-                        key={c.value}
-                        onClick={() => setCuisine(c.value)}
-                        className={`inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition ${
-                          active
-                            ? "bg-[color:var(--duo-cream-2)] border-[color:var(--duo-yellow)] text-foreground font-semibold"
-                            : "bg-background hover:bg-muted border-border/70 text-foreground/80"
-                        }`}
-                      >
-                        <span className="text-sm leading-none">{c.emoji}</span>
-                        {c.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
 
               <div>
                 <div className="flex items-center justify-between mb-3">
