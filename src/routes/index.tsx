@@ -947,7 +947,7 @@ function Mascot({
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
       <button
         aria-label="Fermer"
-        onClick={() => setVisible(false)}
+        onClick={() => { haptic(); setVisible(false); }}
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px] animate-mascot-backdrop"
       />
       <div className="relative pointer-events-auto flex flex-col items-center gap-3 w-full max-w-[320px]">
@@ -962,8 +962,8 @@ function Mascot({
             className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-card border-l-[3px] border-t-[3px] border-[#2b2b2b] rounded-sm"
           />
           <button
-            onClick={() => setVisible(false)}
-            className="absolute -top-2.5 -right-2.5 h-6 w-6 rounded-full bg-card border-2 border-[#2b2b2b] grid place-items-center shadow-[0_2px_0_0_#2b2b2b]"
+            onClick={() => { haptic(); setVisible(false); }}
+            className="absolute -top-2.5 -right-2.5 h-6 w-6 rounded-full bg-card border-2 border-[#2b2b2b] grid place-items-center shadow-[0_2px_0_0_#2b2b2b] tap-bounce"
             aria-label="Fermer"
           >
             <X className="h-3 w-3" />
@@ -977,8 +977,8 @@ function Mascot({
                 {quickPicks.map((p) => (
                   <button
                     key={p.value}
-                    onClick={() => { onPickCuisine(p.value); setStep(1); }}
-                    className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-muted hover:bg-muted/70 border-2 border-[#2b2b2b] shadow-[0_2px_0_0_#2b2b2b] active:translate-y-[1px] active:shadow-none"
+                    onClick={() => { haptic(); onPickCuisine(p.value); setStep(1); }}
+                    className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-muted hover:bg-muted/70 border-2 border-[#2b2b2b] shadow-[0_2px_0_0_#2b2b2b] active:translate-y-[1px] active:shadow-none tap-bounce"
                   >
                     <span>{p.emoji}</span> {p.label}
                   </button>
@@ -995,8 +995,8 @@ function Mascot({
               </p>
               <div className="mt-2 flex justify-center">
                 <button
-                  onClick={() => { onOpenHype(); setVisible(false); }}
-                  className="inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white border-2 border-[#2b2b2b] shadow-[0_2px_0_0_#2b2b2b] active:translate-y-[1px] active:shadow-none"
+                  onClick={() => { haptic(20); onOpenHype(); setVisible(false); }}
+                  className="inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white border-2 border-[#2b2b2b] shadow-[0_2px_0_0_#2b2b2b] active:translate-y-[1px] active:shadow-none tap-bounce"
                 >
                   🔥 Voir les plus hype
                 </button>
