@@ -297,7 +297,8 @@ function Index() {
   const [searchText, setSearchText] = useState("");
   const [onlyOpenNow, setOnlyOpenNow] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("score");
-  const { visits, update } = useVisits();
+  const { user } = useAuthSession();
+  const { visits, update } = useVisits(user?.id ?? null);
   const userLocation = useGeolocation();
 
   const mapReady = useGoogleMaps();
