@@ -24,6 +24,7 @@ export interface Restaurant {
   userRatingCount: number | null;
   priceLevel: string | null;
   primaryType: string | null;
+  primaryTypeKey: string | null;
   googleMapsUri: string | null;
   websiteUri: string | null;
   phone: string | null;
@@ -32,55 +33,65 @@ export interface Restaurant {
   reservable: boolean | null;
   weekdayDescriptions: string[];
   photoUrls: string[];
+  cuisines: Cuisine[];
 }
 
-// Top 20 French cities (by population).
+// Kept exported for backwards compatibility with imports; unused now.
 export const FRENCH_CITIES = [
-  { key: "paris", label: "Paris", lat: 48.8566, lng: 2.3522 },
-  { key: "marseille", label: "Marseille", lat: 43.2965, lng: 5.3698 },
-  { key: "lyon", label: "Lyon", lat: 45.7640, lng: 4.8357 },
   { key: "toulouse", label: "Toulouse", lat: 43.6047, lng: 1.4442 },
-  { key: "nice", label: "Nice", lat: 43.7102, lng: 7.2620 },
-  { key: "nantes", label: "Nantes", lat: 47.2184, lng: -1.5536 },
-  { key: "montpellier", label: "Montpellier", lat: 43.6108, lng: 3.8767 },
-  { key: "strasbourg", label: "Strasbourg", lat: 48.5734, lng: 7.7521 },
-  { key: "bordeaux", label: "Bordeaux", lat: 44.8378, lng: -0.5792 },
-  { key: "lille", label: "Lille", lat: 50.6292, lng: 3.0573 },
-  { key: "rennes", label: "Rennes", lat: 48.1173, lng: -1.6778 },
-  { key: "reims", label: "Reims", lat: 49.2583, lng: 4.0317 },
-  { key: "saint-etienne", label: "Saint-Étienne", lat: 45.4397, lng: 4.3872 },
-  { key: "toulon", label: "Toulon", lat: 43.1242, lng: 5.9280 },
-  { key: "le-havre", label: "Le Havre", lat: 49.4944, lng: 0.1079 },
-  { key: "grenoble", label: "Grenoble", lat: 45.1885, lng: 5.7245 },
-  { key: "dijon", label: "Dijon", lat: 47.3220, lng: 5.0415 },
-  { key: "angers", label: "Angers", lat: 47.4784, lng: -0.5632 },
-  { key: "nimes", label: "Nîmes", lat: 43.8367, lng: 4.3601 },
-  { key: "villeurbanne", label: "Villeurbanne", lat: 45.7719, lng: 4.8902 },
 ] as const;
 
-export type CityKey = (typeof FRENCH_CITIES)[number]["key"] | "all";
+export type CityKey = "toulouse";
 
-interface SearchInput {
-  cuisine: Cuisine;
-  minRating: number;
-  city: CityKey;
-}
-
+const TOULOUSE = { lat: 43.6047, lng: 1.4442 };
+const RADIUS_M = 9000;
 const GATEWAY = "https://connector-gateway.lovable.dev/google_maps";
 
-const CUISINE_LABEL: Record<Cuisine, string> = {
-  any: "restaurants",
-  italian: "restaurants italiens",
-  french: "restaurants français",
-  chinese: "restaurants chinois",
-  japanese: "restaurants japonais",
-  indian: "restaurants indiens",
-  mexican: "restaurants mexicains",
-  thai: "restaurants thaï",
-  spanish: "restaurants espagnols",
-  greek: "restaurants grecs",
-  american: "restaurants américains",
-  vegetarian: "restaurants végétariens",
+const CUISINE_QUERIES: Record<Exclude<Cuisine, "any">, string> = {
+  french: "restaurants français à Toulouse",
+  italian: "restaurants italiens à Toulouse",
+  chinese: "restaurants chinois à Toulouse",
+  japanese: "restaurants japonais à Toulouse",
+  indian: "restaurants indiens à Toulouse",
+  mexican: "restaurants mexicains à Toulouse",
+  thai: "restaurants thaï à Toulouse",
+  spanish: "restaurants espagnols à Toulouse",
+  greek: "restaurants grecs à Toulouse",
+  american: "restaurants américains burgers à Toulouse",
+  vegetarian: "restaurants végétariens à Toulouse",
+};
+
+// Broad queries to reach a large pool (~300).
+const BROAD_QUERIES = [
+  "meilleurs restaurants à Toulouse",
+  "restaurants gastronomiques Toulouse",
+  "bistrots Toulouse",
+  "brasseries Toulouse",
+  "restaurants centre-ville Toulouse",
+  "restaurants Capitole Toulouse",
+  "restaurants Saint-Cyprien Toulouse",
+  "restaurants Carmes Toulouse",
+];
+
+// Map Google primaryType → our cuisine key.
+const PRIMARY_TYPE_TO_CUISINE: Record<string, Cuisine> = {
+  italian_restaurant: "italian",
+  french_restaurant: "french",
+  chinese_restaurant: "chinese",
+  japanese_restaurant: "japanese",
+  sushi_restaurant: "japanese",
+  ramen_restaurant: "japanese",
+  indian_restaurant: "indian",
+  mexican_restaurant: "mexican",
+  thai_restaurant: "thai",
+  spanish_restaurant: "spanish",
+  tapas_restaurant: "spanish",
+  greek_restaurant: "greek",
+  american_restaurant: "american",
+  hamburger_restaurant: "american",
+  steak_house: "american",
+  vegetarian_restaurant: "vegetarian",
+  vegan_restaurant: "vegetarian",
 };
 
 type PlaceRaw = {
@@ -91,7 +102,9 @@ type PlaceRaw = {
   rating?: number;
   userRatingCount?: number;
   priceLevel?: string;
+  primaryType?: string;
   primaryTypeDisplayName?: { text: string };
+  types?: string[];
   googleMapsUri?: string;
   websiteUri?: string;
   nationalPhoneNumber?: string;
@@ -110,7 +123,9 @@ const FIELD_MASK = [
   "places.rating",
   "places.userRatingCount",
   "places.priceLevel",
+  "places.primaryType",
   "places.primaryTypeDisplayName",
+  "places.types",
   "places.googleMapsUri",
   "places.websiteUri",
   "places.nationalPhoneNumber",
@@ -125,8 +140,6 @@ const FIELD_MASK = [
 async function fetchPage(
   textQuery: string,
   minRating: number,
-  center: { lat: number; lng: number },
-  radiusM: number,
   pageToken: string | undefined,
   auth: { lov: string; key: string },
 ) {
@@ -136,8 +149,8 @@ async function fetchPage(
     pageSize: 20,
     locationBias: {
       circle: {
-        center: { latitude: center.lat, longitude: center.lng },
-        radius: radiusM,
+        center: { latitude: TOULOUSE.lat, longitude: TOULOUSE.lng },
+        radius: RADIUS_M,
       },
     },
   };
@@ -163,7 +176,18 @@ async function fetchPage(
   return (await res.json()) as { places?: PlaceRaw[]; nextPageToken?: string };
 }
 
-function toRestaurant(p: PlaceRaw): Restaurant {
+function detectCuisines(p: PlaceRaw, sourceCuisine: Cuisine | null): Cuisine[] {
+  const set = new Set<Cuisine>();
+  if (sourceCuisine && sourceCuisine !== "any") set.add(sourceCuisine);
+  const candidates = [p.primaryType, ...(p.types ?? [])].filter(Boolean) as string[];
+  for (const t of candidates) {
+    const c = PRIMARY_TYPE_TO_CUISINE[t];
+    if (c) set.add(c);
+  }
+  return Array.from(set);
+}
+
+function toRestaurant(p: PlaceRaw, cuisines: Cuisine[]): Restaurant {
   return {
     id: p.id,
     name: p.displayName?.text ?? "Sans nom",
@@ -174,6 +198,7 @@ function toRestaurant(p: PlaceRaw): Restaurant {
     userRatingCount: p.userRatingCount ?? null,
     priceLevel: p.priceLevel ?? null,
     primaryType: p.primaryTypeDisplayName?.text ?? null,
+    primaryTypeKey: p.primaryType ?? null,
     googleMapsUri: p.googleMapsUri ?? null,
     websiteUri: p.websiteUri ?? null,
     phone: p.nationalPhoneNumber ?? null,
@@ -189,14 +214,23 @@ function toRestaurant(p: PlaceRaw): Restaurant {
       .map(
         (ph) => `/api/public/place-photo?name=${encodeURIComponent(ph.name)}`,
       ),
+    cuisines,
   };
+}
+
+// Module-level cache: minRating → { at, results }
+const CACHE = new Map<number, { at: number; data: Restaurant[] }>();
+const CACHE_TTL_MS = 10 * 60 * 1000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+interface SearchInput {
+  minRating: number;
 }
 
 export const searchRestaurants = createServerFn({ method: "POST" })
   .inputValidator((input: SearchInput) => ({
-    cuisine: (input?.cuisine ?? "any") as Cuisine,
     minRating: Math.max(0, Math.min(5, Number(input?.minRating ?? 0))),
-    city: (input?.city ?? "toulouse") as CityKey,
   }))
   .handler(async ({ data }) => {
     const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
@@ -205,89 +239,84 @@ export const searchRestaurants = createServerFn({ method: "POST" })
       throw new Error("Google Maps connector is not configured");
     }
     const auth = { lov: LOVABLE_API_KEY, key: GOOGLE_MAPS_API_KEY };
-    const cuisineLabel = CUISINE_LABEL[data.cuisine];
 
-    // "all" → top 10 of each of the 20 largest French cities.
-    if (data.city === "all") {
-      const seen = new Map<string, PlaceRaw>();
-      const results = await Promise.all(
-        FRENCH_CITIES.map((c) =>
-          fetchPage(
-            `meilleurs ${cuisineLabel} à ${c.label}`,
-            data.minRating,
-            { lat: c.lat, lng: c.lng },
-            15000,
-            undefined,
-            auth,
-          ).catch((e) => {
-            console.error(`City fetch failed for ${c.label}`, e);
-            return { places: [] as PlaceRaw[] };
-          }),
-        ),
-      );
-      results.forEach((page) => {
-        const top = (page.places ?? [])
-          .filter((p) => p.location)
-          .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-          .slice(0, 10);
-        for (const p of top) if (p.id) seen.set(p.id, p);
-      });
-      return Array.from(seen.values()).map(toRestaurant);
+    const cached = CACHE.get(data.minRating);
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+      return cached.data;
     }
 
-    // Single city
-    const cityEntry =
-      FRENCH_CITIES.find((c) => c.key === data.city) ?? FRENCH_CITIES[3];
-    const seen = new Map<string, PlaceRaw>();
+    // Merged pool + source-cuisine tags (built during fetching).
+    const pool = new Map<string, PlaceRaw>();
+    const sources = new Map<string, Set<Cuisine>>();
 
-    // "Tous" → agrège plusieurs cuisines pour dépasser la limite de 60 par requête.
-    if (data.cuisine === "any") {
-      const cuisineKeys: Cuisine[] = [
-        "french", "italian", "japanese", "chinese", "indian",
-        "thai", "spanish", "mexican", "greek", "american", "vegetarian",
-      ];
-      const pages = await Promise.all(
-        cuisineKeys.map((k) =>
-          fetchPage(
-            `${CUISINE_LABEL[k]} à ${cityEntry.label}`,
-            data.minRating,
-            { lat: cityEntry.lat, lng: cityEntry.lng },
-            8000,
-            undefined,
-            auth,
-          ).catch((e) => {
-            console.error(`Cuisine fetch failed for ${k}`, e);
-            return { places: [] as PlaceRaw[] };
-          }),
-        ),
-      );
-      pages.forEach((page) => {
-        for (const p of page.places ?? []) if (p.id) seen.set(p.id, p);
-      });
-      return Array.from(seen.values())
-        .filter((p) => p.location)
-        .map(toRestaurant);
+    const tag = (p: PlaceRaw, src: Cuisine | null) => {
+      if (!p.id) return;
+      pool.set(p.id, p);
+      if (src && src !== "any") {
+        const s = sources.get(p.id) ?? new Set<Cuisine>();
+        s.add(src);
+        sources.set(p.id, s);
+      }
+    };
+
+    // Sequential to avoid rate limits.
+    const runQuery = async (
+      query: string,
+      src: Cuisine | null,
+      maxPages: number,
+    ) => {
+      let token: string | undefined;
+      for (let i = 0; i < maxPages; i++) {
+        try {
+          const page = await fetchPage(query, data.minRating, token, auth);
+          for (const p of page.places ?? []) tag(p, src);
+          if (!page.nextPageToken) break;
+          token = page.nextPageToken;
+          await sleep(120);
+        } catch (e) {
+          console.error(`Query failed: "${query}"`, e);
+          break;
+        }
+        // Stop early once we have plenty.
+        if (pool.size >= 320) return;
+      }
+    };
+
+    // Broad queries with pagination.
+    for (const q of BROAD_QUERIES) {
+      if (pool.size >= 320) break;
+      await runQuery(q, null, 3);
+      await sleep(150);
     }
 
-    // Cuisine spécifique : paginer jusqu'à 3 pages.
-    const query = `${cuisineLabel} à ${cityEntry.label}`;
-    let token: string | undefined;
-    for (let i = 0; i < 3; i++) {
-      const page: { places?: PlaceRaw[]; nextPageToken?: string } =
-        await fetchPage(
-          query,
-          data.minRating,
-          { lat: cityEntry.lat, lng: cityEntry.lng },
-          8000,
-          token,
-          auth,
-        );
-      for (const p of page.places ?? []) if (p.id) seen.set(p.id, p);
-      if (!page.nextPageToken || seen.size >= 60) break;
-      token = page.nextPageToken;
+    // Per-cuisine queries (1 page each is enough to tag them).
+    for (const [cuisine, q] of Object.entries(CUISINE_QUERIES) as [
+      Cuisine,
+      string,
+    ][]) {
+      if (pool.size >= 320 && sources.size >= 200) {
+        // Still run to tag cuisine even if pool is full — but limit further.
+      }
+      await runQuery(q, cuisine, 1);
+      await sleep(150);
     }
 
-    return Array.from(seen.values())
+    // Build results, dedupe, sort by rating × log(count).
+    const restaurants = Array.from(pool.values())
       .filter((p) => p.location)
-      .map(toRestaurant);
+      .map((p) => {
+        const src = sources.get(p.id) ?? new Set<Cuisine>();
+        return toRestaurant(p, detectCuisines(p, null).concat(Array.from(src)));
+      })
+      // dedupe cuisines array
+      .map((r) => ({ ...r, cuisines: Array.from(new Set(r.cuisines)) }))
+      .sort((a, b) => {
+        const score = (r: Restaurant) =>
+          (r.rating ?? 0) * Math.log10((r.userRatingCount ?? 0) + 10);
+        return score(b) - score(a);
+      })
+      .slice(0, 300);
+
+    CACHE.set(data.minRating, { at: Date.now(), data: restaurants });
+    return restaurants;
   });

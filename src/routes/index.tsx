@@ -19,9 +19,7 @@ import {
 
 import {
   searchRestaurants,
-  FRENCH_CITIES,
   type Cuisine,
-  type CityKey,
   type Restaurant,
 } from "@/lib/places.functions";
 import { Button } from "@/components/ui/button";
@@ -44,16 +42,9 @@ const CUISINES: { value: Cuisine; label: string }[] = [
   { value: "vegetarian", label: "Végétarien" },
 ];
 
-const CITY_OPTIONS: { key: CityKey; label: string; lat: number; lng: number; zoom: number }[] = [
-  { key: "all", label: "France · Top 20 villes", lat: 46.6, lng: 2.5, zoom: 6 },
-  ...FRENCH_CITIES.map((c) => ({
-    key: c.key as CityKey,
-    label: c.label,
-    lat: c.lat,
-    lng: c.lng,
-    zoom: 13,
-  })),
-];
+const TOULOUSE_CENTER = { lat: 43.6047, lng: 1.4442 };
+const TOULOUSE_ZOOM = 13;
+
 
 type Tab = "all" | "todo" | "done";
 
@@ -143,7 +134,6 @@ function useVisits() {
 function Index() {
   const [cuisine, setCuisine] = useState<Cuisine>("any");
   const [minRating, setMinRating] = useState(4);
-  const [city, setCity] = useState<CityKey>("toulouse");
   const [tab, setTab] = useState<Tab>("all");
   const [selected, setSelected] = useState<Restaurant | null>(null);
   const [results, setResults] = useState<Restaurant[]>([]);
@@ -156,8 +146,7 @@ function Index() {
 
   const search = useServerFn(searchRestaurants);
   const mutation = useMutation({
-    mutationFn: (vars: { cuisine: Cuisine; minRating: number; city: CityKey }) =>
-      search({ data: vars }),
+    mutationFn: (vars: { minRating: number }) => search({ data: vars }),
     onSuccess: (data) => {
       setResults(data);
       setSelected(null);
@@ -165,17 +154,31 @@ function Index() {
   });
 
   const filtered = useMemo(() => {
-    if (tab === "done") return results.filter((r) => visits[r.id]?.done);
-    if (tab === "todo") return results.filter((r) => !visits[r.id]?.done);
-    return results;
-  }, [results, tab, visits]);
+    let list = results;
+    if (cuisine !== "any") {
+      list = list.filter((r) => r.cuisines.includes(cuisine));
+    }
+    if (tab === "done") return list.filter((r) => visits[r.id]?.done);
+    if (tab === "todo") return list.filter((r) => !visits[r.id]?.done);
+    return list;
+  }, [results, cuisine, tab, visits]);
+
+  // Counts scoped to the current cuisine filter (ignoring tab).
+  const cuisineScoped = useMemo(
+    () =>
+      cuisine === "any"
+        ? results
+        : results.filter((r) => r.cuisines.includes(cuisine)),
+    [results, cuisine],
+  );
+  const doneInScope = cuisineScoped.filter((r) => visits[r.id]?.done).length;
+  const todoCount = cuisineScoped.length - doneInScope;
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstance.current) return;
-    const initial = CITY_OPTIONS.find((c) => c.key === city) ?? CITY_OPTIONS[0];
     mapInstance.current = new window.google!.maps.Map(mapRef.current, {
-      center: { lat: initial.lat, lng: initial.lng },
-      zoom: initial.zoom,
+      center: TOULOUSE_CENTER,
+      zoom: TOULOUSE_ZOOM,
       disableDefaultUI: true,
       zoomControl: true,
       clickableIcons: false,
@@ -183,16 +186,7 @@ function Index() {
       gestureHandling: "greedy",
       styles: minimalMapStyle,
     });
-  }, [mapReady, city]);
-
-  // Recenter when city changes
-  useEffect(() => {
-    if (!mapInstance.current) return;
-    const opt = CITY_OPTIONS.find((c) => c.key === city);
-    if (!opt) return;
-    mapInstance.current.panTo({ lat: opt.lat, lng: opt.lng });
-    mapInstance.current.setZoom(opt.zoom);
-  }, [city]);
+  }, [mapReady]);
 
   useEffect(() => {
     if (!mapInstance.current || !window.google) return;
@@ -224,12 +218,10 @@ function Index() {
   }, [filtered, selected, visits]);
 
   useEffect(() => {
-    mutation.mutate({ cuisine, minRating, city });
+    mutation.mutate({ minRating });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cuisine, minRating, city]);
+  }, [minRating]);
 
-  const todoCount = results.length - results.filter((r) => visits[r.id]?.done).length;
-  const doneInResults = results.filter((r) => visits[r.id]?.done).length;
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
@@ -239,15 +231,15 @@ function Index() {
             <div className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
             <h1 className="text-sm font-semibold tracking-tight truncate">
               Tastemap
-              <span className="text-muted-foreground font-normal ml-1.5">· France</span>
+              <span className="text-muted-foreground font-normal ml-1.5">· Toulouse</span>
             </h1>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
             <span className="tabular-nums">{filtered.length}</span>
-            {doneInResults > 0 && (
+            {doneInScope > 0 && (
               <span className="flex items-center gap-0.5 text-emerald-500">
                 <Check className="h-3 w-3" strokeWidth={3} />
-                <span className="tabular-nums">{doneInResults}</span>
+                <span className="tabular-nums">{doneInScope}</span>
               </span>
             )}
           </div>
@@ -261,21 +253,11 @@ function Index() {
               <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
                 Ville
               </h2>
-              <div className="relative">
-                <select
-                  value={city}
-                  onChange={(e) => setCity(e.target.value as CityKey)}
-                  className="w-full appearance-none text-sm bg-background border border-border/70 rounded-md px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {CITY_OPTIONS.map((c) => (
-                    <option key={c.key} value={c.key}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="text-sm px-3 py-2 rounded-md border border-border/60 bg-background/60 text-foreground/80">
+                Toulouse
               </div>
             </div>
+
 
             <div>
               <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">
@@ -323,7 +305,7 @@ function Index() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => mutation.mutate({ cuisine, minRating, city })}
+              onClick={() => mutation.mutate({ minRating })}
               disabled={mutation.isPending}
             >
               {mutation.isPending ? (
@@ -343,9 +325,9 @@ function Index() {
               <div className="grid grid-cols-3 gap-1">
                 {(
                   [
-                    { key: "all", label: "Tous", count: results.length },
+                    { key: "all", label: "Tous", count: cuisineScoped.length },
                     { key: "todo", label: "À faire", count: todoCount },
-                    { key: "done", label: "Faits", count: doneInResults },
+                    { key: "done", label: "Faits", count: doneInScope },
                   ] as { key: Tab; label: string; count: number }[]
                 ).map((t) => {
                   const active = tab === t.key;
