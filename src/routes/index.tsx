@@ -146,10 +146,10 @@ function Index() {
 
   const search = useServerFn(searchRestaurants);
   const mutation = useMutation({
-    mutationFn: (vars: { minRating: number }) => search({ data: vars }),
+    mutationFn: (vars: { minRating: number; force?: boolean }) =>
+      search({ data: vars }),
     onSuccess: (data) => {
       setResults(data);
-      setSelected(null);
     },
   });
 
@@ -222,9 +222,56 @@ function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minRating]);
 
+  // Pull-to-refresh (mobile)
+  const [pull, setPull] = useState(0);
+  const pullStart = useRef<number | null>(null);
+  const PTR_THRESHOLD = 70;
+  useEffect(() => {
+    const onTouchStart = (e: TouchEvent) => {
+      if (window.scrollY <= 0 && !mutation.isPending) {
+        pullStart.current = e.touches[0].clientY;
+      } else {
+        pullStart.current = null;
+      }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (pullStart.current == null) return;
+      const dy = e.touches[0].clientY - pullStart.current;
+      if (dy > 0) setPull(Math.min(dy * 0.5, 90));
+      else setPull(0);
+    };
+    const onTouchEnd = () => {
+      if (pull >= PTR_THRESHOLD) {
+        mutation.mutate({ minRating, force: true });
+      }
+      pullStart.current = null;
+      setPull(0);
+    };
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd);
+    return () => {
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [pull, minRating, mutation]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
+      {(pull > 0 || mutation.isPending) && (
+        <div
+          className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
+          style={{ transform: `translateY(${Math.max(pull - 20, mutation.isPending ? 12 : 0)}px)`, transition: pull === 0 ? "transform 200ms" : "none" }}
+        >
+          <div className="rounded-full bg-card border border-border/70 shadow-md h-9 w-9 grid place-items-center">
+            <Loader2
+              className={`h-4 w-4 text-foreground ${mutation.isPending ? "animate-spin" : ""}`}
+              style={{ transform: mutation.isPending ? undefined : `rotate(${pull * 4}deg)` }}
+            />
+          </div>
+        </div>
+      )}
       <header className="border-b border-border/60 bg-background/80 backdrop-blur sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -305,7 +352,7 @@ function Index() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => mutation.mutate({ minRating })}
+              onClick={() => mutation.mutate({ minRating, force: true })}
               disabled={mutation.isPending}
             >
               {mutation.isPending ? (
@@ -477,7 +524,7 @@ function DetailCard({
   useEffect(() => setComment(visit.comment), [visit.comment, r.id]);
 
   return (
-    <div className="absolute left-3 right-3 bottom-3 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[340px] rounded-xl bg-card border border-border/70 shadow-xl overflow-hidden max-h-[65vh] flex flex-col">
+    <div className="absolute left-2 right-2 bottom-2 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[320px] rounded-xl bg-card border border-border/70 shadow-xl overflow-hidden max-h-[45vh] lg:max-h-[65vh] flex flex-col">
       {r.photoUrls.length > 0 && (
         <div
           className="flex overflow-x-auto snap-x snap-mandatory flex-shrink-0"
@@ -488,12 +535,13 @@ function DetailCard({
               key={url}
               src={url}
               alt={`${r.name} — plat ${i + 1}`}
-              className="h-28 w-full flex-shrink-0 object-cover snap-start"
+              loading="lazy"
+              className="h-20 lg:h-24 w-full flex-shrink-0 object-cover snap-start"
             />
           ))}
         </div>
       )}
-      <div className="p-4 overflow-y-auto">
+      <div className="p-3 overflow-y-auto">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h3 className="font-semibold tracking-tight truncate text-sm">{r.name}</h3>
