@@ -19,9 +19,7 @@ import {
 
 import {
   searchRestaurants,
-  FRENCH_CITIES,
   type Cuisine,
-  type CityKey,
   type Restaurant,
 } from "@/lib/places.functions";
 import { Button } from "@/components/ui/button";
@@ -44,16 +42,9 @@ const CUISINES: { value: Cuisine; label: string }[] = [
   { value: "vegetarian", label: "Végétarien" },
 ];
 
-const CITY_OPTIONS: { key: CityKey; label: string; lat: number; lng: number; zoom: number }[] = [
-  { key: "all", label: "France · Top 20 villes", lat: 46.6, lng: 2.5, zoom: 6 },
-  ...FRENCH_CITIES.map((c) => ({
-    key: c.key as CityKey,
-    label: c.label,
-    lat: c.lat,
-    lng: c.lng,
-    zoom: 13,
-  })),
-];
+const TOULOUSE_CENTER = { lat: 43.6047, lng: 1.4442 };
+const TOULOUSE_ZOOM = 13;
+
 
 type Tab = "all" | "todo" | "done";
 
