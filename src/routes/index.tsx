@@ -488,8 +488,8 @@ function Index() {
 
       {/* Floating top bar */}
       <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto px-3 pt-1.5 flex items-center justify-between gap-2 max-w-3xl">
-          <div className="flex items-center gap-2 rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm pl-3 pr-2 py-1.5 min-w-0">
+        <div className="mx-auto px-3 pt-0.5 flex items-center justify-between gap-2 max-w-3xl">
+          <div className="flex items-center gap-2 rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm pl-3 pr-2 py-1 min-w-0">
             <span className="text-base leading-none">🍽️</span>
             <h1 className="font-display text-sm font-extrabold tracking-tight truncate">
               Tastemap
@@ -509,40 +509,8 @@ function Index() {
           </div>
         </div>
 
-        {/* Small pill tabs */}
-        <div className="mx-auto px-3 mt-1 flex justify-center">
-          <div className="inline-flex rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm p-0.5 gap-0.5">
-            {(
-              [
-                { key: "all", label: "Tous", count: cuisineScoped.length },
-                { key: "todo", label: "À faire", count: todoCount },
-                { key: "done", label: "Faits", count: doneInScope },
-                { key: "favorites", label: "Favoris", count: favoritesInScope },
-              ] as { key: Tab; label: string; count: number }[]
-            ).map((t) => {
-              const active = tab === t.key;
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`text-[11px] px-2.5 py-1 rounded-full transition flex items-center gap-1 whitespace-nowrap ${
-                    active
-                      ? "bg-[color:var(--duo-green)] text-white font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t.label}
-                  <span className={`tabular-nums text-[10px] ${active ? "opacity-90" : "opacity-60"}`}>
-                    {t.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Cuisine strip */}
-        <div className="mx-auto px-2 mt-2 max-w-3xl">
+        <div className="mx-auto px-2 mt-1 max-w-3xl">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-1 pb-1 -mx-1">
             {CUISINES.filter((c) => c.value !== "any").map((c) => {
               const active = c.value === cuisine;
@@ -564,6 +532,7 @@ function Index() {
           </div>
         </div>
       </div>
+
 
 
       {/* Floating action buttons — bottom right */}
