@@ -414,7 +414,7 @@ function Index() {
       disableDefaultUI: true,
       zoomControl: true,
       clickableIcons: false,
-      backgroundColor: "#1a1d21",
+      backgroundColor: "#FFF9F0",
       gestureHandling: "greedy",
       styles: minimalMapStyle,
     });
