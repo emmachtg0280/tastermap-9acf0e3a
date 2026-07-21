@@ -177,7 +177,12 @@ function Index() {
   const [tab, setTab] = useState<Tab>("all");
   const [selected, setSelected] = useState<Restaurant | null>(null);
   const [results, setResults] = useState<Restaurant[]>([]);
+  const [searchText, setSearchText] = useState("");
+  const [onlyOpenNow, setOnlyOpenNow] = useState(false);
+  const [maxPrice, setMaxPrice] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<SortBy>("score");
   const { visits, update } = useVisits();
+  const userLocation = useGeolocation();
 
   const mapReady = useGoogleMaps();
   const mapRef = useRef<HTMLDivElement>(null);
