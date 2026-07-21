@@ -414,7 +414,7 @@ function Index() {
       center: DEFAULT_CENTER,
       zoom: DEFAULT_ZOOM,
       disableDefaultUI: true,
-      zoomControl: true,
+      zoomControl: false,
       clickableIcons: false,
       backgroundColor: "#FFF9F0",
       gestureHandling: "greedy",
@@ -478,41 +478,6 @@ function Index() {
   }, [city, minRating]);
 
 
-  // Pull-to-refresh (mobile)
-  const [pull, setPull] = useState(0);
-  const pullStart = useRef<number | null>(null);
-  const PTR_THRESHOLD = 70;
-  useEffect(() => {
-    const onTouchStart = (e: TouchEvent) => {
-      if (window.scrollY <= 0 && !mutation.isPending) {
-        pullStart.current = e.touches[0].clientY;
-      } else {
-        pullStart.current = null;
-      }
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (pullStart.current == null) return;
-      const dy = e.touches[0].clientY - pullStart.current;
-      if (dy > 0) setPull(Math.min(dy * 0.5, 90));
-      else setPull(0);
-    };
-    const onTouchEnd = () => {
-      if (pull >= PTR_THRESHOLD && city) {
-        mutation.mutate({ city, minRating, force: true });
-      }
-      pullStart.current = null;
-      setPull(0);
-    };
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
-    window.addEventListener("touchend", onTouchEnd);
-    return () => {
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [pull, minRating, mutation, city]);
-
   return (
     <div className="h-screen w-screen relative overflow-hidden bg-background">
       {/* Full-screen map background */}
@@ -526,21 +491,6 @@ function Index() {
           <div className="rounded-full bg-card/90 border border-border/60 px-4 py-2 text-sm text-muted-foreground shadow-sm flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
             Chargement de la carte…
-          </div>
-        </div>
-      )}
-
-      {/* Pull-to-refresh indicator */}
-      {(pull > 0 || mutation.isPending) && (
-        <div
-          className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
-          style={{ transform: `translateY(${Math.max(pull - 20, mutation.isPending ? 12 : 0)}px)`, transition: pull === 0 ? "transform 200ms" : "none" }}
-        >
-          <div className="rounded-full bg-card border border-border/70 shadow-md h-9 w-9 grid place-items-center">
-            <Loader2
-              className={`h-4 w-4 text-foreground ${mutation.isPending ? "animate-spin" : ""}`}
-              style={{ transform: mutation.isPending ? undefined : `rotate(${pull * 4}deg)` }}
-            />
           </div>
         </div>
       )}
@@ -1055,16 +1005,6 @@ function DetailCard({
               className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border border-border/70 hover:bg-muted transition"
             >
               <Phone className="h-3 w-3" /> {r.phone}
-            </a>
-          )}
-          {r.googleMapsUri && (
-            <a
-              href={r.googleMapsUri}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border border-border/70 hover:bg-muted transition"
-            >
-              <MapPin className="h-3 w-3" /> Maps
             </a>
           )}
         </div>
