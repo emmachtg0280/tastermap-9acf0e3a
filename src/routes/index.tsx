@@ -722,6 +722,7 @@ function Index() {
               )}
               {filtered.map((r) => {
                 const done = !!visits[r.id]?.done;
+                const favorite = !!visits[r.id]?.favorite;
                 return (
                   <button
                     key={r.id}
@@ -730,7 +731,7 @@ function Index() {
                       mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
                       mapInstance.current?.setZoom(15);
                     }}
-                    className={`w-full text-left px-5 py-3 flex gap-3 hover:bg-muted/60 transition ${
+                    className={`w-full text-left px-5 py-3 flex gap-3 hover:bg-muted/60 transition group ${
                       selected?.id === r.id ? "bg-muted/70" : ""
                     }`}
                   >
