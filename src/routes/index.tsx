@@ -451,9 +451,13 @@ function Index() {
       const active = selected?.id === r.id;
       const done = !!visits[r.id]?.done;
       const favorite = !!visits[r.id]?.favorite;
+      const isNew = isNewRestaurant(r);
       const borderColor = done ? "#58CC02" : favorite ? "#FFC800" : active ? "#1CB0F6" : "#2b2b2b";
       const emoji = cuisineEmoji(r.cuisines);
       const size = active ? 46 : 38;
+      const newBadge = isNew
+        ? `<circle cx='8' cy='9' r='7' fill='#0EA5E9' stroke='#ffffff' stroke-width='2'/><text x='8' y='10' text-anchor='middle' dominant-baseline='central' font-size='9' fill='#ffffff'>✨</text>`
+        : "";
       const svg = `
 <svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size + 6}' viewBox='0 0 ${size} ${size + 6}'>
   <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.18)'/>
