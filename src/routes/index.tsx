@@ -549,7 +549,31 @@ function Index() {
             })}
           </div>
         </div>
+
+        {/* Cuisine strip */}
+        <div className="mx-auto px-2 mt-2 max-w-3xl">
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-1 pb-1 -mx-1">
+            {CUISINES.filter((c) => c.value !== "any").map((c) => {
+              const active = c.value === cuisine;
+              return (
+                <button
+                  key={c.value}
+                  onClick={() => setCuisine(active ? "any" : c.value)}
+                  className={`shrink-0 inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border backdrop-blur shadow-sm transition ${
+                    active
+                      ? "bg-[color:var(--duo-green)] border-[color:var(--duo-green)] text-white font-semibold"
+                      : "bg-card/95 border-border/70 text-foreground/80 hover:bg-muted"
+                  }`}
+                >
+                  <span className="text-sm leading-none">{c.emoji}</span>
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
+
 
       {/* Floating action buttons — bottom right */}
       <div className="absolute right-3 bottom-3 z-30 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)]">
@@ -623,30 +647,6 @@ function Index() {
                 </select>
               </div>
 
-              <div>
-                <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">
-                  Cuisine
-                </h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {CUISINES.map((c) => {
-                    const active = c.value === cuisine;
-                    return (
-                      <button
-                        key={c.value}
-                        onClick={() => setCuisine(c.value)}
-                        className={`inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition ${
-                          active
-                            ? "bg-[color:var(--duo-cream-2)] border-[color:var(--duo-yellow)] text-foreground font-semibold"
-                            : "bg-background hover:bg-muted border-border/70 text-foreground/80"
-                        }`}
-                      >
-                        <span className="text-sm leading-none">{c.emoji}</span>
-                        {c.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
 
               <div>
                 <div className="flex items-center justify-between mb-3">
