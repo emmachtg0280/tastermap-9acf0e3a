@@ -484,7 +484,7 @@ function Index() {
               )}
             </h1>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
             <span className="tabular-nums">{filtered.length}</span>
             {doneInScope > 0 && (
               <span className="flex items-center gap-0.5 text-emerald-500">
@@ -492,6 +492,7 @@ function Index() {
                 <span className="tabular-nums">{doneInScope}</span>
               </span>
             )}
+            <AuthButton />
           </div>
         </div>
       </header>
