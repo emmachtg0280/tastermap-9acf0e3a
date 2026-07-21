@@ -39,6 +39,7 @@ import {
   type Visit,
 } from "@/lib/visits.functions";
 import { getHypeStats, type HypeStats } from "@/lib/hype.functions";
+import { haptic } from "@/lib/haptic";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 
@@ -526,14 +527,14 @@ function Index() {
             {/* Discovery tabs */}
             <div className="flex gap-1.5 shrink-0">
               <button
-                onClick={() => { setShowFilters(false); setListMode("new"); }}
-                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 transition"
+                onClick={() => { haptic(); setShowFilters(false); setListMode("new"); }}
+                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
                 <span>✨</span> Nouveautés
               </button>
               <button
-                onClick={() => { setShowFilters(false); setListMode("hype"); }}
-                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 transition"
+                onClick={() => { haptic(); setShowFilters(false); setListMode("hype"); }}
+                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
                 <span>🔥</span> Hype
               </button>
@@ -548,13 +549,8 @@ function Index() {
               return (
                 <button
                   key={c.value}
-                  onClick={() => {
-                    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-                      try { navigator.vibrate(15); } catch { /* ignore */ }
-                    }
-                    setCuisine(active ? "any" : c.value);
-                  }}
-                  className={`shrink-0 inline-flex flex-col items-center justify-center gap-0.5 w-[58px] h-[58px] rounded-2xl backdrop-blur shadow-sm transition active:scale-95 ${
+                  onClick={() => { haptic(); setCuisine(active ? "any" : c.value); }}
+                  className={`shrink-0 inline-flex flex-col items-center justify-center gap-0.5 w-[58px] h-[58px] rounded-2xl backdrop-blur shadow-sm tap-bounce transition ${
                     active
                       ? "bg-white text-foreground font-semibold border-2 border-white ring-2 ring-white/80 shadow-md scale-105"
                       : "bg-white/40 border border-white/50 text-foreground/80 hover:bg-white/60"
@@ -578,30 +574,30 @@ function Index() {
         }`}
       >
         <button
-          onClick={() => { setListMode(null); setShowFilters(true); }}
+          onClick={() => { haptic(20); setListMode(null); setShowFilters(true); }}
           aria-label="Filtres"
-          className="h-12 w-12 rounded-full bg-[color:var(--duo-green)] text-white btn-pop grid place-items-center hover:brightness-105 transition"
+          className="h-12 w-12 rounded-full bg-[color:var(--duo-green)] text-white btn-pop grid place-items-center hover:brightness-105 tap-bounce transition"
         >
           <SlidersHorizontal className="h-5 w-5" />
         </button>
         <button
-          onClick={() => { setShowFilters(false); setListMode("favorites"); }}
+          onClick={() => { haptic(20); setShowFilters(false); setListMode("favorites"); }}
           aria-label="Favoris"
-          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-rose-500 grid place-items-center hover:bg-muted transition"
+          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-rose-500 grid place-items-center hover:bg-muted tap-bounce transition"
         >
           <Heart className="h-5 w-5" />
         </button>
         <button
-          onClick={() => { setShowFilters(false); setListMode("done"); }}
+          onClick={() => { haptic(20); setShowFilters(false); setListMode("done"); }}
           aria-label="Restaurants faits"
-          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-[color:var(--duo-green-dark)] grid place-items-center hover:bg-muted transition"
+          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-[color:var(--duo-green-dark)] grid place-items-center hover:bg-muted tap-bounce transition"
         >
           <Check className="h-5 w-5" strokeWidth={3} />
         </button>
         <button
-          onClick={() => { setShowFilters(false); setListMode("all"); }}
+          onClick={() => { haptic(20); setShowFilters(false); setListMode("all"); }}
           aria-label="Liste des restaurants"
-          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-foreground grid place-items-center hover:bg-muted transition"
+          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-foreground grid place-items-center hover:bg-muted tap-bounce transition"
         >
           <Utensils className="h-5 w-5" />
         </button>
@@ -618,8 +614,8 @@ function Index() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
               <h2 className="font-display font-bold text-sm">Filtres</h2>
               <button
-                onClick={() => setShowFilters(false)}
-                className="p-1 -m-1 text-muted-foreground hover:text-foreground"
+                onClick={() => { haptic(); setShowFilters(false); }}
+                className="p-1 -m-1 text-muted-foreground hover:text-foreground tap-bounce"
                 aria-label="Fermer"
               >
                 <X className="h-4 w-4" />
@@ -710,11 +706,12 @@ function Index() {
             </div>
             <div className="p-3 border-t border-border/60 flex gap-2">
               <button
-                onClick={() =>
-                  city && mutation.mutate({ city, minRating, force: true })
-                }
+                onClick={() => {
+                  haptic(20);
+                  if (city) mutation.mutate({ city, minRating, force: true });
+                }}
                 disabled={mutation.isPending || !city}
-                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-card border border-border/70 hover:bg-muted transition disabled:opacity-50"
+                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-card border border-border/70 hover:bg-muted tap-bounce transition disabled:opacity-50"
               >
                 {mutation.isPending ? (
                   <><Loader2 className="h-4 w-4 animate-spin" /> Recherche…</>
@@ -723,8 +720,8 @@ function Index() {
                 )}
               </button>
               <button
-                onClick={() => setShowFilters(false)}
-                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-[color:var(--duo-green)] text-white btn-pop hover:brightness-105 transition"
+                onClick={() => { haptic(20); setShowFilters(false); }}
+                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-[color:var(--duo-green)] text-white btn-pop hover:brightness-105 tap-bounce transition"
               >
                 Voir la carte
               </button>
@@ -772,8 +769,8 @@ function Index() {
                 {listTitle} <span className="text-muted-foreground font-semibold">· {listItems.length}</span>
               </h2>
               <button
-                onClick={() => setListMode(null)}
-                className="p-1 -m-1 text-muted-foreground hover:text-foreground"
+                onClick={() => { haptic(); setListMode(null); }}
+                className="p-1 -m-1 text-muted-foreground hover:text-foreground tap-bounce"
                 aria-label="Fermer"
               >
                 <X className="h-4 w-4" />
@@ -872,9 +869,10 @@ function Index() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          haptic(favorite ? 12 : 20);
                           update(r.id, { favorite: !favorite });
                         }}
-                        className="p-1.5 rounded-full hover:bg-muted transition flex-shrink-0"
+                        className="p-1.5 rounded-full hover:bg-muted tap-bounce transition flex-shrink-0"
                         aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
                       >
                         <Heart
@@ -949,7 +947,7 @@ function Mascot({
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
       <button
         aria-label="Fermer"
-        onClick={() => setVisible(false)}
+        onClick={() => { haptic(); setVisible(false); }}
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px] animate-mascot-backdrop"
       />
       <div className="relative pointer-events-auto flex flex-col items-center gap-3 w-full max-w-[320px]">
@@ -964,8 +962,8 @@ function Mascot({
             className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-card border-l-[3px] border-t-[3px] border-[#2b2b2b] rounded-sm"
           />
           <button
-            onClick={() => setVisible(false)}
-            className="absolute -top-2.5 -right-2.5 h-6 w-6 rounded-full bg-card border-2 border-[#2b2b2b] grid place-items-center shadow-[0_2px_0_0_#2b2b2b]"
+            onClick={() => { haptic(); setVisible(false); }}
+            className="absolute -top-2.5 -right-2.5 h-6 w-6 rounded-full bg-card border-2 border-[#2b2b2b] grid place-items-center shadow-[0_2px_0_0_#2b2b2b] tap-bounce"
             aria-label="Fermer"
           >
             <X className="h-3 w-3" />
@@ -979,8 +977,8 @@ function Mascot({
                 {quickPicks.map((p) => (
                   <button
                     key={p.value}
-                    onClick={() => { onPickCuisine(p.value); setStep(1); }}
-                    className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-muted hover:bg-muted/70 border-2 border-[#2b2b2b] shadow-[0_2px_0_0_#2b2b2b] active:translate-y-[1px] active:shadow-none"
+                    onClick={() => { haptic(); onPickCuisine(p.value); setStep(1); }}
+                    className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-muted hover:bg-muted/70 border-2 border-[#2b2b2b] shadow-[0_2px_0_0_#2b2b2b] active:translate-y-[1px] active:shadow-none tap-bounce"
                   >
                     <span>{p.emoji}</span> {p.label}
                   </button>
@@ -997,8 +995,8 @@ function Mascot({
               </p>
               <div className="mt-2 flex justify-center">
                 <button
-                  onClick={() => { onOpenHype(); setVisible(false); }}
-                  className="inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white border-2 border-[#2b2b2b] shadow-[0_2px_0_0_#2b2b2b] active:translate-y-[1px] active:shadow-none"
+                  onClick={() => { haptic(20); onOpenHype(); setVisible(false); }}
+                  className="inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white border-2 border-[#2b2b2b] shadow-[0_2px_0_0_#2b2b2b] active:translate-y-[1px] active:shadow-none tap-bounce"
                 >
                   🔥 Voir les plus hype
                 </button>
@@ -1108,8 +1106,8 @@ function DetailCard({
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
-              onClick={() => onUpdate({ done: !visit.done })}
-              className={`inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-full text-sm font-extrabold btn-pop transition ${
+              onClick={() => { haptic(visit.done ? 12 : 20); onUpdate({ done: !visit.done }); }}
+              className={`inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-full text-sm font-extrabold btn-pop tap-bounce transition ${
                 visit.done
                   ? "bg-[color:var(--duo-green)] text-white"
                   : "bg-muted border border-border/60 text-foreground hover:bg-muted/80"
@@ -1120,8 +1118,8 @@ function DetailCard({
               Fait
             </button>
             <button
-              onClick={() => onUpdate({ favorite: !visit.favorite })}
-              className={`inline-flex items-center justify-center h-8 w-8 rounded-full btn-pop transition ${
+              onClick={() => { haptic(visit.favorite ? 12 : 20); onUpdate({ favorite: !visit.favorite }); }}
+              className={`inline-flex items-center justify-center h-8 w-8 rounded-full btn-pop tap-bounce transition ${
                 visit.favorite
                   ? "bg-rose-50 border-rose-200 text-rose-500"
                   : "bg-muted border border-border/60 text-muted-foreground hover:text-foreground"
@@ -1131,8 +1129,8 @@ function DetailCard({
               <Heart className={`h-4 w-4 ${visit.favorite ? "fill-rose-500 text-rose-500" : ""}`} />
             </button>
             <button
-              onClick={onClose}
-              className="text-muted-foreground hover:text-foreground p-1 -m-1"
+              onClick={() => { haptic(); onClose(); }}
+              className="text-muted-foreground hover:text-foreground p-1 -m-1 tap-bounce"
               aria-label="Fermer"
             >
               <X className="h-5 w-5" />
@@ -1188,8 +1186,8 @@ function DetailCard({
         {r.weekdayDescriptions.length > 0 && (
           <div className="mt-2">
             <button
-              onClick={() => setShowHours((v) => !v)}
-              className="inline-flex items-center gap-1 text-xs text-foreground/70 hover:text-foreground bg-muted/60 px-2.5 py-1.5 rounded-full transition"
+              onClick={() => { haptic(); setShowHours((v) => !v); }}
+              className="inline-flex items-center gap-1 text-xs text-foreground/70 hover:text-foreground bg-muted/60 px-2.5 py-1.5 rounded-full tap-bounce transition"
             >
               <CalendarClock className="h-3.5 w-3.5" />
               Horaires
@@ -1213,7 +1211,7 @@ function DetailCard({
               href={r.googleMapsUri}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white font-semibold btn-pop hover:brightness-105 transition"
+              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white font-semibold btn-pop hover:brightness-105 tap-bounce transition"
             >
               <MapPin className="h-3.5 w-3.5" /> Google Maps
             </a>
@@ -1222,14 +1220,14 @@ function DetailCard({
             href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold transition"
+            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold tap-bounce transition"
           >
             <Navigation className="h-3.5 w-3.5" /> Itinéraire
           </a>
           {r.phone && (
             <a
               href={`tel:${r.phone.replace(/\s/g, "")}`}
-              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold transition"
+              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold tap-bounce transition"
             >
               <Phone className="h-3.5 w-3.5" /> {r.phone}
             </a>
