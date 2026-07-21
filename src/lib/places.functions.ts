@@ -36,39 +36,59 @@ export interface Restaurant {
   cuisines: Cuisine[];
 }
 
-// Kept exported for backwards compatibility with imports; unused now.
-export const FRENCH_CITIES = [
-  { key: "toulouse", label: "Toulouse", lat: 43.6047, lng: 1.4442 },
-] as const;
+export type CityKey =
+  | "toulouse"
+  | "montpellier"
+  | "paris"
+  | "lyon"
+  | "marseille"
+  | "bordeaux";
 
-export type CityKey = "toulouse";
+export interface CityDef {
+  key: CityKey;
+  label: string;
+  lat: number;
+  lng: number;
+  radius: number;
+}
 
-const TOULOUSE = { lat: 43.6047, lng: 1.4442 };
-const RADIUS_M = 9000;
-const GATEWAY = "https://connector-gateway.lovable.dev/google_maps";
-
-const CUISINE_QUERIES: Record<Exclude<Cuisine, "any">, string> = {
-  french: "restaurants français à Toulouse",
-  italian: "restaurants italiens à Toulouse",
-  chinese: "restaurants chinois à Toulouse",
-  japanese: "restaurants japonais à Toulouse",
-  indian: "restaurants indiens à Toulouse",
-  mexican: "restaurants mexicains à Toulouse",
-  thai: "restaurants thaï à Toulouse",
-  spanish: "restaurants espagnols à Toulouse",
-  greek: "restaurants grecs à Toulouse",
-  american: "restaurants américains burgers à Toulouse",
-  vegetarian: "restaurants végétariens à Toulouse",
-};
-
-// Broad queries — fewer but paginated. Kept small to stay fast.
-const BROAD_QUERIES = [
-  "meilleurs restaurants à Toulouse",
-  "restaurants gastronomiques Toulouse",
-  "bistrots brasseries Toulouse",
+export const CITIES: CityDef[] = [
+  { key: "toulouse", label: "Toulouse", lat: 43.6047, lng: 1.4442, radius: 9000 },
+  { key: "montpellier", label: "Montpellier", lat: 43.6108, lng: 3.8767, radius: 8000 },
+  { key: "paris", label: "Paris", lat: 48.8566, lng: 2.3522, radius: 10000 },
+  { key: "lyon", label: "Lyon", lat: 45.7640, lng: 4.8357, radius: 9000 },
+  { key: "marseille", label: "Marseille", lat: 43.2965, lng: 5.3698, radius: 10000 },
+  { key: "bordeaux", label: "Bordeaux", lat: 44.8378, lng: -0.5792, radius: 8000 },
 ];
 
-// Map Google primaryType → our cuisine key.
+const CITY_BY_KEY: Record<CityKey, CityDef> = Object.fromEntries(
+  CITIES.map((c) => [c.key, c]),
+) as Record<CityKey, CityDef>;
+
+const GATEWAY = "https://connector-gateway.lovable.dev/google_maps";
+
+const CUISINE_LABEL: Record<Exclude<Cuisine, "any">, string> = {
+  french: "français",
+  italian: "italiens",
+  chinese: "chinois",
+  japanese: "japonais",
+  indian: "indiens",
+  mexican: "mexicains",
+  thai: "thaï",
+  spanish: "espagnols",
+  greek: "grecs",
+  american: "américains burgers",
+  vegetarian: "végétariens",
+};
+
+function broadQueries(cityLabel: string): string[] {
+  return [
+    `meilleurs restaurants à ${cityLabel}`,
+    `restaurants gastronomiques ${cityLabel}`,
+    `bistrots brasseries ${cityLabel}`,
+  ];
+}
+
 const PRIMARY_TYPE_TO_CUISINE: Record<string, Cuisine> = {
   italian_restaurant: "italian",
   french_restaurant: "french",
@@ -136,6 +156,7 @@ async function fetchPage(
   textQuery: string,
   minRating: number,
   pageToken: string | undefined,
+  city: CityDef,
   auth: { lov: string; key: string },
 ) {
   const body: Record<string, unknown> = {
@@ -144,8 +165,8 @@ async function fetchPage(
     pageSize: 20,
     locationBias: {
       circle: {
-        center: { latitude: TOULOUSE.lat, longitude: TOULOUSE.lng },
-        radius: RADIUS_M,
+        center: { latitude: city.lat, longitude: city.lng },
+        radius: city.radius,
       },
     },
   };
@@ -171,9 +192,8 @@ async function fetchPage(
   return (await res.json()) as { places?: PlaceRaw[]; nextPageToken?: string };
 }
 
-function detectCuisines(p: PlaceRaw, sourceCuisine: Cuisine | null): Cuisine[] {
+function detectCuisines(p: PlaceRaw): Cuisine[] {
   const set = new Set<Cuisine>();
-  if (sourceCuisine && sourceCuisine !== "any") set.add(sourceCuisine);
   const candidates = [p.primaryType, ...(p.types ?? [])].filter(Boolean) as string[];
   for (const t of candidates) {
     const c = PRIMARY_TYPE_TO_CUISINE[t];
@@ -213,22 +233,28 @@ function toRestaurant(p: PlaceRaw, cuisines: Cuisine[]): Restaurant {
   };
 }
 
-// Module-level cache: minRating → { at, results }
-const CACHE = new Map<number, { at: number; data: Restaurant[] }>();
+// Module-level cache keyed by `${city}:${minRating}`
+const CACHE = new Map<string, { at: number; data: Restaurant[] }>();
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
-
-
 interface SearchInput {
+  city: CityKey;
   minRating: number;
   force?: boolean;
 }
 
 export const searchRestaurants = createServerFn({ method: "POST" })
-  .inputValidator((input: SearchInput) => ({
-    minRating: Math.max(0, Math.min(5, Number(input?.minRating ?? 0))),
-    force: Boolean(input?.force),
-  }))
+  .inputValidator((input: SearchInput) => {
+    const cityKey = (input?.city ?? "toulouse") as CityKey;
+    if (!CITY_BY_KEY[cityKey]) {
+      throw new Error(`Unknown city: ${cityKey}`);
+    }
+    return {
+      city: cityKey,
+      minRating: Math.max(0, Math.min(5, Number(input?.minRating ?? 0))),
+      force: Boolean(input?.force),
+    };
+  })
   .handler(async ({ data }) => {
     const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
     const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
@@ -236,9 +262,11 @@ export const searchRestaurants = createServerFn({ method: "POST" })
       throw new Error("Google Maps connector is not configured");
     }
     const auth = { lov: LOVABLE_API_KEY, key: GOOGLE_MAPS_API_KEY };
+    const city = CITY_BY_KEY[data.city];
 
+    const cacheKey = `${data.city}:${data.minRating}`;
     if (!data.force) {
-      const cached = CACHE.get(data.minRating);
+      const cached = CACHE.get(cacheKey);
       if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
         return cached.data;
       }
@@ -257,8 +285,6 @@ export const searchRestaurants = createServerFn({ method: "POST" })
       }
     };
 
-
-
     const runQuery = async (
       query: string,
       src: Cuisine | null,
@@ -267,7 +293,7 @@ export const searchRestaurants = createServerFn({ method: "POST" })
       let token: string | undefined;
       for (let i = 0; i < maxPages; i++) {
         try {
-          const page = await fetchPage(query, data.minRating, token, auth);
+          const page = await fetchPage(query, data.minRating, token, city, auth);
           for (const p of page.places ?? []) tag(p, src);
           if (!page.nextPageToken) break;
           token = page.nextPageToken;
@@ -278,10 +304,9 @@ export const searchRestaurants = createServerFn({ method: "POST" })
       }
     };
 
-    // Run broad + cuisine queries in parallel batches to speed up refresh.
     const runBatch = async (
       jobs: Array<{ q: string; src: Cuisine | null; pages: number }>,
-      concurrency = 4,
+      concurrency = 5,
     ) => {
       let i = 0;
       const workers = Array.from({ length: concurrency }, async () => {
@@ -294,19 +319,26 @@ export const searchRestaurants = createServerFn({ method: "POST" })
     };
 
     const jobs: Array<{ q: string; src: Cuisine | null; pages: number }> = [
-      ...BROAD_QUERIES.map((q) => ({ q, src: null as Cuisine | null, pages: 2 })),
-      ...(Object.entries(CUISINE_QUERIES) as [Cuisine, string][]).map(
-        ([cuisine, q]) => ({ q, src: cuisine, pages: 1 }),
+      ...broadQueries(city.label).map((q) => ({
+        q,
+        src: null as Cuisine | null,
+        pages: 2,
+      })),
+      ...(Object.entries(CUISINE_LABEL) as [Cuisine, string][]).map(
+        ([cuisine, label]) => ({
+          q: `restaurants ${label} à ${city.label}`,
+          src: cuisine,
+          pages: 1,
+        }),
       ),
     ];
     await runBatch(jobs, 5);
-
 
     const restaurants = Array.from(pool.values())
       .filter((p) => p.location)
       .map((p) => {
         const src = sources.get(p.id) ?? new Set<Cuisine>();
-        return toRestaurant(p, detectCuisines(p, null).concat(Array.from(src)));
+        return toRestaurant(p, detectCuisines(p).concat(Array.from(src)));
       })
       .map((r) => ({ ...r, cuisines: Array.from(new Set(r.cuisines)) }))
       .sort((a, b) => {
@@ -316,6 +348,6 @@ export const searchRestaurants = createServerFn({ method: "POST" })
       })
       .slice(0, 100);
 
-    CACHE.set(data.minRating, { at: Date.now(), data: restaurants });
+    CACHE.set(cacheKey, { at: Date.now(), data: restaurants });
     return restaurants;
   });
