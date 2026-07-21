@@ -422,7 +422,9 @@ function Index() {
       gestureHandling: "greedy",
       styles: minimalMapStyle,
     });
+    mapInstance.current.addListener("click", () => setSelected(null));
   }, [mapReady]);
+
 
   // Recenter map when city changes
   useEffect(() => {
