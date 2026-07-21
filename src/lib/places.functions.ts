@@ -25,7 +25,7 @@ export interface Restaurant {
   priceLevel: string | null;
   primaryType: string | null;
   googleMapsUri: string | null;
-  photoUrl: string | null;
+  photoUrls: string[];
 }
 
 interface SearchInput {
@@ -35,20 +35,87 @@ interface SearchInput {
 
 const GATEWAY = "https://connector-gateway.lovable.dev/google_maps";
 
+// Toulouse city center
+const TOULOUSE = { latitude: 43.6047, longitude: 1.4442 };
+const TOULOUSE_RADIUS_M = 8000;
+
 const CUISINE_QUERY: Record<Cuisine, string> = {
-  any: "restaurants in France",
-  italian: "italian restaurants in France",
-  french: "french restaurants in France",
-  chinese: "chinese restaurants in France",
-  japanese: "japanese restaurants in France",
-  indian: "indian restaurants in France",
-  mexican: "mexican restaurants in France",
-  thai: "thai restaurants in France",
-  spanish: "spanish restaurants in France",
-  greek: "greek restaurants in France",
-  american: "american restaurants in France",
-  vegetarian: "vegetarian restaurants in France",
+  any: "restaurants à Toulouse",
+  italian: "restaurants italiens à Toulouse",
+  french: "restaurants français à Toulouse",
+  chinese: "restaurants chinois à Toulouse",
+  japanese: "restaurants japonais à Toulouse",
+  indian: "restaurants indiens à Toulouse",
+  mexican: "restaurants mexicains à Toulouse",
+  thai: "restaurants thaï à Toulouse",
+  spanish: "restaurants espagnols à Toulouse",
+  greek: "restaurants grecs à Toulouse",
+  american: "restaurants américains à Toulouse",
+  vegetarian: "restaurants végétariens à Toulouse",
 };
+
+type PlaceRaw = {
+  id: string;
+  displayName?: { text: string };
+  formattedAddress?: string;
+  location?: { latitude: number; longitude: number };
+  rating?: number;
+  userRatingCount?: number;
+  priceLevel?: string;
+  primaryTypeDisplayName?: { text: string };
+  googleMapsUri?: string;
+  photos?: Array<{ name: string }>;
+};
+
+const FIELD_MASK = [
+  "places.id",
+  "places.displayName",
+  "places.formattedAddress",
+  "places.location",
+  "places.rating",
+  "places.userRatingCount",
+  "places.priceLevel",
+  "places.primaryTypeDisplayName",
+  "places.googleMapsUri",
+  "places.photos",
+  "nextPageToken",
+].join(",");
+
+async function fetchPage(
+  textQuery: string,
+  minRating: number,
+  pageToken: string | undefined,
+  auth: { lov: string; key: string },
+) {
+  const body: Record<string, unknown> = {
+    textQuery,
+    includedType: "restaurant",
+    pageSize: 20,
+    locationBias: {
+      circle: { center: TOULOUSE, radius: TOULOUSE_RADIUS_M },
+    },
+  };
+  if (minRating > 0) body.minRating = minRating;
+  if (pageToken) body.pageToken = pageToken;
+
+  const res = await fetch(`${GATEWAY}/places/v1/places:searchText`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${auth.lov}`,
+      "X-Connection-Api-Key": auth.key,
+      "Content-Type": "application/json",
+      "X-Goog-FieldMask": FIELD_MASK,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`Places searchText failed [${res.status}]: ${text}`);
+    throw new Error(`Places search failed: ${res.status}`);
+  }
+  return (await res.json()) as { places?: PlaceRaw[]; nextPageToken?: string };
+}
 
 export const searchRestaurants = createServerFn({ method: "POST" })
   .inputValidator((input: SearchInput) => ({
@@ -61,66 +128,34 @@ export const searchRestaurants = createServerFn({ method: "POST" })
     if (!LOVABLE_API_KEY || !GOOGLE_MAPS_API_KEY) {
       throw new Error("Google Maps connector is not configured");
     }
+    const auth = { lov: LOVABLE_API_KEY, key: GOOGLE_MAPS_API_KEY };
+    const query = CUISINE_QUERY[data.cuisine];
 
-    const fieldMask = [
-      "places.id",
-      "places.displayName",
-      "places.formattedAddress",
-      "places.location",
-      "places.rating",
-      "places.userRatingCount",
-      "places.priceLevel",
-      "places.primaryTypeDisplayName",
-      "places.googleMapsUri",
-      "places.photos",
-    ].join(",");
-
-    const body: Record<string, unknown> = {
-      textQuery: CUISINE_QUERY[data.cuisine],
-      includedType: "restaurant",
-      maxResultCount: 20,
-      locationBias: {
-        rectangle: {
-          low: { latitude: 41.0, longitude: -5.5 },
-          high: { latitude: 51.5, longitude: 10.0 },
-        },
-      },
-    };
-    if (data.minRating > 0) body.minRating = data.minRating;
-
-    const res = await fetch(`${GATEWAY}/places/v1/places:searchText`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": GOOGLE_MAPS_API_KEY,
-        "Content-Type": "application/json",
-        "X-Goog-FieldMask": fieldMask,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.error(`Places searchText failed [${res.status}]: ${text}`);
-      throw new Error(`Places search failed: ${res.status}`);
+    const seen = new Map<string, PlaceRaw>();
+    let token: string | undefined = undefined;
+    // Paginate up to 3 pages (Places caps at 60 total, 20/page).
+    for (let i = 0; i < 3; i++) {
+      const page: { places?: PlaceRaw[]; nextPageToken?: string } = await fetchPage(
+        query,
+        data.minRating,
+        token,
+        auth,
+      );
+      for (const p of page.places ?? []) if (p.id) seen.set(p.id, p);
+      if (!page.nextPageToken || seen.size >= 60) break;
+      token = page.nextPageToken;
     }
 
-    const json = (await res.json()) as {
-      places?: Array<{
-        id: string;
-        displayName?: { text: string };
-        formattedAddress?: string;
-        location?: { latitude: number; longitude: number };
-        rating?: number;
-        userRatingCount?: number;
-        priceLevel?: string;
-        primaryTypeDisplayName?: { text: string };
-        googleMapsUri?: string;
-        photos?: Array<{ name: string }>;
-      }>;
-    };
+    // If still under 50 and cuisine is "any", broaden with a couple extra queries.
+    if (data.cuisine === "any" && seen.size < 50) {
+      for (const extra of ["meilleurs restaurants Toulouse", "bistrot Toulouse"]) {
+        if (seen.size >= 60) break;
+        const page = await fetchPage(extra, data.minRating, undefined, auth);
+        for (const p of page.places ?? []) if (p.id) seen.set(p.id, p);
+      }
+    }
 
-    const restaurants: Restaurant[] = (json.places ?? [])
+    const restaurants: Restaurant[] = Array.from(seen.values())
       .filter((p) => p.location)
       .map((p) => ({
         id: p.id,
@@ -133,9 +168,12 @@ export const searchRestaurants = createServerFn({ method: "POST" })
         priceLevel: p.priceLevel ?? null,
         primaryType: p.primaryTypeDisplayName?.text ?? null,
         googleMapsUri: p.googleMapsUri ?? null,
-        photoUrl: p.photos?.[0]?.name
-          ? `/api/public/place-photo?name=${encodeURIComponent(p.photos[0].name)}`
-          : null,
+        photoUrls: (p.photos ?? [])
+          .slice(0, 6)
+          .map(
+            (ph) =>
+              `/api/public/place-photo?name=${encodeURIComponent(ph.name)}`,
+          ),
       }));
 
     return restaurants;
