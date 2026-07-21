@@ -614,8 +614,8 @@ function Index() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
               <h2 className="font-display font-bold text-sm">Filtres</h2>
               <button
-                onClick={() => setShowFilters(false)}
-                className="p-1 -m-1 text-muted-foreground hover:text-foreground"
+                onClick={() => { haptic(); setShowFilters(false); }}
+                className="p-1 -m-1 text-muted-foreground hover:text-foreground tap-bounce"
                 aria-label="Fermer"
               >
                 <X className="h-4 w-4" />
