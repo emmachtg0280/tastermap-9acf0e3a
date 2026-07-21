@@ -766,7 +766,7 @@ function Index() {
                         </div>
                       )}
                       {done && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 text-white grid place-items-center ring-2 ring-card">
+                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[color:var(--duo-green)] text-white grid place-items-center ring-2 ring-card animate-pop-in">
                           <Check className="h-3 w-3" strokeWidth={3} />
                         </span>
                       )}
