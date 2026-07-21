@@ -67,8 +67,8 @@ function cuisineEmoji(cs: Cuisine[]): string {
   return "🍽️";
 }
 
-const DEFAULT_CENTER = { lat: 46.6, lng: 2.4 };
-const DEFAULT_ZOOM = 6;
+const DEFAULT_CENTER = { lat: 43.6047, lng: 1.4442 }; // Toulouse
+const DEFAULT_ZOOM = 13;
 const CITY_ZOOM = 13;
 
 
@@ -1005,6 +1005,16 @@ function DetailCard({
               className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border border-border/70 hover:bg-muted transition"
             >
               <Phone className="h-3 w-3" /> {r.phone}
+            </a>
+          )}
+          {r.googleMapsUri && (
+            <a
+              href={r.googleMapsUri}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border border-border/70 hover:bg-muted transition"
+            >
+              <MapPin className="h-3 w-3" /> Maps
             </a>
           )}
         </div>
