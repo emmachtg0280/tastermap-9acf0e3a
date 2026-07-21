@@ -706,11 +706,12 @@ function Index() {
             </div>
             <div className="p-3 border-t border-border/60 flex gap-2">
               <button
-                onClick={() =>
-                  city && mutation.mutate({ city, minRating, force: true })
-                }
+                onClick={() => {
+                  haptic(20);
+                  if (city) mutation.mutate({ city, minRating, force: true });
+                }}
                 disabled={mutation.isPending || !city}
-                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-card border border-border/70 hover:bg-muted transition disabled:opacity-50"
+                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-card border border-border/70 hover:bg-muted tap-bounce transition disabled:opacity-50"
               >
                 {mutation.isPending ? (
                   <><Loader2 className="h-4 w-4 animate-spin" /> Recherche…</>
@@ -719,8 +720,8 @@ function Index() {
                 )}
               </button>
               <button
-                onClick={() => setShowFilters(false)}
-                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-[color:var(--duo-green)] text-white btn-pop hover:brightness-105 transition"
+                onClick={() => { haptic(20); setShowFilters(false); }}
+                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-[color:var(--duo-green)] text-white btn-pop hover:brightness-105 tap-bounce transition"
               >
                 Voir la carte
               </button>
