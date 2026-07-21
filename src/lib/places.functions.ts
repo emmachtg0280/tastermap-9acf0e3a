@@ -338,16 +338,35 @@ export const searchRestaurants = createServerFn({ method: "POST" })
     // Query-source tagging (e.g. results returned by a search for "restaurants
     // italiens") is unreliable — Google returns bistros/brasseries in those
     // results too, which caused wrong emojis on the map.
-    const restaurants = Array.from(pool.values())
+    const all = Array.from(pool.values())
       .filter((p) => p.location)
       .map((p) => toRestaurant(p, detectCuisines(p)))
-      .map((r) => ({ ...r, cuisines: Array.from(new Set(r.cuisines)) }))
+      .map((r) => ({ ...r, cuisines: Array.from(new Set(r.cuisines)) }));
+
+    // Hidden gems: high rating with few reviews (< 80). Reserve 5 slots per city.
+    const hiddenGems = all
+      .filter(
+        (r) =>
+          (r.rating ?? 0) >= 4.5 &&
+          r.userRatingCount != null &&
+          r.userRatingCount > 0 &&
+          r.userRatingCount < 80,
+      )
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+      .slice(0, 5);
+
+    const gemIds = new Set(hiddenGems.map((r) => r.id));
+    const popular = all
+      .filter((r) => !gemIds.has(r.id))
       .sort((a, b) => {
         const score = (r: Restaurant) =>
           (r.rating ?? 0) * Math.log10((r.userRatingCount ?? 0) + 10);
         return score(b) - score(a);
       })
-      .slice(0, 100);
+      .slice(0, 100 - hiddenGems.length);
+
+    const restaurants = [...popular, ...hiddenGems];
+
 
     CACHE.set(cacheKey, { at: Date.now(), data: restaurants });
     return restaurants;
