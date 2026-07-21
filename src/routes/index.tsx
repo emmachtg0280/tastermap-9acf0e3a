@@ -1124,6 +1124,11 @@ function DetailCard({
               {priceLabel(r.priceLevel)}
             </span>
           )}
+          {isNewRestaurant(r) && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 font-medium">
+              <Sparkles className="h-3 w-3" /> Nouveau
+            </span>
+          )}
           {r.openNow === true && (
             <span className="text-emerald-600 font-medium flex items-center gap-1">
               <Clock className="h-3 w-3" /> Ouvert
