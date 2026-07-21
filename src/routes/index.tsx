@@ -524,7 +524,7 @@ function DetailCard({
   useEffect(() => setComment(visit.comment), [visit.comment, r.id]);
 
   return (
-    <div className="absolute left-3 right-3 bottom-3 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[340px] rounded-xl bg-card border border-border/70 shadow-xl overflow-hidden max-h-[65vh] flex flex-col">
+    <div className="absolute left-2 right-2 bottom-2 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[320px] rounded-xl bg-card border border-border/70 shadow-xl overflow-hidden max-h-[45vh] lg:max-h-[65vh] flex flex-col">
       {r.photoUrls.length > 0 && (
         <div
           className="flex overflow-x-auto snap-x snap-mandatory flex-shrink-0"
@@ -535,12 +535,13 @@ function DetailCard({
               key={url}
               src={url}
               alt={`${r.name} — plat ${i + 1}`}
-              className="h-28 w-full flex-shrink-0 object-cover snap-start"
+              loading="lazy"
+              className="h-20 lg:h-24 w-full flex-shrink-0 object-cover snap-start"
             />
           ))}
         </div>
       )}
-      <div className="p-4 overflow-y-auto">
+      <div className="p-3 overflow-y-auto">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h3 className="font-semibold tracking-tight truncate text-sm">{r.name}</h3>
