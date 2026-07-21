@@ -159,7 +159,7 @@ function Index() {
       disableDefaultUI: true,
       zoomControl: true,
       clickableIcons: false,
-      backgroundColor: "#eef3ee",
+      backgroundColor: "#1a1d21",
       gestureHandling: "greedy",
       styles: minimalMapStyle,
     });
@@ -207,27 +207,26 @@ function Index() {
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       <header className="border-b border-border/60 bg-background/80 backdrop-blur sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-2 w-2 rounded-full bg-emerald-500" />
-            <div className="leading-tight">
-              <h1 className="text-sm font-semibold tracking-tight">Tastemap</h1>
-              <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                Toulouse
-              </p>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
+            <h1 className="text-sm font-semibold tracking-tight truncate">
+              Tastemap
+              <span className="text-muted-foreground font-normal ml-1.5">· Toulouse</span>
+            </h1>
           </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span>{filtered.length} adresses</span>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
+            <span className="tabular-nums">{filtered.length}</span>
             {doneCount > 0 && (
-              <span className="flex items-center gap-1 text-emerald-600">
-                <Check className="h-3 w-3" />
-                {doneCount} faits
+              <span className="flex items-center gap-0.5 text-emerald-500">
+                <Check className="h-3 w-3" strokeWidth={3} />
+                <span className="tabular-nums">{doneCount}</span>
               </span>
             )}
           </div>
         </div>
       </header>
+
 
       <div className="max-w-7xl mx-auto w-full px-5 py-5 grid gap-5 lg:grid-cols-[340px_1fr]">
         <aside className="space-y-5">
@@ -393,7 +392,7 @@ function Index() {
           <div
             ref={mapRef}
             className="w-full h-[65vh] lg:h-[calc(100vh-7rem)] rounded-xl border border-border/60 overflow-hidden touch-pan-y touch-pan-x"
-            style={{ backgroundColor: "#eef3ee" }}
+            style={{ backgroundColor: "#1a1d21" }}
           />
           {!mapReady && (
             <div className="absolute inset-0 grid place-items-center pointer-events-none">
@@ -590,24 +589,25 @@ function priceLabel(level: string) {
   return map[level] ?? "";
 }
 
-// Minimalist but not monochrome: soft greens for parks, blue water, warm land.
+// Dark, minimalist map style — muted land, subtle parks/water, hidden POIs.
 const minimalMapStyle: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#f5f3ee" }] },
+  { elementType: "geometry", stylers: [{ color: "#1a1d21" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#6b6a63" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#f5f3ee" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#8b8f96" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#1a1d21" }] },
   { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
   { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
   { featureType: "administrative.neighborhood", stylers: [{ visibility: "off" }] },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#dfeadb" }, { visibility: "on" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#1f2a24" }, { visibility: "on" }] },
   { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#2a2e34" }] },
   { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#ffe9b8" }] },
-  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#f5f3ee" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#bcd7e6" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#2f333a" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#3a3020" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#1a1d21" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#0f1c26" }] },
   { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
 ];
+
