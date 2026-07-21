@@ -217,7 +217,7 @@ function toRestaurant(p: PlaceRaw, cuisines: Cuisine[]): Restaurant {
 const CACHE = new Map<number, { at: number; data: Restaurant[] }>();
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 
 interface SearchInput {
   minRating: number;
