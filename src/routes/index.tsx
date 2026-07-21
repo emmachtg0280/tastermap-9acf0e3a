@@ -823,7 +823,7 @@ function Index() {
           <div
             ref={mapRef}
             className="w-full h-[65vh] lg:h-[calc(100vh-7rem)] rounded-xl border border-border/60 overflow-hidden touch-pan-y touch-pan-x"
-            style={{ backgroundColor: "#1a1d21" }}
+            style={{ backgroundColor: "#FFF9F0" }}
           />
           {!mapReady && (
             <div className="absolute inset-0 grid place-items-center pointer-events-none">
