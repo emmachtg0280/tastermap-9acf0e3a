@@ -869,9 +869,10 @@ function Index() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          haptic(favorite ? 12 : 20);
                           update(r.id, { favorite: !favorite });
                         }}
-                        className="p-1.5 rounded-full hover:bg-muted transition flex-shrink-0"
+                        className="p-1.5 rounded-full hover:bg-muted tap-bounce transition flex-shrink-0"
                         aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
                       >
                         <Heart
