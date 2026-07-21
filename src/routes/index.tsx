@@ -769,8 +769,8 @@ function Index() {
                 {listTitle} <span className="text-muted-foreground font-semibold">· {listItems.length}</span>
               </h2>
               <button
-                onClick={() => setListMode(null)}
-                className="p-1 -m-1 text-muted-foreground hover:text-foreground"
+                onClick={() => { haptic(); setListMode(null); }}
+                className="p-1 -m-1 text-muted-foreground hover:text-foreground tap-bounce"
                 aria-label="Fermer"
               >
                 <X className="h-4 w-4" />
