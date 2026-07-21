@@ -23,6 +23,7 @@ import {
   LogIn,
   LogOut,
   User,
+  Sparkles,
 } from "lucide-react";
 
 import {
@@ -67,6 +68,13 @@ function cuisineEmoji(cs: Cuisine[]): string {
   const priority: Cuisine[] = ["italian","japanese","french","chinese","indian","mexican","thai","spanish","greek","american","vegetarian"];
   for (const p of priority) if (cs.includes(p)) return CUISINES.find(c => c.value === p)!.emoji;
   return "🍽️";
+}
+
+// Google Places API does not expose an opening date. We use a low review count
+// as a proxy for "opened in the last rolling year".
+function isNewRestaurant(r: Restaurant): boolean {
+  const count = r.userRatingCount ?? 0;
+  return count > 0 && count < 80;
 }
 
 const DEFAULT_CENTER = { lat: 43.6047, lng: 1.4442 }; // Toulouse
@@ -443,14 +451,19 @@ function Index() {
       const active = selected?.id === r.id;
       const done = !!visits[r.id]?.done;
       const favorite = !!visits[r.id]?.favorite;
+      const isNew = isNewRestaurant(r);
       const borderColor = done ? "#58CC02" : favorite ? "#FFC800" : active ? "#1CB0F6" : "#2b2b2b";
       const emoji = cuisineEmoji(r.cuisines);
       const size = active ? 46 : 38;
+      const newBadge = isNew
+        ? `<circle cx='8' cy='9' r='7' fill='#0EA5E9' stroke='#ffffff' stroke-width='2'/><text x='8' y='10' text-anchor='middle' dominant-baseline='central' font-size='9' fill='#ffffff'>✨</text>`
+        : "";
       const svg = `
 <svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size + 6}' viewBox='0 0 ${size} ${size + 6}'>
   <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.18)'/>
   <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 3}' fill='#ffffff' stroke='${borderColor}' stroke-width='3'/>
   <text x='${size / 2}' y='${size / 2}' text-anchor='middle' dominant-baseline='central' font-size='${size * 0.5}' font-family='Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif'>${emoji}</text>
+  ${newBadge}
   ${done ? `<circle cx='${size - 8}' cy='9' r='7' fill='#58CC02' stroke='#ffffff' stroke-width='2'/><path d='M${size - 11} 9 l2.5 2.5 L${size - 5} 6.5' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
 </svg>`.trim();
       const marker = new window.google!.maps.Marker({
@@ -730,10 +743,10 @@ function Index() {
             ? filtered.filter((r) => visits[r.id]?.done)
             : listMode === "favorites"
               ? filtered.filter((r) => visits[r.id]?.favorite)
-              : listMode === "new"
-                ? [...baseFiltered]
-                    .filter((r) => (r.userRatingCount ?? 0) > 0 && (r.userRatingCount ?? 0) < 400)
-                    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+                : listMode === "new"
+                  ? [...baseFiltered]
+                      .filter((r) => isNewRestaurant(r))
+                      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
                 : listMode === "hype"
                   ? [...baseFiltered]
                       .filter((r) => (hypeStats[r.id]?.score ?? 0) > 0)
@@ -844,6 +857,11 @@ function Index() {
                                   ({r.userRatingCount})
                                 </span>
                               )}
+                            </span>
+                          )}
+                          {isNewRestaurant(r) && (
+                            <span className="inline-flex items-center gap-0.5 text-sky-600 font-medium">
+                              <Sparkles className="h-3 w-3" /> Nouveau
                             </span>
                           )}
                           {r.openNow === true && (
@@ -1115,6 +1133,11 @@ function DetailCard({
           {r.priceLevel && (
             <span className="text-muted-foreground">
               {priceLabel(r.priceLevel)}
+            </span>
+          )}
+          {isNewRestaurant(r) && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 font-medium">
+              <Sparkles className="h-3 w-3" /> Nouveau
             </span>
           )}
           {r.openNow === true && (
