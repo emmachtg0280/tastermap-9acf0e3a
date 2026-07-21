@@ -388,7 +388,7 @@ function Index() {
           </div>
         </aside>
 
-        <main className="relative">
+        <main className="relative min-w-0">
           <div
             ref={mapRef}
             className="w-full h-[65vh] lg:h-[calc(100vh-7rem)] rounded-xl border border-border/60 overflow-hidden touch-pan-y touch-pan-x"
