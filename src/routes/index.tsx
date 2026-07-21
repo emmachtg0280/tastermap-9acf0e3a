@@ -526,14 +526,14 @@ function Index() {
           </div>
         </div>
       )}
-      <header className="border-b border-border/60 bg-background/80 backdrop-blur sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      <header className="border-b border-border/60 bg-background/85 backdrop-blur-md sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
-            <h1 className="text-sm font-semibold tracking-tight truncate">
+            <span className="text-lg leading-none">🍽️</span>
+            <h1 className="font-display text-base font-extrabold tracking-tight truncate">
               Tastemap
               {currentCity && (
-                <span className="text-muted-foreground font-normal ml-1.5">
+                <span className="text-muted-foreground font-semibold ml-1.5">
                   · {currentCity.label}
                 </span>
               )}
