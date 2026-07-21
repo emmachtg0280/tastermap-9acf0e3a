@@ -784,7 +784,12 @@ function Index() {
                       ? "Aucun restaurant marqué fait pour l'instant."
                       : listMode === "favorites"
                         ? "Aucun restaurant en favori pour l'instant."
-                        : "Aucun restaurant trouvé."}
+                        : listMode === "new"
+                          ? "Aucune nouveauté pour l'instant."
+                          : listMode === "hype"
+                            ? "Pas encore de restos hype. Marquez-en pour lancer la tendance !"
+                            : "Aucun restaurant trouvé."}
+
                 </div>
               )}
 
