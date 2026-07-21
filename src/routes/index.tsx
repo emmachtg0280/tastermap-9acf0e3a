@@ -325,9 +325,9 @@ function Index() {
               <div className="grid grid-cols-3 gap-1">
                 {(
                   [
-                    { key: "all", label: "Tous", count: results.length },
+                    { key: "all", label: "Tous", count: cuisineScoped.length },
                     { key: "todo", label: "À faire", count: todoCount },
-                    { key: "done", label: "Faits", count: doneInResults },
+                    { key: "done", label: "Faits", count: doneInScope },
                   ] as { key: Tab; label: string; count: number }[]
                 ).map((t) => {
                   const active = tab === t.key;
