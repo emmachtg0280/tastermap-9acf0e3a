@@ -1186,8 +1186,8 @@ function DetailCard({
         {r.weekdayDescriptions.length > 0 && (
           <div className="mt-2">
             <button
-              onClick={() => setShowHours((v) => !v)}
-              className="inline-flex items-center gap-1 text-xs text-foreground/70 hover:text-foreground bg-muted/60 px-2.5 py-1.5 rounded-full transition"
+              onClick={() => { haptic(); setShowHours((v) => !v); }}
+              className="inline-flex items-center gap-1 text-xs text-foreground/70 hover:text-foreground bg-muted/60 px-2.5 py-1.5 rounded-full tap-bounce transition"
             >
               <CalendarClock className="h-3.5 w-3.5" />
               Horaires
@@ -1211,7 +1211,7 @@ function DetailCard({
               href={r.googleMapsUri}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white font-semibold btn-pop hover:brightness-105 transition"
+              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white font-semibold btn-pop hover:brightness-105 tap-bounce transition"
             >
               <MapPin className="h-3.5 w-3.5" /> Google Maps
             </a>
@@ -1220,14 +1220,14 @@ function DetailCard({
             href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold transition"
+            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold tap-bounce transition"
           >
             <Navigation className="h-3.5 w-3.5" /> Itinéraire
           </a>
           {r.phone && (
             <a
               href={`tel:${r.phone.replace(/\s/g, "")}`}
-              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold transition"
+              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold tap-bounce transition"
             >
               <Phone className="h-3.5 w-3.5" /> {r.phone}
             </a>
