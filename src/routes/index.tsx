@@ -888,9 +888,102 @@ function Index() {
           onClose={() => setSelected(null)}
         />
       )}
+
+      <Mascot
+        onPickCuisine={(c) => setCuisine(c)}
+        onOpenHype={() => { setShowFilters(false); setListMode("hype"); }}
+      />
     </div>
   );
 }
+
+function Mascot({
+  onPickCuisine,
+  onOpenHype,
+}: {
+  onPickCuisine: (c: Cuisine) => void;
+  onOpenHype: () => void;
+}) {
+  const [visible, setVisible] = useState(false);
+  const [step, setStep] = useState<0 | 1>(0);
+
+  useEffect(() => {
+    try {
+      const last = localStorage.getItem("tastemap.mascot.lastSeen");
+      const now = Date.now();
+      if (last && now - Number(last) < 6 * 60 * 60 * 1000) return;
+      localStorage.setItem("tastemap.mascot.lastSeen", String(now));
+    } catch {
+      /* ignore */
+    }
+    const t1 = setTimeout(() => setVisible(true), 900);
+    const t2 = setTimeout(() => setVisible(false), 14000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
+  if (!visible) return null;
+
+  const quickPicks: { emoji: string; label: string; value: Cuisine }[] = [
+    { emoji: "🍕", label: "Italien", value: "italian" },
+    { emoji: "🍣", label: "Japonais", value: "japanese" },
+    { emoji: "🥖", label: "Français", value: "french" },
+    { emoji: "🍔", label: "Burger", value: "american" },
+  ];
+
+  return (
+    <div className="absolute inset-x-0 top-24 z-50 flex justify-center pointer-events-none px-4">
+      <div className="pointer-events-auto max-w-xs w-full flex items-end gap-2 animate-pop-in">
+        <div className="flex-shrink-0 h-14 w-14 rounded-full bg-[#FFC800] border-2 border-[#2b2b2b] shadow-md grid place-items-center text-3xl leading-none">
+          🐥
+        </div>
+        <div className="relative flex-1 rounded-2xl bg-card border-2 border-[#2b2b2b] shadow-md px-3 py-2">
+          <button
+            onClick={() => setVisible(false)}
+            className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-card border border-[#2b2b2b] grid place-items-center text-[10px]"
+            aria-label="Fermer"
+          >
+            <X className="h-3 w-3" />
+          </button>
+          {step === 0 ? (
+            <>
+              <p className="text-xs font-semibold text-foreground">
+                Coucou ! Tu manges quoi aujourd'hui ?
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {quickPicks.map((p) => (
+                  <button
+                    key={p.value}
+                    onClick={() => {
+                      onPickCuisine(p.value);
+                      setStep(1);
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted hover:bg-muted/70 border border-border/60"
+                  >
+                    <span>{p.emoji}</span> {p.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-xs font-semibold text-foreground">
+                🎯 Défi de la semaine : découvre 3 nouveaux restos !
+              </p>
+              <button
+                onClick={() => { onOpenHype(); setVisible(false); }}
+                className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[color:var(--duo-green)] text-white"
+              >
+                🔥 Voir les plus hype
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 
 
 function DetailCard({
