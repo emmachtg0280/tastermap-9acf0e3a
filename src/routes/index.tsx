@@ -589,24 +589,25 @@ function priceLabel(level: string) {
   return map[level] ?? "";
 }
 
-// Minimalist but not monochrome: soft greens for parks, blue water, warm land.
+// Dark, minimalist map style — muted land, subtle parks/water, hidden POIs.
 const minimalMapStyle: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#f5f3ee" }] },
+  { elementType: "geometry", stylers: [{ color: "#1a1d21" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#6b6a63" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#f5f3ee" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#8b8f96" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#1a1d21" }] },
   { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
   { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
   { featureType: "administrative.neighborhood", stylers: [{ visibility: "off" }] },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#dfeadb" }, { visibility: "on" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#1f2a24" }, { visibility: "on" }] },
   { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#2a2e34" }] },
   { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#ffe9b8" }] },
-  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#f5f3ee" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#bcd7e6" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#2f333a" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#3a3020" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#1a1d21" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#0f1c26" }] },
   { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
 ];
+
