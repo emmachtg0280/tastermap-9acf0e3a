@@ -436,20 +436,28 @@ function Index() {
     filtered.forEach((r) => {
       const active = selected?.id === r.id;
       const done = !!visits[r.id]?.done;
-      const color = active ? "#111111" : done ? "#16a34a" : "#e11d48";
+      const favorite = !!visits[r.id]?.favorite;
+      const borderColor = done ? "#58CC02" : favorite ? "#FFC800" : active ? "#1CB0F6" : "#2b2b2b";
+      const emoji = cuisineEmoji(r.cuisines);
+      const size = active ? 46 : 38;
+      const svg = `
+<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size + 6}' viewBox='0 0 ${size} ${size + 6}'>
+  <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.18)'/>
+  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 3}' fill='#ffffff' stroke='${borderColor}' stroke-width='3'/>
+  <text x='50%' y='54%' text-anchor='middle' dominant-baseline='middle' font-size='${size * 0.5}' font-family='Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif'>${emoji}</text>
+  ${done ? `<circle cx='${size - 8}' cy='9' r='7' fill='#58CC02' stroke='#ffffff' stroke-width='2'/><path d='M${size - 11} 9 l2.5 2.5 L${size - 5} 6.5' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
+</svg>`.trim();
       const marker = new window.google!.maps.Marker({
         position: { lat: r.lat, lng: r.lng },
         map: mapInstance.current!,
         title: r.name,
         icon: {
-          path: window.google!.maps.SymbolPath.CIRCLE,
-          scale: active ? 9 : 6.5,
-          fillColor: color,
-          fillOpacity: 1,
-          strokeColor: "#ffffff",
-          strokeWeight: 2,
+          url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
+          scaledSize: new window.google!.maps.Size(size, size + 6),
+          anchor: new window.google!.maps.Point(size / 2, size / 2),
         },
-        zIndex: active ? 999 : done ? 5 : 1,
+        zIndex: active ? 999 : done ? 5 : favorite ? 3 : 1,
+        optimized: true,
       });
       marker.addListener("click", () => setSelected(r));
       markersRef.current.push(marker);
