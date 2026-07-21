@@ -1,69 +1,41 @@
+# Plan : réparer et uniformiser le feedback haptique au tap
 
-# Refonte visuelle "carte ludique" style Duolingo
+## Problème constaté
+Seules les chips de cuisine déclenchent `navigator.vibrate(15)` au tap. Les autres icônes / boutons (Nouveautés, Hype, Filtres, Favoris, Faits, Restaurants, actions de fiche) n'ont aucune vibration. De plus, `navigator.vibrate` n'est pas supportée sur iOS Safari, donc le feedback est silencieux pour une grande partie des utilisateurs.
 
-Objectif : transformer l'app en une **carte interactive joyeuse et ludique** (esprit Duolingo / jeu mobile), tout en gardant les onglets et filtres **discrets** pour ne pas casser l'ambiance.
+## Objectif
+Donner un feedback haptique / visuel clair et cohérent sur **tous** les boutons/icônes tapables, avec une solution qui fonctionne aussi sur iOS.
 
-## Direction visuelle
+## Étapes
 
-**Palette ludique** (remplace le dark actuel) :
-- Fond app : crème doux `#FFF9F0` (mode clair chaleureux type Duolingo)
-- Vert primaire vif `#58CC02` (accent principal, boutons, "faits")
-- Jaune miel `#FFC800` (favoris, étoiles, récompenses)
-- Corail `#FF6B6B` (cœurs favoris, alertes)
-- Bleu ciel `#1CB0F6` (liens, info)
-- Bordures marquées 2px + ombres portées "plates" décalées (style neo-brutalist doux)
+1. **Créer un helper `haptic.ts`**
+   - Tente `navigator.vibrate(pattern)` si disponible (Android).
+   - Retourne un flag `supported` pour que l'interface puisse ajouter un fallback visuel sur les appareils non-haptiques.
+   - Pattern court de 15 ms pour les petits boutons, 20 ms pour les grosses cibles.
 
-**Typo** : `Nunito` (arrondie, ludique) pour titres + `DM Sans` corps.
+2. **Ajouter un feedback visuel universel au tap**
+   - Classe utilitaire `.tap-bounce` : `active:scale-95` + courte transition + micro-impulsion via keyframe `tap-pop` (scale 0.92 → 1.0) pour compenser l'absence de vibration sur iOS.
+   - Appliquer cette classe aux boutons flottants, aux chips de cuisine et aux boutons d'action de fiche.
 
-## Carte interactive ludique
+3. **Brancher le helper sur tous les boutons interactifs**
+   - **Top bar** : Nouveautés, Hype, chaque chip cuisine.
+   - **Floating action buttons** : Filtres, Favoris, Faits, Restaurants.
+   - **Fiche restaurant** : Fait, Favori, fermeture, liens (téléphone, site, itinéraire), commentaire.
+   - **Overlays** : boutons d'ouverture/fermeture des modales Filtres / Liste / Faits / Favoris.
 
-- Style Google Maps custom : **fond crème**, eau bleu pastel, parcs vert vif, routes blanches contour gris clair (style "board game"). Sortie du dark.
-- **Marqueurs restaurants transformés en pastilles rondes** colorées type "niveaux Duolingo" :
-  - Rond blanc avec icône emoji cuisine (🍕 🍜 🥐 🍔…) selon le type
-  - Bordure épaisse colorée (vert si fait, jaune si favori, gris sinon)
-  - Ombre portée décalée
-  - Petit rebond au hover / au clic (animation `scale` + `translateY`)
-- **Marqueur "fait"** : coche verte en badge sur la pastille (comme une leçon complétée)
-- **Cluster léger** au dézoom : gros rond avec nombre, même style
+4. **Vérifier la cohérence mobile**
+   - S'assurer que les animations CSS ne bloquent pas le rendu (`will-change: transform` sur les cibles fréquemment tapées).
+   - Empêcher le double-déclenclement si le navigateur supporte à la fois la vibration et le fallback visuel : le visuel s'applique toujours, la vibration en plus quand disponible.
 
-## Onglets et filtres — restent minimalistes
+5. **Validation**
+   - Build (`bun run build`) sans erreur.
+   - Test sur le preview mobile : vérifier que chaque icône donne un retour visuel au tap, et qu'Android vibre en plus.
 
-Contrainte forte : ne PAS envahir l'écran avec du ludique.
+## Fichiers concernés
+- `src/lib/haptic.ts` (nouveau)
+- `src/styles.css` (keyframes tap-pop + classe utilitaire)
+- `src/routes/index.tsx` (ajout du helper sur tous les boutons interactifs)
 
-- **Header** : hauteur réduite, fond crème translucide `backdrop-blur`, titre app en Nunito bold + petit compteur discret.
-- **Onglets Tous / À faire / Faits / Favoris** : pilules fines, texte gris, l'onglet actif prend un fond vert pâle avec texte vert foncé (pas de gros bouton bombé). Badges compteurs en petit chiffre à côté.
-- **Filtres cuisine** : chips discrètes avec emoji + label court, actives = fond crème foncé + bordure fine, pas de couleurs criardes.
-- **Slider note et tri** : gardent leur style actuel épuré, juste re-teinté crème/vert.
-
-## Fiche restaurant
-
-- Coins plus arrondis (`rounded-3xl`), ombre douce décalée.
-- Badge cuisine en haut avec emoji + label sur fond pastel.
-- Boutons "Fait" / "Favori" : boutons pilules avec micro-animation (bounce léger au clic, confetti discret optionnel au "Fait").
-- Étoiles de note dessinées en jaune miel remplies, plus expressives.
-
-## Micro-animations
-
-- Transitions douces (`transition-all duration-200`) sur hover pastilles, chips, onglets.
-- Bounce léger au tap sur mobile.
-- Petit "pop" quand on marque un resto comme fait (scale 1 → 1.15 → 1 sur la coche).
-- Pas d'animations lourdes qui ralentissent la carte.
-
-## Fichiers modifiés
-
-- `src/routes/__root.tsx` : retire le `dark` forcé, ajoute la classe crème claire globale + import fonts Nunito/DM Sans.
-- `src/styles.css` : nouveaux tokens couleur (crème, vert Duo, jaune, corail, bleu ciel), radius plus généreux, ombres décalées, familles de fonts.
-- `src/routes/index.tsx` :
-  - Nouveau `minimalMapStyle` clair "board game".
-  - Marqueurs custom (SVG data URL ou `OverlayView`) en pastilles avec emoji cuisine.
-  - Restyle header, onglets, chips filtres, fiche resto avec les nouveaux tokens.
-  - Ajout des micro-animations (Tailwind + `transition`).
-- Mapping `cuisine → emoji` (italien 🍕, japonais 🍣, français 🥖, chinois 🥟, etc.).
-
-## Ce qui NE change pas
-
-- Toute la logique (fetch Places, cache, favoris cloud, auth, tri, pull-to-refresh, itinéraire) reste identique.
-- La sélection de ville, le zoom, les 100 restos de Toulouse : inchangés.
-- Uniquement du travail frontend / présentation.
-
-Après ton feu vert, j'implémente tout d'un coup.
+## Non inclus
+- Pas d'ajout de son au tap par défaut (demanderait une permission / politique utilisateur).
+- Pas de remplacement de l'API Google Maps par AdvancedMarkerElement (hors sujet).
