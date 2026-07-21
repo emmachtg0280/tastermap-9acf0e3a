@@ -271,28 +271,36 @@ export const searchRestaurants = createServerFn({ method: "POST" })
           for (const p of page.places ?? []) tag(p, src);
           if (!page.nextPageToken) break;
           token = page.nextPageToken;
-          await sleep(120);
         } catch (e) {
           console.error(`Query failed: "${query}"`, e);
           break;
         }
-        if (pool.size >= TARGET) return;
       }
     };
 
-    for (const q of BROAD_QUERIES) {
-      if (pool.size >= TARGET) break;
-      await runQuery(q, null, 2);
-      await sleep(120);
-    }
+    // Run broad + cuisine queries in parallel batches to speed up refresh.
+    const runBatch = async (
+      jobs: Array<{ q: string; src: Cuisine | null; pages: number }>,
+      concurrency = 4,
+    ) => {
+      let i = 0;
+      const workers = Array.from({ length: concurrency }, async () => {
+        while (i < jobs.length) {
+          const job = jobs[i++];
+          await runQuery(job.q, job.src, job.pages);
+        }
+      });
+      await Promise.all(workers);
+    };
 
-    for (const [cuisine, q] of Object.entries(CUISINE_QUERIES) as [
-      Cuisine,
-      string,
-    ][]) {
-      await runQuery(q, cuisine, 1);
-      await sleep(120);
-    }
+    const jobs: Array<{ q: string; src: Cuisine | null; pages: number }> = [
+      ...BROAD_QUERIES.map((q) => ({ q, src: null as Cuisine | null, pages: 2 })),
+      ...(Object.entries(CUISINE_QUERIES) as [Cuisine, string][]).map(
+        ([cuisine, q]) => ({ q, src: cuisine, pages: 1 }),
+      ),
+    ];
+    await runBatch(jobs, 5);
+
 
     const restaurants = Array.from(pool.values())
       .filter((p) => p.location)
