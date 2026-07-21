@@ -334,7 +334,7 @@ function sortRestaurants(
 }
 
 function Index() {
-  const [city, setCity] = useState<CityKey | null>(null);
+  const [city, setCity] = useState<CityKey | null>("toulouse");
 
   const [cuisine, setCuisine] = useState<Cuisine>("any");
   const [minRating, setMinRating] = useState(4);
@@ -344,6 +344,8 @@ function Index() {
   const [searchText, setSearchText] = useState("");
   const [onlyOpenNow, setOnlyOpenNow] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("score");
+  const [showFilters, setShowFilters] = useState(false);
+  const [showList, setShowList] = useState(false);
   const { user } = useAuthSession();
   const { visits, update } = useVisits(user?.id ?? null);
   const userLocation = useGeolocation();
@@ -444,7 +446,7 @@ function Index() {
 <svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size + 6}' viewBox='0 0 ${size} ${size + 6}'>
   <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.18)'/>
   <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 3}' fill='#ffffff' stroke='${borderColor}' stroke-width='3'/>
-  <text x='50%' y='54%' text-anchor='middle' dominant-baseline='middle' font-size='${size * 0.5}' font-family='Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif'>${emoji}</text>
+  <text x='${size / 2}' y='${size / 2}' text-anchor='middle' dominant-baseline='central' font-size='${size * 0.5}' font-family='Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif'>${emoji}</text>
   ${done ? `<circle cx='${size - 8}' cy='9' r='7' fill='#58CC02' stroke='#ffffff' stroke-width='2'/><path d='M${size - 11} 9 l2.5 2.5 L${size - 5} 6.5' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
 </svg>`.trim();
       const marker = new window.google!.maps.Marker({
@@ -512,7 +514,23 @@ function Index() {
   }, [pull, minRating, mutation, city]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
+    <div className="h-screen w-screen relative overflow-hidden bg-background">
+      {/* Full-screen map background */}
+      <div
+        ref={mapRef}
+        className="absolute inset-0 touch-pan-y touch-pan-x"
+        style={{ backgroundColor: "#FFF9F0" }}
+      />
+      {!mapReady && (
+        <div className="absolute inset-0 grid place-items-center pointer-events-none z-10">
+          <div className="rounded-full bg-card/90 border border-border/60 px-4 py-2 text-sm text-muted-foreground shadow-sm flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Chargement de la carte…
+          </div>
+        </div>
+      )}
+
+      {/* Pull-to-refresh indicator */}
       {(pull > 0 || mutation.isPending) && (
         <div
           className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
@@ -526,197 +544,252 @@ function Index() {
           </div>
         </div>
       )}
-      <header className="border-b border-border/60 bg-background/85 backdrop-blur-md sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-lg leading-none">🍽️</span>
-            <h1 className="font-display text-base font-extrabold tracking-tight truncate">
+
+      {/* Floating top bar */}
+      <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)]">
+        <div className="mx-auto px-3 pt-3 flex items-center justify-between gap-2 max-w-3xl">
+          <div className="flex items-center gap-2 rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm pl-3 pr-2 py-1.5 min-w-0">
+            <span className="text-base leading-none">🍽️</span>
+            <h1 className="font-display text-sm font-extrabold tracking-tight truncate">
               Tastemap
-              {currentCity && (
-                <span className="text-muted-foreground font-semibold ml-1.5">
-                  · {currentCity.label}
-                </span>
-              )}
             </h1>
-          </div>
-          <div className="flex items-center gap-2 text-xs flex-shrink-0">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-foreground/80 font-semibold tabular-nums">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-[11px] text-foreground/80 font-semibold tabular-nums">
               {filtered.length}
             </span>
             {doneInScope > 0 && (
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-[color:var(--duo-green)]/15 text-[color:var(--duo-green-dark)] font-semibold">
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-[color:var(--duo-green)]/15 text-[color:var(--duo-green-dark)] text-[11px] font-semibold">
                 <Check className="h-3 w-3" strokeWidth={3} />
                 <span className="tabular-nums">{doneInScope}</span>
               </span>
             )}
+          </div>
+          <div className="rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm">
             <AuthButton />
           </div>
         </div>
-      </header>
 
-      <div className="max-w-7xl mx-auto w-full px-5 py-5 grid grid-cols-1 gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <aside className="min-w-0 space-y-5">
-          <div className="rounded-xl border border-border/60 bg-card p-5 space-y-5">
-            <div>
-              <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
-                Rechercher
-              </h2>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  placeholder="Nom, adresse, type…"
-                  className="pl-8 text-sm"
+        {/* Small pill tabs */}
+        <div className="mx-auto px-3 mt-2 flex justify-center">
+          <div className="inline-flex rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm p-0.5 gap-0.5">
+            {(
+              [
+                { key: "all", label: "Tous", count: cuisineScoped.length },
+                { key: "todo", label: "À faire", count: todoCount },
+                { key: "done", label: "Faits", count: doneInScope },
+                { key: "favorites", label: "Favoris", count: favoritesInScope },
+              ] as { key: Tab; label: string; count: number }[]
+            ).map((t) => {
+              const active = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`text-[11px] px-2.5 py-1 rounded-full transition flex items-center gap-1 whitespace-nowrap ${
+                    active
+                      ? "bg-[color:var(--duo-green)] text-white font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t.label}
+                  <span className={`tabular-nums text-[10px] ${active ? "opacity-90" : "opacity-60"}`}>
+                    {t.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Floating action buttons — bottom right */}
+      <div className="absolute right-3 bottom-3 z-30 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)]">
+        <button
+          onClick={() => { setShowList(false); setShowFilters(true); }}
+          aria-label="Filtres"
+          className="h-12 w-12 rounded-full bg-[color:var(--duo-green)] text-white btn-pop grid place-items-center hover:brightness-105 transition"
+        >
+          <SlidersHorizontal className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => { setShowFilters(false); setShowList(true); }}
+          aria-label="Liste"
+          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-foreground grid place-items-center hover:bg-muted transition"
+        >
+          <Utensils className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Filters overlay (backdrop + sheet) */}
+      {showFilters && (
+        <>
+          <div
+            className="absolute inset-0 z-30 bg-black/30 backdrop-blur-sm"
+            onClick={() => setShowFilters(false)}
+          />
+          <div className="absolute z-40 left-2 right-2 bottom-2 sm:left-auto sm:right-4 sm:bottom-4 sm:top-4 sm:w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl overflow-hidden flex flex-col animate-pop-in">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
+              <h2 className="font-display font-bold text-sm">Filtres</h2>
+              <button
+                onClick={() => setShowFilters(false)}
+                className="p-1 -m-1 text-muted-foreground hover:text-foreground"
+                aria-label="Fermer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-5 overflow-y-auto">
+              <div>
+                <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
+                  Rechercher
+                </h3>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    placeholder="Nom, adresse, type…"
+                    className="pl-8 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
+                  Ville
+                </h3>
+                <select
+                  value={city ?? ""}
+                  onChange={(e) =>
+                    setCity((e.target.value || null) as CityKey | null)
+                  }
+                  className="w-full text-sm px-3 py-2 rounded-md border border-border/60 bg-background/60 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
+                >
+                  <option value="">Sélectionnez une ville…</option>
+                  {CITIES.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">
+                  Cuisine
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {CUISINES.map((c) => {
+                    const active = c.value === cuisine;
+                    return (
+                      <button
+                        key={c.value}
+                        onClick={() => setCuisine(c.value)}
+                        className={`inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition ${
+                          active
+                            ? "bg-[color:var(--duo-cream-2)] border-[color:var(--duo-yellow)] text-foreground font-semibold"
+                            : "bg-background hover:bg-muted border-border/70 text-foreground/80"
+                        }`}
+                      >
+                        <span className="text-sm leading-none">{c.emoji}</span>
+                        {c.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    Note minimum
+                  </h3>
+                  <span className="text-sm font-medium flex items-center gap-1">
+                    <Star className="h-3.5 w-3.5 fill-amber-400 stroke-amber-400" />
+                    {minRating.toFixed(1)}
+                  </span>
+                </div>
+                <Slider
+                  value={[minRating]}
+                  min={0}
+                  max={5}
+                  step={0.1}
+                  onValueChange={(v) => setMinRating(v[0])}
                 />
               </div>
-            </div>
 
-            <div>
-              <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
-                Ville
-              </h2>
-              <select
-                value={city ?? ""}
-                onChange={(e) =>
-                  setCity((e.target.value || null) as CityKey | null)
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="open"
+                  checked={onlyOpenNow}
+                  onCheckedChange={(v) => setOnlyOpenNow(v === true)}
+                />
+                <label htmlFor="open" className="text-xs text-foreground/80">
+                  Ouvert maintenant
+                </label>
+              </div>
+
+              <div>
+                <label className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground block mb-1.5">
+                  Trier par
+                </label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortBy)}
+                  className="w-full text-xs px-2 py-2 rounded-md border border-border/60 bg-background/60 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
+                >
+                  <option value="score">Pertinence</option>
+                  <option value="rating">Note</option>
+                  <option value="reviews">Avis</option>
+                  <option value="distance">Distance</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-3 border-t border-border/60 flex gap-2">
+              <button
+                onClick={() =>
+                  city && mutation.mutate({ city, minRating, force: true })
                 }
-                className="w-full text-sm px-3 py-2 rounded-md border border-border/60 bg-background/60 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
+                disabled={mutation.isPending || !city}
+                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-card border border-border/70 hover:bg-muted transition disabled:opacity-50"
               >
-                <option value="">Sélectionnez une ville…</option>
-                {CITIES.map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-
-
-
-            <div>
-              <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">
-                Cuisine
-              </h2>
-              <div className="flex flex-wrap gap-1.5">
-                {CUISINES.map((c) => {
-                  const active = c.value === cuisine;
-                  return (
-                    <button
-                      key={c.value}
-                      onClick={() => setCuisine(c.value)}
-                      className={`inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition ${
-                        active
-                          ? "bg-[color:var(--duo-cream-2)] border-[color:var(--duo-yellow)] text-foreground font-semibold"
-                          : "bg-background hover:bg-muted border-border/70 text-foreground/80"
-                      }`}
-                    >
-                      <span className="text-sm leading-none">{c.emoji}</span>
-                      {c.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                  Note minimum
-                </h2>
-                <span className="text-sm font-medium flex items-center gap-1">
-                  <Star className="h-3.5 w-3.5 fill-amber-400 stroke-amber-400" />
-                  {minRating.toFixed(1)}
-                </span>
-              </div>
-              <Slider
-                value={[minRating]}
-                min={0}
-                max={5}
-                step={0.1}
-                onValueChange={(v) => setMinRating(v[0])}
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="open"
-                checked={onlyOpenNow}
-                onCheckedChange={(v) => setOnlyOpenNow(v === true)}
-              />
-              <label htmlFor="open" className="text-xs text-foreground/80">
-                Ouvert maintenant
-              </label>
-            </div>
-
-            <div>
-              <label className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground block mb-1.5">
-                Trier par
-              </label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortBy)}
-                className="w-full text-xs px-2 py-2 rounded-md border border-border/60 bg-background/60 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
+                {mutation.isPending ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Recherche…</>
+                ) : (
+                  <><Search className="h-4 w-4" /> Actualiser</>
+                )}
+              </button>
+              <button
+                onClick={() => setShowFilters(false)}
+                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-[color:var(--duo-green)] text-white btn-pop hover:brightness-105 transition"
               >
-                <option value="score">Pertinence</option>
-                <option value="rating">Note</option>
-                <option value="reviews">Avis</option>
-                <option value="distance">Distance</option>
-              </select>
+                Voir la carte
+              </button>
             </div>
-
-            <button
-              onClick={() =>
-                city && mutation.mutate({ city, minRating, force: true })
-              }
-              disabled={mutation.isPending || !city}
-              className="w-full inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-[color:var(--duo-green)] text-white btn-pop hover:brightness-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {mutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Recherche…
-                </>
-              ) : (
-                <>
-                  <Search className="h-4 w-4" /> Actualiser
-                </>
-              )}
-            </button>
           </div>
+        </>
+      )}
 
-            <div className="rounded-xl border border-border/60 bg-card">
-            <div className="px-2 pt-2 border-b border-border/60">
-              <div className="grid grid-cols-4 gap-1">
-                {(
-                  [
-                    { key: "all", label: "Tous", count: cuisineScoped.length },
-                    { key: "todo", label: "À faire", count: todoCount },
-                    { key: "done", label: "Faits", count: doneInScope },
-                    { key: "favorites", label: "Favoris", count: favoritesInScope },
-                  ] as { key: Tab; label: string; count: number }[]
-                ).map((t) => {
-                  const active = tab === t.key;
-                  return (
-                    <button
-                      key={t.key}
-                      onClick={() => setTab(t.key)}
-                      className={`text-[10px] sm:text-xs py-2 rounded-full transition flex items-center justify-center gap-1 ${
-                        active
-                          ? "bg-[color:var(--duo-green)]/15 text-[color:var(--duo-green-dark)] font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {t.label}
-                      <span className="tabular-nums text-[10px] opacity-70">
-                        {t.count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+      {/* List overlay */}
+      {showList && (
+        <>
+          <div
+            className="absolute inset-0 z-30 bg-black/30 backdrop-blur-sm"
+            onClick={() => setShowList(false)}
+          />
+          <div className="absolute z-40 left-2 right-2 bottom-2 top-20 sm:left-4 sm:right-auto sm:top-4 sm:bottom-4 sm:w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl overflow-hidden flex flex-col animate-pop-in">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
+              <h2 className="font-display font-bold text-sm">
+                Restaurants <span className="text-muted-foreground font-semibold">· {filtered.length}</span>
+              </h2>
+              <button
+                onClick={() => setShowList(false)}
+                className="p-1 -m-1 text-muted-foreground hover:text-foreground"
+                aria-label="Fermer"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <div className="max-h-[520px] overflow-auto divide-y divide-border/50">
+            <div className="flex-1 overflow-auto divide-y divide-border/50">
               {mutation.isPending && results.length === 0 && (
                 <div className="p-6 text-center text-sm text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
@@ -725,7 +798,7 @@ function Index() {
               )}
               {!mutation.isPending && filtered.length === 0 && (
                 <div className="p-6 text-center text-sm text-muted-foreground">
-                {!city
+                  {!city
                     ? "Sélectionnez une ville pour lancer la recherche."
                     : tab === "done"
                       ? "Aucun restaurant marqué comme fait."
@@ -746,8 +819,9 @@ function Index() {
                       setSelected(r);
                       mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
                       mapInstance.current?.setZoom(15);
+                      setShowList(false);
                     }}
-                    className={`w-full text-left px-5 py-3 flex gap-3 hover:bg-muted/60 transition group ${
+                    className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-muted/60 transition ${
                       selected?.id === r.id ? "bg-muted/70" : ""
                     }`}
                   >
@@ -816,37 +890,23 @@ function Index() {
               })}
             </div>
           </div>
-        </aside>
+        </>
+      )}
 
-        <main className="relative min-w-0">
-          <div
-            ref={mapRef}
-            className="w-full h-[65vh] lg:h-[calc(100vh-7rem)] rounded-xl border border-border/60 overflow-hidden touch-pan-y touch-pan-x"
-            style={{ backgroundColor: "#FFF9F0" }}
-          />
-          {!mapReady && (
-            <div className="absolute inset-0 grid place-items-center pointer-events-none">
-              <div className="rounded-full bg-card/90 border border-border/60 px-4 py-2 text-sm text-muted-foreground shadow-sm flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Chargement de la carte…
-              </div>
-            </div>
-          )}
-
-          {selected && (
-            <DetailCard
-              key={selected.id}
-              restaurant={selected}
-              visit={visits[selected.id] ?? { done: false, comment: "" }}
-              onUpdate={(patch) => update(selected.id, patch)}
-              onClose={() => setSelected(null)}
-            />
-          )}
-        </main>
-      </div>
+      {/* Detail card */}
+      {selected && (
+        <DetailCard
+          key={selected.id}
+          restaurant={selected}
+          visit={visits[selected.id] ?? { done: false, comment: "" }}
+          onUpdate={(patch) => update(selected.id, patch)}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 }
+
 
 function DetailCard({
   restaurant: r,
