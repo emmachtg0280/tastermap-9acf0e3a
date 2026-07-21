@@ -23,6 +23,7 @@ import {
   LogIn,
   LogOut,
   User,
+  Sparkles,
 } from "lucide-react";
 
 import {
