@@ -606,12 +606,13 @@ function Index() {
                     <button
                       key={c.value}
                       onClick={() => setCuisine(c.value)}
-                      className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                      className={`inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition ${
                         active
-                          ? "bg-foreground text-background border-foreground"
-                          : "bg-background hover:bg-muted border-border/70 text-foreground"
+                          ? "bg-[color:var(--duo-cream-2)] border-[color:var(--duo-yellow)] text-foreground font-semibold"
+                          : "bg-background hover:bg-muted border-border/70 text-foreground/80"
                       }`}
                     >
+                      <span className="text-sm leading-none">{c.emoji}</span>
                       {c.label}
                     </button>
                   );
