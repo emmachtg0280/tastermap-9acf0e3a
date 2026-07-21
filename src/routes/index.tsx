@@ -231,15 +231,15 @@ function Index() {
             <div className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
             <h1 className="text-sm font-semibold tracking-tight truncate">
               Tastemap
-              <span className="text-muted-foreground font-normal ml-1.5">· France</span>
+              <span className="text-muted-foreground font-normal ml-1.5">· Toulouse</span>
             </h1>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
             <span className="tabular-nums">{filtered.length}</span>
-            {doneInResults > 0 && (
+            {doneInScope > 0 && (
               <span className="flex items-center gap-0.5 text-emerald-500">
                 <Check className="h-3 w-3" strokeWidth={3} />
-                <span className="tabular-nums">{doneInResults}</span>
+                <span className="tabular-nums">{doneInScope}</span>
               </span>
             )}
           </div>
