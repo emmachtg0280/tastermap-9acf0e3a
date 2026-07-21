@@ -1,75 +1,69 @@
-Proposition de fonctionnalités à ajouter à Tastemap
 
-## Contexte actuel
-L'application est un explorateur de restaurants sur 6 villes françaises avec : carte Google Maps, filtres ville/cuisine/note minimum, marquage fait/à faire + commentaire, photos, horaires d'ouverture, pull-to-refresh, mode sombre minimaliste.
+# Refonte visuelle "carte ludique" style Duolingo
 
-## Pistes de fonctionnalités, par thème
+Objectif : transformer l'app en une **carte interactive joyeuse et ludique** (esprit Duolingo / jeu mobile), tout en gardant les onglets et filtres **discrets** pour ne pas casser l'ambiance.
 
-### 1. Enrichissement des données restaurant
-- Afficher le niveau de prix (€/€€/€€€) avec un filtre correspondant.
-- Indiquer "Ouvert maintenant" / "Ferme bientôt" en temps réel.
-- Afficher le nombre d'avis Google et un lien vers les avis détaillés.
-- Afficher les accessibilités (terrasse, livraison, parking, option végétarienne…).
-- Lien de réservation direct (TheFork, site officiel, téléphone).
+## Direction visuelle
 
-### 2. Navigation et découverte
-- Bouton "Itinéraire" qui ouvre Google Maps / Apple Maps / Waze vers le restaurant.
-- Géolocalisation de l'utilisateur et tri des restaurants par distance.
-- Recherche textuelle libre (nom, rue, quartier, spécialité).
-- Filtre "Ouvert maintenant".
-- Tri des résultats : note, nombre d'avis, prix, distance.
+**Palette ludique** (remplace le dark actuel) :
+- Fond app : crème doux `#FFF9F0` (mode clair chaleureux type Duolingo)
+- Vert primaire vif `#58CC02` (accent principal, boutons, "faits")
+- Jaune miel `#FFC800` (favoris, étoiles, récompenses)
+- Corail `#FF6B6B` (cœurs favoris, alertes)
+- Bleu ciel `#1CB0F6` (liens, info)
+- Bordures marquées 2px + ombres portées "plates" décalées (style neo-brutalist doux)
 
-### 3. Carnet personnel avancé
-- Système de favoris / wishlist indépendant du statut "fait".
-- Notes personnelles en étoiles (1-5) en plus du commentaire texte.
-- Date de visite et historique chronologique.
-- Statistiques personnelles : restaurants faits, cuisines préférées, ville la plus explorée, note moyenne.
-- Export du carnet en CSV ou PDF.
+**Typo** : `Nunito` (arrondie, ludique) pour titres + `DM Sans` corps.
 
-### 4. Social et partage
-- Partage d'un restaurant par lien (URL avec id du restaurant).
-- Partage d'une carte de restaurants filtrée ("Mes restaurants italiens à Toulouse").
-- Système de listes publiques : "Top ramen à Paris", etc.
+## Carte interactive ludique
 
-### 5. Synchronisation et compte
-- Sauvegarde cloud du carnet via Lovable Cloud (authentification).
-- Sync multi-appareils (même compte = même carnet).
-- Mode hors ligne avec cache des 100 restaurants affichés.
+- Style Google Maps custom : **fond crème**, eau bleu pastel, parcs vert vif, routes blanches contour gris clair (style "board game"). Sortie du dark.
+- **Marqueurs restaurants transformés en pastilles rondes** colorées type "niveaux Duolingo" :
+  - Rond blanc avec icône emoji cuisine (🍕 🍜 🥐 🍔…) selon le type
+  - Bordure épaisse colorée (vert si fait, jaune si favori, gris sinon)
+  - Ombre portée décalée
+  - Petit rebond au hover / au clic (animation `scale` + `translateY`)
+- **Marqueur "fait"** : coche verte en badge sur la pastille (comme une leçon complétée)
+- **Cluster léger** au dézoom : gros rond avec nombre, même style
 
-### 6. UX / Performance
-- Skeleton de chargement plus léger.
-- Cluster de marqueurs sur la carte quand beaucoup de restaurants sont proches.
-- Mode "carte plein écran" / "liste plein écran" sur mobile.
-- Animation de transition entre la liste et la fiche détail.
-- Pagination ou scroll infini dans la liste au-delà de 100 restaurants.
+## Onglets et filtres — restent minimalistes
 
-### 7. Gamification
-- Badges : "10 restaurants faits", "Gourmet asiatique", "Explorateur de Bordeaux".
-- Objectifs mensuels : "Essayer 3 nouveaux restaurants ce mois-ci".
-- Défis thématiques : "Manger dans 5 cuisines différentes".
+Contrainte forte : ne PAS envahir l'écran avec du ludique.
 
-## Recommandation de priorisation
+- **Header** : hauteur réduite, fond crème translucide `backdrop-blur`, titre app en Nunito bold + petit compteur discret.
+- **Onglets Tous / À faire / Faits / Favoris** : pilules fines, texte gris, l'onglet actif prend un fond vert pâle avec texte vert foncé (pas de gros bouton bombé). Badges compteurs en petit chiffre à côté.
+- **Filtres cuisine** : chips discrètes avec emoji + label court, actives = fond crème foncé + bordure fine, pas de couleurs criardes.
+- **Slider note et tri** : gardent leur style actuel épuré, juste re-teinté crème/vert.
 
-Phase 1 (impact immédiat, faible complexité) :
-- Filtre "Ouvert maintenant" + indicateur live.
-- Tri des résultats (note, avis, prix, distance).
-- Bouton "Itinéraire".
-- Recherche textuelle libre.
-- Niveau de prix et filtre prix.
+## Fiche restaurant
 
-Phase 2 (engagement utilisateur) :
-- Favoris / wishlist.
-- Notes personnelles en étoiles.
-- Date de visite + historique.
-- Statistiques personnelles.
+- Coins plus arrondis (`rounded-3xl`), ombre douce décalée.
+- Badge cuisine en haut avec emoji + label sur fond pastel.
+- Boutons "Fait" / "Favori" : boutons pilules avec micro-animation (bounce léger au clic, confetti discret optionnel au "Fait").
+- Étoiles de note dessinées en jaune miel remplies, plus expressives.
 
-Phase 3 (cloud / social) :
-- Authentification Lovable Cloud + sync carnet.
-- Partage de liens et de listes.
-- Badges / défis.
+## Micro-animations
 
-## Questions de priorisation
-Quelles sont les 3 fonctionnalités que tu veux implémenter en premier ?
-- Est-ce que tu veux activer Lovable Cloud pour synchroniser le carnet (compte utilisateur) ?
-- Est-ce que tu veux que l'on conserve le scope sur les 6 villes actuelles ou l'étendre à toute la France / l'Europe ?
-- As-tu une préférence entre "fonctionnalités de découverte" (filtres, tri, itinéraire) et "fonctionnalités de carnet" (favoris, notes, stats) ?
+- Transitions douces (`transition-all duration-200`) sur hover pastilles, chips, onglets.
+- Bounce léger au tap sur mobile.
+- Petit "pop" quand on marque un resto comme fait (scale 1 → 1.15 → 1 sur la coche).
+- Pas d'animations lourdes qui ralentissent la carte.
+
+## Fichiers modifiés
+
+- `src/routes/__root.tsx` : retire le `dark` forcé, ajoute la classe crème claire globale + import fonts Nunito/DM Sans.
+- `src/styles.css` : nouveaux tokens couleur (crème, vert Duo, jaune, corail, bleu ciel), radius plus généreux, ombres décalées, familles de fonts.
+- `src/routes/index.tsx` :
+  - Nouveau `minimalMapStyle` clair "board game".
+  - Marqueurs custom (SVG data URL ou `OverlayView`) en pastilles avec emoji cuisine.
+  - Restyle header, onglets, chips filtres, fiche resto avec les nouveaux tokens.
+  - Ajout des micro-animations (Tailwind + `transition`).
+- Mapping `cuisine → emoji` (italien 🍕, japonais 🍣, français 🥖, chinois 🥟, etc.).
+
+## Ce qui NE change pas
+
+- Toute la logique (fetch Places, cache, favoris cloud, auth, tri, pull-to-refresh, itinéraire) reste identique.
+- La sélection de ville, le zoom, les 100 restos de Toulouse : inchangés.
+- Uniquement du travail frontend / présentation.
+
+Après ton feu vert, j'implémente tout d'un coup.

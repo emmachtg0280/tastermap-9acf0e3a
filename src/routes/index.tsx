@@ -39,27 +39,33 @@ import {
 } from "@/lib/visits.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { Button } from "@/components/ui/button";
+
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const CUISINES: { value: Cuisine; label: string }[] = [
-  { value: "any", label: "Tous" },
-  { value: "french", label: "Français" },
-  { value: "italian", label: "Italien" },
-  { value: "chinese", label: "Chinois" },
-  { value: "japanese", label: "Japonais" },
-  { value: "indian", label: "Indien" },
-  { value: "mexican", label: "Mexicain" },
-  { value: "thai", label: "Thaï" },
-  { value: "spanish", label: "Espagnol" },
-  { value: "greek", label: "Grec" },
-  { value: "american", label: "Américain" },
-  { value: "vegetarian", label: "Végétarien" },
+const CUISINES: { value: Cuisine; label: string; emoji: string }[] = [
+  { value: "any", label: "Tous", emoji: "🍽️" },
+  { value: "french", label: "Français", emoji: "🥖" },
+  { value: "italian", label: "Italien", emoji: "🍕" },
+  { value: "chinese", label: "Chinois", emoji: "🥟" },
+  { value: "japanese", label: "Japonais", emoji: "🍣" },
+  { value: "indian", label: "Indien", emoji: "🍛" },
+  { value: "mexican", label: "Mexicain", emoji: "🌮" },
+  { value: "thai", label: "Thaï", emoji: "🍜" },
+  { value: "spanish", label: "Espagnol", emoji: "🥘" },
+  { value: "greek", label: "Grec", emoji: "🥙" },
+  { value: "american", label: "Américain", emoji: "🍔" },
+  { value: "vegetarian", label: "Végétarien", emoji: "🥗" },
 ];
+
+function cuisineEmoji(cs: Cuisine[]): string {
+  const priority: Cuisine[] = ["italian","japanese","french","chinese","indian","mexican","thai","spanish","greek","american","vegetarian"];
+  for (const p of priority) if (cs.includes(p)) return CUISINES.find(c => c.value === p)!.emoji;
+  return "🍽️";
+}
 
 const DEFAULT_CENTER = { lat: 46.6, lng: 2.4 };
 const DEFAULT_ZOOM = 6;
@@ -408,7 +414,7 @@ function Index() {
       disableDefaultUI: true,
       zoomControl: true,
       clickableIcons: false,
-      backgroundColor: "#1a1d21",
+      backgroundColor: "#FFF9F0",
       gestureHandling: "greedy",
       styles: minimalMapStyle,
     });
@@ -430,20 +436,28 @@ function Index() {
     filtered.forEach((r) => {
       const active = selected?.id === r.id;
       const done = !!visits[r.id]?.done;
-      const color = active ? "#111111" : done ? "#16a34a" : "#e11d48";
+      const favorite = !!visits[r.id]?.favorite;
+      const borderColor = done ? "#58CC02" : favorite ? "#FFC800" : active ? "#1CB0F6" : "#2b2b2b";
+      const emoji = cuisineEmoji(r.cuisines);
+      const size = active ? 46 : 38;
+      const svg = `
+<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size + 6}' viewBox='0 0 ${size} ${size + 6}'>
+  <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.18)'/>
+  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 3}' fill='#ffffff' stroke='${borderColor}' stroke-width='3'/>
+  <text x='50%' y='54%' text-anchor='middle' dominant-baseline='middle' font-size='${size * 0.5}' font-family='Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif'>${emoji}</text>
+  ${done ? `<circle cx='${size - 8}' cy='9' r='7' fill='#58CC02' stroke='#ffffff' stroke-width='2'/><path d='M${size - 11} 9 l2.5 2.5 L${size - 5} 6.5' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
+</svg>`.trim();
       const marker = new window.google!.maps.Marker({
         position: { lat: r.lat, lng: r.lng },
         map: mapInstance.current!,
         title: r.name,
         icon: {
-          path: window.google!.maps.SymbolPath.CIRCLE,
-          scale: active ? 9 : 6.5,
-          fillColor: color,
-          fillOpacity: 1,
-          strokeColor: "#ffffff",
-          strokeWeight: 2,
+          url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
+          scaledSize: new window.google!.maps.Size(size, size + 6),
+          anchor: new window.google!.maps.Point(size / 2, size / 2),
         },
-        zIndex: active ? 999 : done ? 5 : 1,
+        zIndex: active ? 999 : done ? 5 : favorite ? 3 : 1,
+        optimized: true,
       });
       marker.addListener("click", () => setSelected(r));
       markersRef.current.push(marker);
@@ -512,23 +526,25 @@ function Index() {
           </div>
         </div>
       )}
-      <header className="border-b border-border/60 bg-background/80 backdrop-blur sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      <header className="border-b border-border/60 bg-background/85 backdrop-blur-md sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
-            <h1 className="text-sm font-semibold tracking-tight truncate">
+            <span className="text-lg leading-none">🍽️</span>
+            <h1 className="font-display text-base font-extrabold tracking-tight truncate">
               Tastemap
               {currentCity && (
-                <span className="text-muted-foreground font-normal ml-1.5">
+                <span className="text-muted-foreground font-semibold ml-1.5">
                   · {currentCity.label}
                 </span>
               )}
             </h1>
           </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
-            <span className="tabular-nums">{filtered.length}</span>
+          <div className="flex items-center gap-2 text-xs flex-shrink-0">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-foreground/80 font-semibold tabular-nums">
+              {filtered.length}
+            </span>
             {doneInScope > 0 && (
-              <span className="flex items-center gap-0.5 text-emerald-500">
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-[color:var(--duo-green)]/15 text-[color:var(--duo-green-dark)] font-semibold">
                 <Check className="h-3 w-3" strokeWidth={3} />
                 <span className="tabular-nums">{doneInScope}</span>
               </span>
@@ -590,12 +606,13 @@ function Index() {
                     <button
                       key={c.value}
                       onClick={() => setCuisine(c.value)}
-                      className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                      className={`inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition ${
                         active
-                          ? "bg-foreground text-background border-foreground"
-                          : "bg-background hover:bg-muted border-border/70 text-foreground"
+                          ? "bg-[color:var(--duo-cream-2)] border-[color:var(--duo-yellow)] text-foreground font-semibold"
+                          : "bg-background hover:bg-muted border-border/70 text-foreground/80"
                       }`}
                     >
+                      <span className="text-sm leading-none">{c.emoji}</span>
                       {c.label}
                     </button>
                   );
@@ -649,24 +666,23 @@ function Index() {
               </select>
             </div>
 
-            <Button
-              variant="outline"
-              className="w-full"
+            <button
               onClick={() =>
                 city && mutation.mutate({ city, minRating, force: true })
               }
               disabled={mutation.isPending || !city}
+              className="w-full inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-[color:var(--duo-green)] text-white btn-pop hover:brightness-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {mutation.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Recherche…
+                  <Loader2 className="h-4 w-4 animate-spin" /> Recherche…
                 </>
               ) : (
                 <>
-                  <Search className="mr-2 h-4 w-4" /> Actualiser
+                  <Search className="h-4 w-4" /> Actualiser
                 </>
               )}
-            </Button>
+            </button>
           </div>
 
             <div className="rounded-xl border border-border/60 bg-card">
@@ -685,9 +701,9 @@ function Index() {
                     <button
                       key={t.key}
                       onClick={() => setTab(t.key)}
-                      className={`text-[10px] sm:text-xs py-2 rounded-md transition flex items-center justify-center gap-1 ${
+                      className={`text-[10px] sm:text-xs py-2 rounded-full transition flex items-center justify-center gap-1 ${
                         active
-                          ? "bg-muted text-foreground"
+                          ? "bg-[color:var(--duo-green)]/15 text-[color:var(--duo-green-dark)] font-semibold"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
@@ -749,7 +765,7 @@ function Index() {
                         </div>
                       )}
                       {done && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 text-white grid place-items-center ring-2 ring-card">
+                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[color:var(--duo-green)] text-white grid place-items-center ring-2 ring-card animate-pop-in">
                           <Check className="h-3 w-3" strokeWidth={3} />
                         </span>
                       )}
@@ -806,7 +822,7 @@ function Index() {
           <div
             ref={mapRef}
             className="w-full h-[65vh] lg:h-[calc(100vh-7rem)] rounded-xl border border-border/60 overflow-hidden touch-pan-y touch-pan-x"
-            style={{ backgroundColor: "#1a1d21" }}
+            style={{ backgroundColor: "#FFF9F0" }}
           />
           {!mapReady && (
             <div className="absolute inset-0 grid place-items-center pointer-events-none">
@@ -949,7 +965,7 @@ function DetailCard({
             href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-emerald-500 text-white hover:opacity-90 transition"
+            className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-[color:var(--duo-green)] text-white font-semibold btn-pop hover:brightness-105 transition"
           >
             <Navigation className="h-3 w-3" /> Itinéraire
           </a>
@@ -1001,20 +1017,20 @@ function DetailCard({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => onUpdate({ favorite: !visit.favorite })}
-                className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition ${
+                className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border font-semibold btn-pop transition ${
                   visit.favorite
-                    ? "bg-rose-500 border-rose-500 text-white"
+                    ? "bg-[color:var(--duo-coral)] border-[color:var(--duo-coral)] text-white"
                     : "border-border/70 hover:bg-muted"
                 }`}
               >
-                <Heart className="h-3 w-3" />
+                <Heart className={`h-3 w-3 ${visit.favorite ? "fill-white" : ""}`} />
                 {visit.favorite ? "Favori" : "Favori"}
               </button>
               <button
                 onClick={() => onUpdate({ done: !visit.done })}
-                className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition ${
+                className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border font-semibold btn-pop transition ${
                   visit.done
-                    ? "bg-emerald-500 border-emerald-500 text-white"
+                    ? "bg-[color:var(--duo-green)] border-[color:var(--duo-green)] text-white"
                     : "border-border/70 hover:bg-muted"
                 }`}
               >
@@ -1048,29 +1064,32 @@ function priceLabel(level: string) {
   return map[level] ?? "";
 }
 
-// Dark, minimalist map style — muted land, subtle parks/water, hidden POIs.
+// Playful "board game" light map — cream land, pastel water & parks, soft roads.
 const minimalMapStyle: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#1a1d21" }] },
+  { elementType: "geometry", stylers: [{ color: "#FFF9F0" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#8b8f96" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#1a1d21" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#7a6a55" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#FFF9F0" }, { weight: 3 }] },
   { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
   { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
-  { featureType: "administrative.neighborhood", elementType: "labels.text.fill", stylers: [{ color: "#a8adb5" }, { visibility: "on" }] },
-  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#c5cad2" }] },
+  { featureType: "administrative.neighborhood", elementType: "labels.text.fill", stylers: [{ color: "#8a7a63" }, { visibility: "on" }] },
+  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#4a3f30" }] },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#1f2a24" }, { visibility: "on" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#CDECC3" }, { visibility: "on" }] },
   { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#2a2e34" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e8dfcc" }] },
   { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#2f333a" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
   { featureType: "road.arterial", elementType: "labels", stylers: [{ visibility: "on" }] },
-  { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#8b8f96" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#3a3020" }] },
+  { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#8a7a63" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#FFE0A6" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#e8c47a" }] },
   { featureType: "road.highway", elementType: "labels", stylers: [{ visibility: "on" }] },
-  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#c8a878" }] },
-  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#1a1d21" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#0f1c26" }] },
+  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#6a5236" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#FFF9F0" }] },
+  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#F7EFDD" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#B8E3F5" }] },
   { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
 ];
