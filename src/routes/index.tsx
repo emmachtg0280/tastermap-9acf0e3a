@@ -1007,6 +1007,16 @@ function DetailCard({
               <Phone className="h-3 w-3" /> {r.phone}
             </a>
           )}
+          {r.googleMapsUri && (
+            <a
+              href={r.googleMapsUri}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border border-border/70 hover:bg-muted transition"
+            >
+              <MapPin className="h-3 w-3" /> Maps
+            </a>
+          )}
         </div>
 
         <div className="mt-3 pt-3 border-t border-border/60">
