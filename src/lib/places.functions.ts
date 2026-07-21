@@ -25,6 +25,11 @@ export interface Restaurant {
   priceLevel: string | null;
   primaryType: string | null;
   googleMapsUri: string | null;
+  websiteUri: string | null;
+  phone: string | null;
+  summary: string | null;
+  openNow: boolean | null;
+  reservable: boolean | null;
   photoUrls: string[];
 }
 
