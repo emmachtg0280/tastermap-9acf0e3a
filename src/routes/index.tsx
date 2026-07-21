@@ -1,7 +1,7 @@
 /// <reference types="google.maps" />
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Star,
@@ -15,10 +15,14 @@ import {
   CalendarClock,
   Clock,
   ChevronDown,
-  Route as RouteIcon,
   Navigation,
   DollarSign,
   Utensils,
+  SlidersHorizontal,
+  Heart,
+  LogIn,
+  LogOut,
+  User,
 } from "lucide-react";
 
 import {
@@ -28,10 +32,19 @@ import {
   type Restaurant,
   type CityKey,
 } from "@/lib/places.functions";
+import {
+  getMyVisits,
+  upsertVisit,
+  type Visit,
+} from "@/lib/visits.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const CUISINES: { value: Cuisine; label: string }[] = [
   { value: "any", label: "Tous" },
@@ -53,11 +66,11 @@ const DEFAULT_ZOOM = 6;
 const CITY_ZOOM = 13;
 
 
-type Tab = "all" | "todo" | "done";
+type Tab = "all" | "todo" | "done" | "favorites";
 
-type VisitEntry = { done: boolean; comment: string };
+type VisitEntry = { done: boolean; comment: string; favorite: boolean; personalRating?: number };
 type VisitMap = Record<string, VisitEntry>;
-const VISITS_KEY = "tastemap.visits.v1";
+const VISITS_KEY = "tastemap.visits.v2";
 
 declare global {
   interface Window {
@@ -73,7 +86,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Explorez les meilleurs restaurants des 20 plus grandes villes de France sur une carte minimaliste. Filtrez, marquez et commentez.",
+          "Explorez les meilleurs restaurants des grandes villes de France sur une carte minimaliste. Filtrez, marquez, commentez et synchronisez.",
       },
       { property: "og:title", content: "Tastemap · Restaurants de France" },
       {
@@ -111,31 +124,95 @@ function useGoogleMaps() {
   return ready;
 }
 
-function useVisits() {
-  const [visits, setVisits] = useState<VisitMap>({});
+function useAuthSession() {
+  const [user, setUser] = useState<null | { id: string; email?: string }>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user ? { id: data.user.id, email: data.user.email } : null);
+      setLoading(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ? { id: session.user.id, email: session.user.email } : null);
+      setLoading(false);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+  return { user, loading };
+}
+
+function useVisits(userId: string | null) {
+  const [localVisits, setLocalVisits] = useState<VisitMap>({});
+  const queryClient = useQueryClient();
+  const serverGetVisits = useServerFn(getMyVisits);
+  const serverUpsert = useServerFn(upsertVisit);
+
+  // Load localStorage on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem(VISITS_KEY);
-      if (raw) setVisits(JSON.parse(raw));
+      if (raw) setLocalVisits(JSON.parse(raw));
     } catch {
       /* ignore */
     }
   }, []);
-  const update = (id: string, patch: Partial<VisitEntry>) => {
-    setVisits((prev) => {
-      const current = prev[id] ?? { done: false, comment: "" };
-      const next = { ...current, ...patch };
-      const merged = { ...prev, [id]: next };
-      if (!next.done && !next.comment.trim()) delete merged[id];
-      try {
-        localStorage.setItem(VISITS_KEY, JSON.stringify(merged));
-      } catch {
-        /* ignore */
-      }
-      return merged;
+
+  // Cloud visits
+  const cloudQuery = useQuery({
+    queryKey: ["my-visits"],
+    queryFn: () => serverGetVisits({ data: undefined }),
+    enabled: !!userId,
+    staleTime: 0,
+  });
+
+  const cloudMap = useMemo<VisitMap>(() => {
+    const map: VisitMap = {};
+    (cloudQuery.data ?? []).forEach((v) => {
+      map[v.place_id] = {
+        done: v.done,
+        favorite: v.favorite,
+        comment: v.comment ?? "",
+        personalRating: v.personal_rating ?? undefined,
+      };
     });
+    return map;
+  }, [cloudQuery.data]);
+
+  const visits = userId ? cloudMap : localVisits;
+
+  const update = async (id: string, patch: Partial<VisitEntry>) => {
+    if (userId) {
+      const current = visits[id] ?? { done: false, comment: "", favorite: false };
+      const next = { ...current, ...patch };
+      await serverUpsert({
+        data: {
+          place_id: id,
+          done: next.done,
+          favorite: next.favorite,
+          comment: next.comment.trim() || null,
+          personal_rating: next.personalRating ?? null,
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ["my-visits"] });
+    } else {
+      setLocalVisits((prev) => {
+        const current = prev[id] ?? { done: false, comment: "", favorite: false };
+        const next = { ...current, ...patch };
+        const merged = { ...prev, [id]: next };
+        if (!next.done && !next.favorite && !next.comment.trim() && !next.personalRating) {
+          delete merged[id];
+        }
+        try {
+          localStorage.setItem(VISITS_KEY, JSON.stringify(merged));
+        } catch {
+          /* ignore */
+        }
+        return merged;
+      });
+    }
   };
-  return { visits, update };
+
+  return { visits, update, isLoading: cloudQuery.isLoading };
 }
 
 type SortBy = "score" | "rating" | "reviews" | "price" | "distance";
@@ -170,8 +247,48 @@ function haversineDistance(
   return R * c;
 }
 
+function priceValue(level: string) {
+  const map: Record<string, number> = {
+    PRICE_LEVEL_FREE: 0,
+    PRICE_LEVEL_INEXPENSIVE: 1,
+    PRICE_LEVEL_MODERATE: 2,
+    PRICE_LEVEL_EXPENSIVE: 3,
+    PRICE_LEVEL_VERY_EXPENSIVE: 4,
+  };
+  return map[level] ?? 9;
+}
+
+function sortRestaurants(
+  a: Restaurant,
+  b: Restaurant,
+  sortBy: SortBy,
+  userLocation: { lat: number; lng: number } | null,
+  city: { lat: number; lng: number } | null,
+) {
+  const origin = userLocation ?? city;
+  const score = (r: Restaurant) =>
+    (r.rating ?? 0) * Math.log10((r.userRatingCount ?? 1) + 1);
+  switch (sortBy) {
+    case "rating":
+      return (b.rating ?? 0) - (a.rating ?? 0);
+    case "reviews":
+      return (b.userRatingCount ?? 0) - (a.userRatingCount ?? 0);
+    case "price":
+      return priceValue(a.priceLevel ?? "") - priceValue(b.priceLevel ?? "");
+    case "distance":
+      if (!origin) return 0;
+      return (
+        haversineDistance(origin, a) - haversineDistance(origin, b)
+      );
+    case "score":
+    default:
+      return score(b) - score(a);
+  }
+}
+
 function Index() {
   const [city, setCity] = useState<CityKey | null>(null);
+
   const [cuisine, setCuisine] = useState<Cuisine>("any");
   const [minRating, setMinRating] = useState(4);
   const [tab, setTab] = useState<Tab>("all");
@@ -179,7 +296,6 @@ function Index() {
   const [results, setResults] = useState<Restaurant[]>([]);
   const [searchText, setSearchText] = useState("");
   const [onlyOpenNow, setOnlyOpenNow] = useState(false);
-  const [maxPrice, setMaxPrice] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortBy>("score");
   const { visits, update } = useVisits();
   const userLocation = useGeolocation();
@@ -203,25 +319,39 @@ function Index() {
     },
   });
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     let list = results;
     if (cuisine !== "any") {
       list = list.filter((r) => r.cuisines.includes(cuisine));
     }
-    if (tab === "done") return list.filter((r) => visits[r.id]?.done);
-    if (tab === "todo") return list.filter((r) => !visits[r.id]?.done);
+    const q = searchText.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (r) =>
+          r.name.toLowerCase().includes(q) ||
+          r.address.toLowerCase().includes(q) ||
+          (r.primaryType ?? "").toLowerCase().includes(q),
+      );
+    }
+    if (onlyOpenNow) {
+      list = list.filter((r) => r.openNow === true);
+    }
     return list;
-  }, [results, cuisine, tab, visits]);
+  }, [results, cuisine, searchText, onlyOpenNow]);
 
-  const cuisineScoped = useMemo(
-    () =>
-      cuisine === "any"
-        ? results
-        : results.filter((r) => r.cuisines.includes(cuisine)),
-    [results, cuisine],
+  const cuisineScoped = baseFiltered;
+  const doneInScope = useMemo(
+    () => cuisineScoped.filter((r) => visits[r.id]?.done).length,
+    [cuisineScoped, visits],
   );
-  const doneInScope = cuisineScoped.filter((r) => visits[r.id]?.done).length;
   const todoCount = cuisineScoped.length - doneInScope;
+
+  const filtered = useMemo(() => {
+    let list = baseFiltered;
+    if (tab === "done") list = list.filter((r) => visits[r.id]?.done);
+    if (tab === "todo") list = list.filter((r) => !visits[r.id]?.done);
+    return [...list].sort((a, b) => sortRestaurants(a, b, sortBy, userLocation, currentCity));
+  }, [baseFiltered, tab, visits, sortBy, userLocation, currentCity]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstance.current) return;
@@ -365,6 +495,21 @@ function Index() {
           <div className="rounded-xl border border-border/60 bg-card p-5 space-y-5">
             <div>
               <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
+                Rechercher
+              </h2>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder="Nom, adresse, type…"
+                  className="pl-8 text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
                 Ville
               </h2>
               <select
@@ -427,6 +572,33 @@ function Index() {
                 step={0.1}
                 onValueChange={(v) => setMinRating(v[0])}
               />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="open"
+                checked={onlyOpenNow}
+                onCheckedChange={(v) => setOnlyOpenNow(v === true)}
+              />
+              <label htmlFor="open" className="text-xs text-foreground/80">
+                Ouvert maintenant
+              </label>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground block mb-1.5">
+                Trier par
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortBy)}
+                className="w-full text-xs px-2 py-2 rounded-md border border-border/60 bg-background/60 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
+              >
+                <option value="score">Pertinence</option>
+                <option value="rating">Note</option>
+                <option value="reviews">Avis</option>
+                <option value="distance">Distance</option>
+              </select>
             </div>
 
             <Button
@@ -705,6 +877,14 @@ function DetailCard({
         )}
 
         <div className="mt-3 flex flex-wrap gap-1.5">
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-emerald-500 text-white hover:opacity-90 transition"
+          >
+            <Navigation className="h-3 w-3" /> Itinéraire
+          </a>
           {r.websiteUri && (
             <a
               href={r.websiteUri}
