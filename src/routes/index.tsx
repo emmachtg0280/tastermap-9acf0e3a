@@ -538,15 +538,29 @@ function Index() {
       {/* Floating action buttons — bottom right */}
       <div className="absolute right-3 bottom-3 z-30 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)]">
         <button
-          onClick={() => { setShowList(false); setShowFilters(true); }}
+          onClick={() => { setListMode(null); setShowFilters(true); }}
           aria-label="Filtres"
           className="h-12 w-12 rounded-full bg-[color:var(--duo-green)] text-white btn-pop grid place-items-center hover:brightness-105 transition"
         >
           <SlidersHorizontal className="h-5 w-5" />
         </button>
         <button
-          onClick={() => { setShowFilters(false); setShowList(true); }}
-          aria-label="Liste"
+          onClick={() => { setShowFilters(false); setListMode("favorites"); }}
+          aria-label="Favoris"
+          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-rose-500 grid place-items-center hover:bg-muted transition"
+        >
+          <Heart className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => { setShowFilters(false); setListMode("done"); }}
+          aria-label="Restaurants faits"
+          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-[color:var(--duo-green-dark)] grid place-items-center hover:bg-muted transition"
+        >
+          <Check className="h-5 w-5" strokeWidth={3} />
+        </button>
+        <button
+          onClick={() => { setShowFilters(false); setListMode("all"); }}
+          aria-label="Liste des restaurants"
           className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-foreground grid place-items-center hover:bg-muted transition"
         >
           <Utensils className="h-5 w-5" />
