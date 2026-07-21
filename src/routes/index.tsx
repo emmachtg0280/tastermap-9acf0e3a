@@ -228,8 +228,8 @@ function Index() {
       </header>
 
 
-      <div className="max-w-7xl mx-auto w-full px-5 py-5 grid gap-5 lg:grid-cols-[340px_1fr]">
-        <aside className="space-y-5">
+      <div className="max-w-7xl mx-auto w-full px-5 py-5 grid grid-cols-1 gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <aside className="min-w-0 space-y-5">
           <div className="rounded-xl border border-border/60 bg-card p-5 space-y-5">
             <div>
               <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">
@@ -388,7 +388,7 @@ function Index() {
           </div>
         </aside>
 
-        <main className="relative">
+        <main className="relative min-w-0">
           <div
             ref={mapRef}
             className="w-full h-[65vh] lg:h-[calc(100vh-7rem)] rounded-xl border border-border/60 overflow-hidden touch-pan-y touch-pan-x"
