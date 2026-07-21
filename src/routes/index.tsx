@@ -207,27 +207,26 @@ function Index() {
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       <header className="border-b border-border/60 bg-background/80 backdrop-blur sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-2 w-2 rounded-full bg-emerald-500" />
-            <div className="leading-tight">
-              <h1 className="text-sm font-semibold tracking-tight">Tastemap</h1>
-              <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                Toulouse
-              </p>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
+            <h1 className="text-sm font-semibold tracking-tight truncate">
+              Tastemap
+              <span className="text-muted-foreground font-normal ml-1.5">· Toulouse</span>
+            </h1>
           </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span>{filtered.length} adresses</span>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
+            <span className="tabular-nums">{filtered.length}</span>
             {doneCount > 0 && (
-              <span className="flex items-center gap-1 text-emerald-600">
-                <Check className="h-3 w-3" />
-                {doneCount} faits
+              <span className="flex items-center gap-0.5 text-emerald-500">
+                <Check className="h-3 w-3" strokeWidth={3} />
+                <span className="tabular-nums">{doneCount}</span>
               </span>
             )}
           </div>
         </div>
       </header>
+
 
       <div className="max-w-7xl mx-auto w-full px-5 py-5 grid gap-5 lg:grid-cols-[340px_1fr]">
         <aside className="space-y-5">
