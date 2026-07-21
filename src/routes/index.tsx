@@ -512,59 +512,44 @@ function Index() {
         </div>
       )}
 
-      {/* Floating top bar */}
+      {/* Floating top bar — auth only, top right */}
+      <div className="absolute top-0 right-0 z-30 pt-[env(safe-area-inset-top)] px-3">
+        <div className="pt-0.5 rounded-full bg-card/80 backdrop-blur border border-white/40 shadow-sm px-2 py-1">
+          <AuthButton />
+        </div>
+      </div>
+
+      {/* Top tabs: Nouveautés / Hype / Cuisines — pushed to very top */}
       <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto px-3 pt-0.5 flex items-center justify-between gap-2 max-w-3xl">
-          <div className="flex items-center gap-2 rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm pl-3 pr-2 py-1 min-w-0">
-            <span className="text-base leading-none">🍽️</span>
-            <h1 className="font-display text-sm font-extrabold tracking-tight truncate">
-              Tastemap
-            </h1>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-[11px] text-foreground/80 font-semibold tabular-nums">
-              {filtered.length}
-            </span>
-            {doneInScope > 0 && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-[color:var(--duo-green)]/15 text-[color:var(--duo-green-dark)] text-[11px] font-semibold">
-                <Check className="h-3 w-3" strokeWidth={3} />
-                <span className="tabular-nums">{doneInScope}</span>
-              </span>
-            )}
-          </div>
-          <div className="rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm">
-            <AuthButton />
-          </div>
-        </div>
-
-        {/* Top pills: Nouveautés / Hype */}
-        <div className="mx-auto px-3 mt-1 max-w-3xl flex justify-center gap-1.5">
-          <button
-            onClick={() => { setShowFilters(false); setListMode("new"); }}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm text-foreground/80 hover:bg-muted transition"
-          >
-            <span>✨</span> Nouveautés
-          </button>
-          <button
-            onClick={() => { setShowFilters(false); setListMode("hype"); }}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm text-foreground/80 hover:bg-muted transition"
-          >
-            <span>🔥</span> Hype
-          </button>
-        </div>
-
-        {/* Cuisine strip */}
-
-        <div className="mx-auto px-2 mt-1 max-w-3xl">
+        <div className="mx-auto max-w-3xl px-2 pt-0.5">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-1 pb-1 -mx-1">
+            <button
+              onClick={() => { setShowFilters(false); setListMode("new"); }}
+              className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 transition"
+            >
+              <span>✨</span> Nouveautés
+            </button>
+            <button
+              onClick={() => { setShowFilters(false); setListMode("hype"); }}
+              className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 transition"
+            >
+              <span>🔥</span> Hype
+            </button>
             {CUISINES.filter((c) => c.value !== "any").map((c) => {
               const active = c.value === cuisine;
               return (
                 <button
                   key={c.value}
-                  onClick={() => setCuisine(active ? "any" : c.value)}
-                  className={`shrink-0 inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border backdrop-blur shadow-sm transition ${
+                  onClick={() => {
+                    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+                      try { navigator.vibrate(15); } catch { /* ignore */ }
+                    }
+                    setCuisine(active ? "any" : c.value);
+                  }}
+                  className={`shrink-0 inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full backdrop-blur shadow-sm transition active:scale-95 ${
                     active
-                      ? "bg-[color:var(--duo-green)] border-[color:var(--duo-green)] text-white font-semibold"
-                      : "bg-card/95 border-border/70 text-foreground/80 hover:bg-muted"
+                      ? "bg-white text-foreground font-semibold border-2 border-white ring-2 ring-white/80 shadow-md scale-105"
+                      : "bg-white/40 border border-white/50 text-foreground/80 hover:bg-white/60"
                   }`}
                 >
                   <span className="text-sm leading-none">{c.emoji}</span>
