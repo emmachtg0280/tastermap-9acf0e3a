@@ -344,6 +344,8 @@ function Index() {
   const [searchText, setSearchText] = useState("");
   const [onlyOpenNow, setOnlyOpenNow] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("score");
+  const [showFilters, setShowFilters] = useState(false);
+  const [showList, setShowList] = useState(false);
   const { user } = useAuthSession();
   const { visits, update } = useVisits(user?.id ?? null);
   const userLocation = useGeolocation();
