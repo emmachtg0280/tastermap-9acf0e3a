@@ -754,44 +754,46 @@ function Index() {
                         </span>
                       )}
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        update(r.id, { favorite: !favorite });
-                      }}
-                      className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted transition"
-                      aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-                    >
-                      <Heart
-                        className={`h-4 w-4 transition ${
-                          favorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground"
-                        }`}
-                      />
-                    </button>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate">{r.name}</div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {r.primaryType ?? "Restaurant"}
+                    <div className="min-w-0 flex-1 flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium truncate">{r.name}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {r.primaryType ?? "Restaurant"}
+                        </div>
+                        <div className="mt-1 flex items-center gap-2 text-xs">
+                          {r.rating != null && (
+                            <span className="flex items-center gap-0.5">
+                              <Star className="h-3 w-3 fill-amber-400 stroke-amber-400" />
+                              {r.rating.toFixed(1)}
+                              {r.userRatingCount != null && (
+                                <span className="text-muted-foreground ml-1">
+                                  ({r.userRatingCount})
+                                </span>
+                              )}
+                            </span>
+                          )}
+                          {r.openNow === true && (
+                            <span className="text-emerald-600">Ouvert</span>
+                          )}
+                          {r.openNow === false && (
+                            <span className="text-muted-foreground">Fermé</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="mt-1 flex items-center gap-2 text-xs">
-                        {r.rating != null && (
-                          <span className="flex items-center gap-0.5">
-                            <Star className="h-3 w-3 fill-amber-400 stroke-amber-400" />
-                            {r.rating.toFixed(1)}
-                            {r.userRatingCount != null && (
-                              <span className="text-muted-foreground ml-1">
-                                ({r.userRatingCount})
-                              </span>
-                            )}
-                          </span>
-                        )}
-                        {r.openNow === true && (
-                          <span className="text-emerald-600">Ouvert</span>
-                        )}
-                        {r.openNow === false && (
-                          <span className="text-muted-foreground">Fermé</span>
-                        )}
-                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          update(r.id, { favorite: !favorite });
+                        }}
+                        className="p-1.5 rounded-full hover:bg-muted transition flex-shrink-0"
+                        aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                      >
+                        <Heart
+                          className={`h-4 w-4 transition ${
+                            favorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground"
+                          }`}
+                        />
+                      </button>
                     </div>
                   </button>
                 );
