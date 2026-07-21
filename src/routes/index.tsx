@@ -694,19 +694,28 @@ function Index() {
       )}
 
       {/* List overlay */}
-      {showList && (
+      {listMode && (() => {
+        const listItems =
+          listMode === "done"
+            ? filtered.filter((r) => visits[r.id]?.done)
+            : listMode === "favorites"
+              ? filtered.filter((r) => visits[r.id]?.favorite)
+              : filtered;
+        const listTitle =
+          listMode === "done" ? "Faits" : listMode === "favorites" ? "Favoris" : "Restaurants";
+        return (
         <>
           <div
             className="absolute inset-0 z-30 bg-black/30 backdrop-blur-sm"
-            onClick={() => setShowList(false)}
+            onClick={() => setListMode(null)}
           />
           <div className="absolute z-40 left-2 right-2 bottom-2 top-20 sm:left-4 sm:right-auto sm:top-4 sm:bottom-4 sm:w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl overflow-hidden flex flex-col animate-pop-in">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
               <h2 className="font-display font-bold text-sm">
-                Restaurants <span className="text-muted-foreground font-semibold">· {filtered.length}</span>
+                {listTitle} <span className="text-muted-foreground font-semibold">· {listItems.length}</span>
               </h2>
               <button
-                onClick={() => setShowList(false)}
+                onClick={() => setListMode(null)}
                 className="p-1 -m-1 text-muted-foreground hover:text-foreground"
                 aria-label="Fermer"
               >
@@ -720,11 +729,15 @@ function Index() {
                   Chargement…
                 </div>
               )}
-              {!mutation.isPending && filtered.length === 0 && (
+              {!mutation.isPending && listItems.length === 0 && (
                 <div className="p-6 text-center text-sm text-muted-foreground">
                   {!city
                     ? "Sélectionnez une ville pour lancer la recherche."
-                    : "Aucun restaurant trouvé."}
+                    : listMode === "done"
+                      ? "Aucun restaurant marqué fait pour l'instant."
+                      : listMode === "favorites"
+                        ? "Aucun restaurant en favori pour l'instant."
+                        : "Aucun restaurant trouvé."}
                 </div>
               )}
 
