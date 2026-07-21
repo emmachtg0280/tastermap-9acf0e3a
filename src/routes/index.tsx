@@ -160,7 +160,7 @@ function useVisits(userId: string | null) {
   // Cloud visits
   const cloudQuery = useQuery({
     queryKey: ["my-visits"],
-    queryFn: () => serverGetVisits({ data: undefined }),
+    queryFn: () => serverGetVisits(),
     enabled: !!userId,
     staleTime: 0,
   });
