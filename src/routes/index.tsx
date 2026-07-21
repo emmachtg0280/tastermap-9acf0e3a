@@ -1018,20 +1018,20 @@ function DetailCard({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => onUpdate({ favorite: !visit.favorite })}
-                className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition ${
+                className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border font-semibold btn-pop transition ${
                   visit.favorite
-                    ? "bg-rose-500 border-rose-500 text-white"
+                    ? "bg-[color:var(--duo-coral)] border-[color:var(--duo-coral)] text-white"
                     : "border-border/70 hover:bg-muted"
                 }`}
               >
-                <Heart className="h-3 w-3" />
+                <Heart className={`h-3 w-3 ${visit.favorite ? "fill-white" : ""}`} />
                 {visit.favorite ? "Favori" : "Favori"}
               </button>
               <button
                 onClick={() => onUpdate({ done: !visit.done })}
-                className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition ${
+                className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border font-semibold btn-pop transition ${
                   visit.done
-                    ? "bg-emerald-500 border-emerald-500 text-white"
+                    ? "bg-[color:var(--duo-green)] border-[color:var(--duo-green)] text-white"
                     : "border-border/70 hover:bg-muted"
                 }`}
               >
