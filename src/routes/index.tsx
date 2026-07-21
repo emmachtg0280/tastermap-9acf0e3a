@@ -710,15 +710,10 @@ function Index() {
                 <div className="p-6 text-center text-sm text-muted-foreground">
                   {!city
                     ? "Sélectionnez une ville pour lancer la recherche."
-                    : tab === "done"
-                      ? "Aucun restaurant marqué comme fait."
-                      : tab === "todo"
-                        ? "Vous avez tout fait ! 🎉"
-                        : tab === "favorites"
-                          ? "Aucun favori pour le moment."
-                          : "Aucun restaurant trouvé."}
+                    : "Aucun restaurant trouvé."}
                 </div>
               )}
+
               {filtered.map((r) => {
                 const done = !!visits[r.id]?.done;
                 const favorite = !!visits[r.id]?.favorite;
