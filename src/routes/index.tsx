@@ -669,14 +669,15 @@ function Index() {
             </Button>
           </div>
 
-          <div className="rounded-xl border border-border/60 bg-card">
+            <div className="rounded-xl border border-border/60 bg-card">
             <div className="px-2 pt-2 border-b border-border/60">
-              <div className="grid grid-cols-3 gap-1">
+              <div className="grid grid-cols-4 gap-1">
                 {(
                   [
                     { key: "all", label: "Tous", count: cuisineScoped.length },
                     { key: "todo", label: "À faire", count: todoCount },
                     { key: "done", label: "Faits", count: doneInScope },
+                    { key: "favorites", label: "Favoris", count: favoritesInScope },
                   ] as { key: Tab; label: string; count: number }[]
                 ).map((t) => {
                   const active = tab === t.key;
@@ -684,7 +685,7 @@ function Index() {
                     <button
                       key={t.key}
                       onClick={() => setTab(t.key)}
-                      className={`text-xs py-2 rounded-md transition flex items-center justify-center gap-1.5 ${
+                      className={`text-[10px] sm:text-xs py-2 rounded-md transition flex items-center justify-center gap-1 ${
                         active
                           ? "bg-muted text-foreground"
                           : "text-muted-foreground hover:text-foreground"
