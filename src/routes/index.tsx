@@ -737,10 +737,10 @@ function Index() {
             ? filtered.filter((r) => visits[r.id]?.done)
             : listMode === "favorites"
               ? filtered.filter((r) => visits[r.id]?.favorite)
-              : listMode === "new"
-                ? [...baseFiltered]
-                    .filter((r) => (r.userRatingCount ?? 0) > 0 && (r.userRatingCount ?? 0) < 400)
-                    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+                : listMode === "new"
+                  ? [...baseFiltered]
+                      .filter((r) => isNewRestaurant(r))
+                      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
                 : listMode === "hype"
                   ? [...baseFiltered]
                       .filter((r) => (hypeStats[r.id]?.score ?? 0) > 0)
