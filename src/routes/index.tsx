@@ -69,6 +69,13 @@ function cuisineEmoji(cs: Cuisine[]): string {
   return "🍽️";
 }
 
+// Google Places API does not expose an opening date. We use a low review count
+// as a proxy for "opened in the last rolling year".
+function isNewRestaurant(r: Restaurant): boolean {
+  const count = r.userRatingCount ?? 0;
+  return count > 0 && count < 80;
+}
+
 const DEFAULT_CENTER = { lat: 43.6047, lng: 1.4442 }; // Toulouse
 const DEFAULT_ZOOM = 13;
 const CITY_ZOOM = 13;
