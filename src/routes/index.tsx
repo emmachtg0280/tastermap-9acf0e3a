@@ -346,11 +346,16 @@ function Index() {
     [cuisineScoped, visits],
   );
   const todoCount = cuisineScoped.length - doneInScope;
+  const favoritesInScope = useMemo(
+    () => cuisineScoped.filter((r) => visits[r.id]?.favorite).length,
+    [cuisineScoped, visits],
+  );
 
   const filtered = useMemo(() => {
     let list = baseFiltered;
     if (tab === "done") list = list.filter((r) => visits[r.id]?.done);
     if (tab === "todo") list = list.filter((r) => !visits[r.id]?.done);
+    if (tab === "favorites") list = list.filter((r) => visits[r.id]?.favorite);
     return [...list].sort((a, b) => sortRestaurants(a, b, sortBy, userLocation, currentCity));
   }, [baseFiltered, tab, visits, sortBy, userLocation, currentCity]);
 
