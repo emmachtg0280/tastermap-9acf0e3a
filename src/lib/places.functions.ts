@@ -257,7 +257,7 @@ export const searchRestaurants = createServerFn({ method: "POST" })
       }
     };
 
-    const TARGET = 140;
+
 
     const runQuery = async (
       query: string,
