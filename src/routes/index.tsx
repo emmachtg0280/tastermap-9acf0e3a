@@ -37,8 +37,10 @@ import {
   upsertVisit,
   type Visit,
 } from "@/lib/visits.functions";
+import { getHypeStats, type HypeStats } from "@/lib/hype.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+
 
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
