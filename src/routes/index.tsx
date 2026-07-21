@@ -709,13 +709,15 @@ function Index() {
               )}
               {!mutation.isPending && filtered.length === 0 && (
                 <div className="p-6 text-center text-sm text-muted-foreground">
-                  {!city
+                {!city
                     ? "Sélectionnez une ville pour lancer la recherche."
                     : tab === "done"
                       ? "Aucun restaurant marqué comme fait."
                       : tab === "todo"
                         ? "Vous avez tout fait ! 🎉"
-                        : "Aucun restaurant trouvé."}
+                        : tab === "favorites"
+                          ? "Aucun favori pour le moment."
+                          : "Aucun restaurant trouvé."}
                 </div>
               )}
               {filtered.map((r) => {
