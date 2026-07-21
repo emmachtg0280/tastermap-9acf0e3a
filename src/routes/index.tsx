@@ -14,9 +14,16 @@ import {
   Phone,
   CalendarClock,
   Clock,
+  ChevronDown,
 } from "lucide-react";
 
-import { searchRestaurants, type Cuisine, type Restaurant } from "@/lib/places.functions";
+import {
+  searchRestaurants,
+  FRENCH_CITIES,
+  type Cuisine,
+  type CityKey,
+  type Restaurant,
+} from "@/lib/places.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
@@ -37,7 +44,18 @@ const CUISINES: { value: Cuisine; label: string }[] = [
   { value: "vegetarian", label: "Végétarien" },
 ];
 
-const TOULOUSE_CENTER = { lat: 43.6047, lng: 1.4442 };
+const CITY_OPTIONS: { key: CityKey; label: string; lat: number; lng: number; zoom: number }[] = [
+  { key: "all", label: "France · Top 20 villes", lat: 46.6, lng: 2.5, zoom: 6 },
+  ...FRENCH_CITIES.map((c) => ({
+    key: c.key as CityKey,
+    label: c.label,
+    lat: c.lat,
+    lng: c.lng,
+    zoom: 13,
+  })),
+];
+
+type Tab = "all" | "todo" | "done";
 
 type VisitEntry = { done: boolean; comment: string };
 type VisitMap = Record<string, VisitEntry>;
@@ -53,16 +71,16 @@ declare global {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Tastemap · Restaurants de Toulouse" },
+      { title: "Tastemap · Restaurants de France" },
       {
         name: "description",
         content:
-          "Découvrez les restaurants de Toulouse sur une carte minimaliste. Filtrez, marquez ceux que vous avez faits et ajoutez vos commentaires.",
+          "Explorez les meilleurs restaurants des 20 plus grandes villes de France sur une carte minimaliste. Filtrez, marquez et commentez.",
       },
-      { property: "og:title", content: "Tastemap · Restaurants de Toulouse" },
+      { property: "og:title", content: "Tastemap · Restaurants de France" },
       {
         property: "og:description",
-        content: "Carte des restaurants de Toulouse, filtrée à votre goût.",
+        content: "Carte des meilleurs restaurants de France, filtrée à votre goût.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -110,7 +128,6 @@ function useVisits() {
       const current = prev[id] ?? { done: false, comment: "" };
       const next = { ...current, ...patch };
       const merged = { ...prev, [id]: next };
-      // Remove empty entries
       if (!next.done && !next.comment.trim()) delete merged[id];
       try {
         localStorage.setItem(VISITS_KEY, JSON.stringify(merged));
@@ -126,7 +143,8 @@ function useVisits() {
 function Index() {
   const [cuisine, setCuisine] = useState<Cuisine>("any");
   const [minRating, setMinRating] = useState(4);
-  const [showDoneOnly, setShowDoneOnly] = useState(false);
+  const [city, setCity] = useState<CityKey>("toulouse");
+  const [tab, setTab] = useState<Tab>("all");
   const [selected, setSelected] = useState<Restaurant | null>(null);
   const [results, setResults] = useState<Restaurant[]>([]);
   const { visits, update } = useVisits();
@@ -138,7 +156,7 @@ function Index() {
 
   const search = useServerFn(searchRestaurants);
   const mutation = useMutation({
-    mutationFn: (vars: { cuisine: Cuisine; minRating: number }) =>
+    mutationFn: (vars: { cuisine: Cuisine; minRating: number; city: CityKey }) =>
       search({ data: vars }),
     onSuccess: (data) => {
       setResults(data);
@@ -146,16 +164,18 @@ function Index() {
     },
   });
 
-  const filtered = useMemo(
-    () => (showDoneOnly ? results.filter((r) => visits[r.id]?.done) : results),
-    [results, showDoneOnly, visits],
-  );
+  const filtered = useMemo(() => {
+    if (tab === "done") return results.filter((r) => visits[r.id]?.done);
+    if (tab === "todo") return results.filter((r) => !visits[r.id]?.done);
+    return results;
+  }, [results, tab, visits]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstance.current) return;
+    const initial = CITY_OPTIONS.find((c) => c.key === city) ?? CITY_OPTIONS[0];
     mapInstance.current = new window.google!.maps.Map(mapRef.current, {
-      center: TOULOUSE_CENTER,
-      zoom: 13,
+      center: { lat: initial.lat, lng: initial.lng },
+      zoom: initial.zoom,
       disableDefaultUI: true,
       zoomControl: true,
       clickableIcons: false,
@@ -163,7 +183,16 @@ function Index() {
       gestureHandling: "greedy",
       styles: minimalMapStyle,
     });
-  }, [mapReady]);
+  }, [mapReady, city]);
+
+  // Recenter when city changes
+  useEffect(() => {
+    if (!mapInstance.current) return;
+    const opt = CITY_OPTIONS.find((c) => c.key === city);
+    if (!opt) return;
+    mapInstance.current.panTo({ lat: opt.lat, lng: opt.lng });
+    mapInstance.current.setZoom(opt.zoom);
+  }, [city]);
 
   useEffect(() => {
     if (!mapInstance.current || !window.google) return;
@@ -195,14 +224,16 @@ function Index() {
   }, [filtered, selected, visits]);
 
   useEffect(() => {
-    mutation.mutate({ cuisine, minRating });
+    mutation.mutate({ cuisine, minRating, city });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cuisine, minRating]);
+  }, [cuisine, minRating, city]);
 
   const doneCount = useMemo(
     () => Object.values(visits).filter((v) => v.done).length,
     [visits],
   );
+  const todoCount = results.length - results.filter((r) => visits[r.id]?.done).length;
+  const doneInResults = results.filter((r) => visits[r.id]?.done).length;
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
@@ -212,7 +243,7 @@ function Index() {
             <div className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
             <h1 className="text-sm font-semibold tracking-tight truncate">
               Tastemap
-              <span className="text-muted-foreground font-normal ml-1.5">· Toulouse</span>
+              <span className="text-muted-foreground font-normal ml-1.5">· France</span>
             </h1>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
@@ -227,10 +258,29 @@ function Index() {
         </div>
       </header>
 
-
       <div className="max-w-7xl mx-auto w-full px-5 py-5 grid grid-cols-1 gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
         <aside className="min-w-0 space-y-5">
           <div className="rounded-xl border border-border/60 bg-card p-5 space-y-5">
+            <div>
+              <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
+                Ville
+              </h2>
+              <div className="relative">
+                <select
+                  value={city}
+                  onChange={(e) => setCity(e.target.value as CityKey)}
+                  className="w-full appearance-none text-sm bg-background border border-border/70 rounded-md px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {CITY_OPTIONS.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+
             <div>
               <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">
                 Cuisine
@@ -274,20 +324,10 @@ function Index() {
               />
             </div>
 
-            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={showDoneOnly}
-                onChange={(e) => setShowDoneOnly(e.target.checked)}
-                className="h-4 w-4 rounded border-border accent-emerald-600"
-              />
-              N'afficher que les restaurants faits
-            </label>
-
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => mutation.mutate({ cuisine, minRating })}
+              onClick={() => mutation.mutate({ cuisine, minRating, city })}
               disabled={mutation.isPending}
             >
               {mutation.isPending ? (
@@ -303,13 +343,34 @@ function Index() {
           </div>
 
           <div className="rounded-xl border border-border/60 bg-card">
-            <div className="px-5 py-3 border-b border-border/60 flex items-center justify-between">
-              <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                Résultats
-              </h2>
-              <Badge variant="secondary" className="rounded-full">
-                {filtered.length}
-              </Badge>
+            <div className="px-2 pt-2 border-b border-border/60">
+              <div className="grid grid-cols-3 gap-1">
+                {(
+                  [
+                    { key: "all", label: "Tous", count: results.length },
+                    { key: "todo", label: "À faire", count: todoCount },
+                    { key: "done", label: "Faits", count: doneInResults },
+                  ] as { key: Tab; label: string; count: number }[]
+                ).map((t) => {
+                  const active = tab === t.key;
+                  return (
+                    <button
+                      key={t.key}
+                      onClick={() => setTab(t.key)}
+                      className={`text-xs py-2 rounded-md transition flex items-center justify-center gap-1.5 ${
+                        active
+                          ? "bg-muted text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {t.label}
+                      <span className="tabular-nums text-[10px] opacity-70">
+                        {t.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="max-h-[520px] overflow-auto divide-y divide-border/50">
               {mutation.isPending && results.length === 0 && (
@@ -320,7 +381,11 @@ function Index() {
               )}
               {!mutation.isPending && filtered.length === 0 && (
                 <div className="p-6 text-center text-sm text-muted-foreground">
-                  Aucun restaurant trouvé.
+                  {tab === "done"
+                    ? "Aucun restaurant marqué comme fait."
+                    : tab === "todo"
+                      ? "Vous avez tout fait ! 🎉"
+                      : "Aucun restaurant trouvé."}
                 </div>
               )}
               {filtered.map((r) => {
@@ -430,10 +495,11 @@ function DetailCard({
   onClose: () => void;
 }) {
   const [comment, setComment] = useState(visit.comment);
+  const [showHours, setShowHours] = useState(false);
   useEffect(() => setComment(visit.comment), [visit.comment, r.id]);
 
   return (
-    <div className="absolute left-4 right-4 bottom-4 lg:left-6 lg:right-auto lg:bottom-6 lg:w-[440px] rounded-xl bg-card border border-border/70 shadow-xl overflow-hidden max-h-[80vh] flex flex-col">
+    <div className="absolute left-3 right-3 bottom-3 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[340px] rounded-xl bg-card border border-border/70 shadow-xl overflow-hidden max-h-[65vh] flex flex-col">
       {r.photoUrls.length > 0 && (
         <div
           className="flex overflow-x-auto snap-x snap-mandatory flex-shrink-0"
@@ -444,15 +510,15 @@ function DetailCard({
               key={url}
               src={url}
               alt={`${r.name} — plat ${i + 1}`}
-              className="h-44 w-full flex-shrink-0 object-cover snap-start"
+              className="h-28 w-full flex-shrink-0 object-cover snap-start"
             />
           ))}
         </div>
       )}
-      <div className="p-5 overflow-y-auto">
+      <div className="p-4 overflow-y-auto">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="font-semibold tracking-tight truncate">{r.name}</h3>
+            <h3 className="font-semibold tracking-tight truncate text-sm">{r.name}</h3>
             <p className="text-xs text-muted-foreground">
               {r.primaryType ?? "Restaurant"}
             </p>
@@ -466,55 +532,77 @@ function DetailCard({
           </button>
         </div>
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           {r.rating != null && (
             <span className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-amber-400 stroke-amber-400" />
+              <Star className="h-3.5 w-3.5 fill-amber-400 stroke-amber-400" />
               <span className="font-medium">{r.rating.toFixed(1)}</span>
               {r.userRatingCount != null && (
-                <span className="text-muted-foreground text-xs">
+                <span className="text-muted-foreground">
                   ({r.userRatingCount})
                 </span>
               )}
             </span>
           )}
           {r.priceLevel && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground">
               {priceLabel(r.priceLevel)}
             </span>
           )}
           {r.openNow === true && (
-            <span className="text-xs text-emerald-600 flex items-center gap-1">
+            <span className="text-emerald-600 flex items-center gap-1">
               <Clock className="h-3 w-3" /> Ouvert
             </span>
           )}
           {r.openNow === false && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <span className="text-muted-foreground flex items-center gap-1">
               <Clock className="h-3 w-3" /> Fermé
             </span>
           )}
         </div>
 
         {r.summary && (
-          <p className="mt-3 text-sm text-foreground/80 leading-relaxed">
+          <p className="mt-2 text-xs text-foreground/80 leading-relaxed line-clamp-3">
             {r.summary}
           </p>
         )}
 
-        <p className="mt-3 text-sm text-muted-foreground flex items-start gap-1.5">
-          <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <span>{r.address}</span>
+        <p className="mt-2 text-xs text-muted-foreground flex items-start gap-1.5">
+          <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+          <span className="line-clamp-2">{r.address}</span>
         </p>
 
-        <div className="mt-3 flex flex-wrap gap-2">
+        {r.weekdayDescriptions.length > 0 && (
+          <div className="mt-2">
+            <button
+              onClick={() => setShowHours((v) => !v)}
+              className="flex items-center gap-1.5 text-xs text-foreground/80 hover:text-foreground"
+            >
+              <Clock className="h-3.5 w-3.5" />
+              Horaires d'ouverture
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform ${showHours ? "rotate-180" : ""}`}
+              />
+            </button>
+            {showHours && (
+              <ul className="mt-1.5 space-y-0.5 text-[11px] text-muted-foreground">
+                {r.weekdayDescriptions.map((d) => (
+                  <li key={d}>{d}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-wrap gap-1.5">
           {r.websiteUri && (
             <a
               href={r.websiteUri}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border/70 hover:bg-muted transition"
+              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border border-border/70 hover:bg-muted transition"
             >
-              <Globe className="h-3.5 w-3.5" /> Site web
+              <Globe className="h-3 w-3" /> Site
             </a>
           )}
           {r.reservable && r.websiteUri && (
@@ -522,17 +610,17 @@ function DetailCard({
               href={r.websiteUri}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-foreground text-background hover:opacity-90 transition"
+              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-foreground text-background hover:opacity-90 transition"
             >
-              <CalendarClock className="h-3.5 w-3.5" /> Réserver
+              <CalendarClock className="h-3 w-3" /> Réserver
             </a>
           )}
           {r.phone && (
             <a
               href={`tel:${r.phone.replace(/\s/g, "")}`}
-              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border/70 hover:bg-muted transition"
+              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border border-border/70 hover:bg-muted transition"
             >
-              <Phone className="h-3.5 w-3.5" /> {r.phone}
+              <Phone className="h-3 w-3" /> {r.phone}
             </a>
           )}
           {r.googleMapsUri && (
@@ -540,37 +628,37 @@ function DetailCard({
               href={r.googleMapsUri}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border/70 hover:bg-muted transition"
+              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border border-border/70 hover:bg-muted transition"
             >
-              <MapPin className="h-3.5 w-3.5" /> Google Maps
+              <MapPin className="h-3 w-3" /> Maps
             </a>
           )}
         </div>
 
-        <div className="mt-5 pt-4 border-t border-border/60">
+        <div className="mt-3 pt-3 border-t border-border/60">
           <div className="flex items-center justify-between">
-            <h4 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            <h4 className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
               Mon carnet
             </h4>
             <button
               onClick={() => onUpdate({ done: !visit.done })}
-              className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition ${
+              className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition ${
                 visit.done
                   ? "bg-emerald-500 border-emerald-500 text-white"
                   : "border-border/70 hover:bg-muted"
               }`}
             >
-              <Check className="h-3.5 w-3.5" strokeWidth={3} />
-              {visit.done ? "Fait" : "Marquer comme fait"}
+              <Check className="h-3 w-3" strokeWidth={3} />
+              {visit.done ? "Fait" : "Marquer fait"}
             </button>
           </div>
           <Textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             onBlur={() => onUpdate({ comment })}
-            placeholder="Un petit commentaire ? (plats préférés, ambiance, prix…)"
-            rows={3}
-            className="mt-3 resize-none text-sm"
+            placeholder="Un petit commentaire ?"
+            rows={2}
+            className="mt-2 resize-none text-xs"
           />
         </div>
       </div>
@@ -610,4 +698,3 @@ const minimalMapStyle: google.maps.MapTypeStyle[] = [
   { featureType: "water", elementType: "geometry", stylers: [{ color: "#0f1c26" }] },
   { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
 ];
-
