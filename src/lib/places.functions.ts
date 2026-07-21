@@ -61,16 +61,11 @@ const CUISINE_QUERIES: Record<Exclude<Cuisine, "any">, string> = {
   vegetarian: "restaurants végétariens à Toulouse",
 };
 
-// Broad queries to reach a large pool (~300).
+// Broad queries — fewer but paginated. Kept small to stay fast.
 const BROAD_QUERIES = [
   "meilleurs restaurants à Toulouse",
   "restaurants gastronomiques Toulouse",
-  "bistrots Toulouse",
-  "brasseries Toulouse",
-  "restaurants centre-ville Toulouse",
-  "restaurants Capitole Toulouse",
-  "restaurants Saint-Cyprien Toulouse",
-  "restaurants Carmes Toulouse",
+  "bistrots brasseries Toulouse",
 ];
 
 // Map Google primaryType → our cuisine key.
