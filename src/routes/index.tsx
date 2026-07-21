@@ -1106,8 +1106,8 @@ function DetailCard({
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
-              onClick={() => onUpdate({ done: !visit.done })}
-              className={`inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-full text-sm font-extrabold btn-pop transition ${
+              onClick={() => { haptic(visit.done ? 12 : 20); onUpdate({ done: !visit.done }); }}
+              className={`inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-full text-sm font-extrabold btn-pop tap-bounce transition ${
                 visit.done
                   ? "bg-[color:var(--duo-green)] text-white"
                   : "bg-muted border border-border/60 text-foreground hover:bg-muted/80"
@@ -1118,8 +1118,8 @@ function DetailCard({
               Fait
             </button>
             <button
-              onClick={() => onUpdate({ favorite: !visit.favorite })}
-              className={`inline-flex items-center justify-center h-8 w-8 rounded-full btn-pop transition ${
+              onClick={() => { haptic(visit.favorite ? 12 : 20); onUpdate({ favorite: !visit.favorite }); }}
+              className={`inline-flex items-center justify-center h-8 w-8 rounded-full btn-pop tap-bounce transition ${
                 visit.favorite
                   ? "bg-rose-50 border-rose-200 text-rose-500"
                   : "bg-muted border border-border/60 text-muted-foreground hover:text-foreground"
@@ -1129,8 +1129,8 @@ function DetailCard({
               <Heart className={`h-4 w-4 ${visit.favorite ? "fill-rose-500 text-rose-500" : ""}`} />
             </button>
             <button
-              onClick={onClose}
-              className="text-muted-foreground hover:text-foreground p-1 -m-1"
+              onClick={() => { haptic(); onClose(); }}
+              className="text-muted-foreground hover:text-foreground p-1 -m-1 tap-bounce"
               aria-label="Fermer"
             >
               <X className="h-5 w-5" />
