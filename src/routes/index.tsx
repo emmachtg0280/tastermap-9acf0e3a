@@ -702,9 +702,9 @@ function Index() {
                     <button
                       key={t.key}
                       onClick={() => setTab(t.key)}
-                      className={`text-[10px] sm:text-xs py-2 rounded-md transition flex items-center justify-center gap-1 ${
+                      className={`text-[10px] sm:text-xs py-2 rounded-full transition flex items-center justify-center gap-1 ${
                         active
-                          ? "bg-muted text-foreground"
+                          ? "bg-[color:var(--duo-green)]/15 text-[color:var(--duo-green-dark)] font-semibold"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
