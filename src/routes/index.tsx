@@ -414,7 +414,7 @@ function Index() {
       center: DEFAULT_CENTER,
       zoom: DEFAULT_ZOOM,
       disableDefaultUI: true,
-      zoomControl: true,
+      zoomControl: false,
       clickableIcons: false,
       backgroundColor: "#FFF9F0",
       gestureHandling: "greedy",
