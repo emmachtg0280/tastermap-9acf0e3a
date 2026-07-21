@@ -1060,8 +1060,10 @@ function DetailCard({
   const [showHours, setShowHours] = useState(false);
   useEffect(() => setComment(visit.comment), [visit.comment, r.id]);
 
+  const emoji = cuisineEmoji(r.cuisines);
+
   return (
-    <div className="absolute left-2 right-2 bottom-2 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[360px] rounded-xl bg-card border border-border/70 shadow-xl overflow-hidden max-h-[55vh] lg:max-h-[70vh] flex flex-col">
+    <div className="absolute left-3 right-3 bottom-3 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[360px] rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.12)] overflow-hidden max-h-[52vh] lg:max-h-[70vh] flex flex-col">
       {r.photoUrls.length > 0 && (
         <div
           className="flex overflow-x-auto snap-x snap-mandatory flex-shrink-0"
@@ -1073,16 +1075,19 @@ function DetailCard({
               src={url}
               alt={`${r.name} — plat ${i + 1}`}
               loading="lazy"
-              className="h-36 lg:h-48 w-full flex-shrink-0 object-cover snap-start"
+              className="h-32 lg:h-44 w-full flex-shrink-0 object-cover snap-start"
             />
           ))}
         </div>
       )}
-      <div className="p-3 overflow-y-auto">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="font-semibold tracking-tight truncate text-sm">{r.name}</h3>
-            <p className="text-xs text-muted-foreground">
+      <div className="p-3.5 overflow-y-auto">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-lg">
+            {emoji}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-display font-bold text-sm leading-tight truncate">{r.name}</h3>
+            <p className="text-xs text-muted-foreground truncate">
               {r.primaryType ?? "Restaurant"}
             </p>
           </div>
@@ -1095,13 +1100,13 @@ function DetailCard({
           </button>
         </div>
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
           {r.rating != null && (
-            <span className="flex items-center gap-1">
-              <Star className="h-3.5 w-3.5 fill-amber-400 stroke-amber-400" />
-              <span className="font-medium">{r.rating.toFixed(1)}</span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium">
+              <Star className="h-3 w-3 fill-amber-400 stroke-amber-400" />
+              {r.rating.toFixed(1)}
               {r.userRatingCount != null && (
-                <span className="text-muted-foreground">
+                <span className="text-amber-600/70 font-normal">
                   ({r.userRatingCount})
                 </span>
               )}
@@ -1113,7 +1118,7 @@ function DetailCard({
             </span>
           )}
           {r.openNow === true && (
-            <span className="text-emerald-600 flex items-center gap-1">
+            <span className="text-emerald-600 font-medium flex items-center gap-1">
               <Clock className="h-3 w-3" /> Ouvert
             </span>
           )}
@@ -1125,12 +1130,12 @@ function DetailCard({
         </div>
 
         {r.summary && (
-          <p className="mt-2 text-xs text-foreground/80 leading-relaxed line-clamp-3">
+          <p className="mt-2.5 text-xs text-foreground/80 leading-relaxed line-clamp-2">
             {r.summary}
           </p>
         )}
 
-        <p className="mt-2 text-xs text-muted-foreground flex items-start gap-1.5">
+        <p className="mt-2.5 text-xs text-muted-foreground flex items-start gap-1.5">
           <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
           <span className="line-clamp-2">{r.address}</span>
         </p>
@@ -1139,16 +1144,16 @@ function DetailCard({
           <div className="mt-2">
             <button
               onClick={() => setShowHours((v) => !v)}
-              className="flex items-center gap-1 text-[11px] text-foreground/80 hover:text-foreground"
+              className="inline-flex items-center gap-1 text-[11px] text-foreground/70 hover:text-foreground bg-muted/60 px-2 py-1 rounded-full transition"
             >
-              <Clock className="h-3 w-3" />
+              <CalendarClock className="h-3 w-3" />
               Horaires
               <ChevronDown
                 className={`h-3 w-3 transition-transform ${showHours ? "rotate-180" : ""}`}
               />
             </button>
             {showHours && (
-              <ul className="mt-1 space-y-0 text-[10px] text-muted-foreground leading-tight">
+              <ul className="mt-1.5 space-y-0 text-[10px] text-muted-foreground leading-tight bg-muted/30 rounded-lg p-2">
                 {r.weekdayDescriptions.map((d) => (
                   <li key={d}>{d}</li>
                 ))}
@@ -1158,97 +1163,75 @@ function DetailCard({
         )}
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          <a
-            href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-[color:var(--duo-green)] text-white font-semibold btn-pop hover:brightness-105 transition"
-          >
-            <Navigation className="h-3 w-3" /> Itinéraire
-          </a>
-          {r.websiteUri && (
-            <a
-              href={r.websiteUri}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border border-border/70 hover:bg-muted transition"
-            >
-              <Globe className="h-3 w-3" /> Site
-            </a>
-          )}
-          {r.reservable && r.websiteUri && (
-            <a
-              href={r.websiteUri}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-foreground text-background hover:opacity-90 transition"
-            >
-              <CalendarClock className="h-3 w-3" /> Réserver
-            </a>
-          )}
-          {r.phone && (
-            <a
-              href={`tel:${r.phone.replace(/\s/g, "")}`}
-              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border border-border/70 hover:bg-muted transition"
-            >
-              <Phone className="h-3 w-3" /> {r.phone}
-            </a>
-          )}
           {r.googleMapsUri && (
             <a
               href={r.googleMapsUri}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border border-border/70 hover:bg-muted transition"
+              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white font-semibold btn-pop hover:brightness-105 transition"
             >
-              <MapPin className="h-3 w-3" /> Maps
+              <MapPin className="h-3 w-3" /> Google Maps
+            </a>
+          )}
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold transition"
+          >
+            <Navigation className="h-3 w-3" /> Itinéraire
+          </a>
+          {r.phone && (
+            <a
+              href={`tel:${r.phone.replace(/\s/g, "")}`}
+              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold transition"
+            >
+              <Phone className="h-3 w-3" /> {r.phone}
             </a>
           )}
         </div>
 
-        <div className="mt-3 pt-3 border-t border-border/60">
-          <div className="flex items-center justify-between">
-            <h4 className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              Mon carnet
-            </h4>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => onUpdate({ favorite: !visit.favorite })}
-                className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border font-semibold btn-pop transition ${
-                  visit.favorite
-                    ? "bg-[color:var(--duo-coral)] border-[color:var(--duo-coral)] text-white"
-                    : "border-border/70 hover:bg-muted"
-                }`}
-              >
-                <Heart className={`h-3 w-3 ${visit.favorite ? "fill-white" : ""}`} />
-                {visit.favorite ? "Favori" : "Favori"}
-              </button>
-              <button
-                onClick={() => onUpdate({ done: !visit.done })}
-                className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border font-semibold btn-pop transition ${
-                  visit.done
-                    ? "bg-[color:var(--duo-green)] border-[color:var(--duo-green)] text-white"
-                    : "border-border/70 hover:bg-muted"
-                }`}
-              >
-                <Check className="h-3 w-3" strokeWidth={3} />
-                {visit.done ? "Fait" : "Marquer fait"}
-              </button>
-            </div>
+        <div className="mt-3 pt-3 border-t border-border/50">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onUpdate({ done: !visit.done })}
+              className={`flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-extrabold px-3 py-2.5 rounded-xl btn-pop transition ${
+                visit.done
+                  ? "bg-[color:var(--duo-green)] text-white border-[color:var(--duo-green)]"
+                  : "bg-muted hover:bg-muted/80 border border-border/60 text-foreground"
+              }`}
+            >
+              <span className={`inline-flex items-center justify-center rounded-full transition ${visit.done ? "bg-white/20" : "bg-[color:var(--duo-green)] text-white"} h-5 w-5`}>
+                <Check className={`h-3.5 w-3.5 ${visit.done ? "" : "text-white"}`} strokeWidth={3} />
+              </span>
+              {visit.done ? "Fait" : "Marquer fait"}
+            </button>
+            <button
+              onClick={() => onUpdate({ favorite: !visit.favorite })}
+              className={`inline-flex items-center justify-center gap-1 h-10 w-10 rounded-xl btn-pop transition ${
+                visit.favorite
+                  ? "bg-rose-50 border-rose-200 text-rose-500"
+                  : "bg-muted border border-border/60 text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label={visit.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+            >
+              <Heart className={`h-4 w-4 ${visit.favorite ? "fill-rose-500 text-rose-500" : ""}`} />
+            </button>
           </div>
           <Textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             onBlur={() => onUpdate({ comment })}
-            placeholder="Un petit commentaire ?"
+            placeholder="Un petit mot sur ce resto ?"
             rows={2}
-            className="mt-2 resize-none text-xs"
+            className="mt-2.5 resize-none text-xs border-border/40 bg-muted/30 focus:bg-card"
           />
         </div>
       </div>
     </div>
   );
 }
+
 
 function priceLabel(level: string) {
   const map: Record<string, string> = {
