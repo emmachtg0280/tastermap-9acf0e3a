@@ -996,17 +996,30 @@ function DetailCard({
             <h4 className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
               Mon carnet
             </h4>
-            <button
-              onClick={() => onUpdate({ done: !visit.done })}
-              className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition ${
-                visit.done
-                  ? "bg-emerald-500 border-emerald-500 text-white"
-                  : "border-border/70 hover:bg-muted"
-              }`}
-            >
-              <Check className="h-3 w-3" strokeWidth={3} />
-              {visit.done ? "Fait" : "Marquer fait"}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => onUpdate({ favorite: !visit.favorite })}
+                className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition ${
+                  visit.favorite
+                    ? "bg-rose-500 border-rose-500 text-white"
+                    : "border-border/70 hover:bg-muted"
+                }`}
+              >
+                <Heart className="h-3 w-3" />
+                {visit.favorite ? "Favori" : "Favori"}
+              </button>
+              <button
+                onClick={() => onUpdate({ done: !visit.done })}
+                className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition ${
+                  visit.done
+                    ? "bg-emerald-500 border-emerald-500 text-white"
+                    : "border-border/70 hover:bg-muted"
+                }`}
+              >
+                <Check className="h-3 w-3" strokeWidth={3} />
+                {visit.done ? "Fait" : "Marquer fait"}
+              </button>
+            </div>
           </div>
           <Textarea
             value={comment}
