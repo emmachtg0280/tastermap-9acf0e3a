@@ -754,6 +754,20 @@ function Index() {
                         </span>
                       )}
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        update(r.id, { favorite: !favorite });
+                      }}
+                      className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted transition"
+                      aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                    >
+                      <Heart
+                        className={`h-4 w-4 transition ${
+                          favorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground"
+                        }`}
+                      />
+                    </button>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate">{r.name}</div>
                       <div className="text-xs text-muted-foreground truncate">
