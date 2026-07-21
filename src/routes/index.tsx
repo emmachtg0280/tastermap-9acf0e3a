@@ -886,7 +886,7 @@ function DetailCard({
               src={url}
               alt={`${r.name} — plat ${i + 1}`}
               loading="lazy"
-              className="h-28 lg:h-36 w-full flex-shrink-0 object-cover snap-start"
+              className="h-36 lg:h-48 w-full flex-shrink-0 object-cover snap-start"
             />
           ))}
         </div>
