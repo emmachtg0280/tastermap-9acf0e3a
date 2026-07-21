@@ -185,6 +185,14 @@ export const searchRestaurants = createServerFn({ method: "POST" })
         priceLevel: p.priceLevel ?? null,
         primaryType: p.primaryTypeDisplayName?.text ?? null,
         googleMapsUri: p.googleMapsUri ?? null,
+        websiteUri: p.websiteUri ?? null,
+        phone: p.nationalPhoneNumber ?? null,
+        summary:
+          p.editorialSummary?.text ??
+          p.generativeSummary?.overview?.text ??
+          null,
+        openNow: p.regularOpeningHours?.openNow ?? null,
+        reservable: p.reservable ?? null,
         photoUrls: (p.photos ?? [])
           .slice(0, 6)
           .map(
