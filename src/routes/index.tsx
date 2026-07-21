@@ -67,8 +67,8 @@ function cuisineEmoji(cs: Cuisine[]): string {
   return "🍽️";
 }
 
-const DEFAULT_CENTER = { lat: 46.6, lng: 2.4 };
-const DEFAULT_ZOOM = 6;
+const DEFAULT_CENTER = { lat: 43.6047, lng: 1.4442 }; // Toulouse
+const DEFAULT_ZOOM = 13;
 const CITY_ZOOM = 13;
 
 
