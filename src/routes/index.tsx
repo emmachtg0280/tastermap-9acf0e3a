@@ -539,10 +539,12 @@ function Index() {
               )}
             </h1>
           </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
-            <span className="tabular-nums">{filtered.length}</span>
+          <div className="flex items-center gap-2 text-xs flex-shrink-0">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-foreground/80 font-semibold tabular-nums">
+              {filtered.length}
+            </span>
             {doneInScope > 0 && (
-              <span className="flex items-center gap-0.5 text-emerald-500">
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-[color:var(--duo-green)]/15 text-[color:var(--duo-green-dark)] font-semibold">
                 <Check className="h-3 w-3" strokeWidth={3} />
                 <span className="tabular-nums">{doneInScope}</span>
               </span>
