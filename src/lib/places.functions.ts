@@ -226,11 +226,13 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 interface SearchInput {
   minRating: number;
+  force?: boolean;
 }
 
 export const searchRestaurants = createServerFn({ method: "POST" })
   .inputValidator((input: SearchInput) => ({
     minRating: Math.max(0, Math.min(5, Number(input?.minRating ?? 0))),
+    force: Boolean(input?.force),
   }))
   .handler(async ({ data }) => {
     const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
@@ -240,12 +242,13 @@ export const searchRestaurants = createServerFn({ method: "POST" })
     }
     const auth = { lov: LOVABLE_API_KEY, key: GOOGLE_MAPS_API_KEY };
 
-    const cached = CACHE.get(data.minRating);
-    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
-      return cached.data;
+    if (!data.force) {
+      const cached = CACHE.get(data.minRating);
+      if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+        return cached.data;
+      }
     }
 
-    // Merged pool + source-cuisine tags (built during fetching).
     const pool = new Map<string, PlaceRaw>();
     const sources = new Map<string, Set<Cuisine>>();
 
@@ -259,7 +262,8 @@ export const searchRestaurants = createServerFn({ method: "POST" })
       }
     };
 
-    // Sequential to avoid rate limits.
+    const TARGET = 140;
+
     const runQuery = async (
       query: string,
       src: Cuisine | null,
@@ -277,45 +281,37 @@ export const searchRestaurants = createServerFn({ method: "POST" })
           console.error(`Query failed: "${query}"`, e);
           break;
         }
-        // Stop early once we have plenty.
-        if (pool.size >= 320) return;
+        if (pool.size >= TARGET) return;
       }
     };
 
-    // Broad queries with pagination.
     for (const q of BROAD_QUERIES) {
-      if (pool.size >= 320) break;
-      await runQuery(q, null, 3);
-      await sleep(150);
+      if (pool.size >= TARGET) break;
+      await runQuery(q, null, 2);
+      await sleep(120);
     }
 
-    // Per-cuisine queries (1 page each is enough to tag them).
     for (const [cuisine, q] of Object.entries(CUISINE_QUERIES) as [
       Cuisine,
       string,
     ][]) {
-      if (pool.size >= 320 && sources.size >= 200) {
-        // Still run to tag cuisine even if pool is full — but limit further.
-      }
       await runQuery(q, cuisine, 1);
-      await sleep(150);
+      await sleep(120);
     }
 
-    // Build results, dedupe, sort by rating × log(count).
     const restaurants = Array.from(pool.values())
       .filter((p) => p.location)
       .map((p) => {
         const src = sources.get(p.id) ?? new Set<Cuisine>();
         return toRestaurant(p, detectCuisines(p, null).concat(Array.from(src)));
       })
-      // dedupe cuisines array
       .map((r) => ({ ...r, cuisines: Array.from(new Set(r.cuisines)) }))
       .sort((a, b) => {
         const score = (r: Restaurant) =>
           (r.rating ?? 0) * Math.log10((r.userRatingCount ?? 0) + 10);
         return score(b) - score(a);
       })
-      .slice(0, 300);
+      .slice(0, 100);
 
     CACHE.set(data.minRating, { at: Date.now(), data: restaurants });
     return restaurants;
