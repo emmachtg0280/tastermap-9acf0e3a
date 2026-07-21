@@ -347,7 +347,7 @@ function Index() {
   const [onlyOpenNow, setOnlyOpenNow] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("score");
   const [showFilters, setShowFilters] = useState(false);
-  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites">(null);
+  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "hype">(null);
   const { user } = useAuthSession();
   const { visits, update } = useVisits(user?.id ?? null);
   const userLocation = useGeolocation();
