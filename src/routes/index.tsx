@@ -495,21 +495,6 @@ function Index() {
         </div>
       )}
 
-      {/* Pull-to-refresh indicator */}
-      {(pull > 0 || mutation.isPending) && (
-        <div
-          className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
-          style={{ transform: `translateY(${Math.max(pull - 20, mutation.isPending ? 12 : 0)}px)`, transition: pull === 0 ? "transform 200ms" : "none" }}
-        >
-          <div className="rounded-full bg-card border border-border/70 shadow-md h-9 w-9 grid place-items-center">
-            <Loader2
-              className={`h-4 w-4 text-foreground ${mutation.isPending ? "animate-spin" : ""}`}
-              style={{ transform: mutation.isPending ? undefined : `rotate(${pull * 4}deg)` }}
-            />
-          </div>
-        </div>
-      )}
-
       {/* Floating top bar */}
       <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)]">
         <div className="mx-auto px-3 pt-3 flex items-center justify-between gap-2 max-w-3xl">
