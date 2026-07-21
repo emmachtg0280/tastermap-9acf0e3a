@@ -319,7 +319,7 @@ function Index() {
                 value={[minRating]}
                 min={0}
                 max={5}
-                step={0.5}
+                step={0.1}
                 onValueChange={(v) => setMinRating(v[0])}
               />
             </div>
