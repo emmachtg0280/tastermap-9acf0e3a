@@ -134,7 +134,6 @@ function useVisits() {
 function Index() {
   const [cuisine, setCuisine] = useState<Cuisine>("any");
   const [minRating, setMinRating] = useState(4);
-  const [city, setCity] = useState<CityKey>("toulouse");
   const [tab, setTab] = useState<Tab>("all");
   const [selected, setSelected] = useState<Restaurant | null>(null);
   const [results, setResults] = useState<Restaurant[]>([]);
@@ -147,8 +146,7 @@ function Index() {
 
   const search = useServerFn(searchRestaurants);
   const mutation = useMutation({
-    mutationFn: (vars: { cuisine: Cuisine; minRating: number; city: CityKey }) =>
-      search({ data: vars }),
+    mutationFn: (vars: { minRating: number }) => search({ data: vars }),
     onSuccess: (data) => {
       setResults(data);
       setSelected(null);
@@ -156,17 +154,31 @@ function Index() {
   });
 
   const filtered = useMemo(() => {
-    if (tab === "done") return results.filter((r) => visits[r.id]?.done);
-    if (tab === "todo") return results.filter((r) => !visits[r.id]?.done);
-    return results;
-  }, [results, tab, visits]);
+    let list = results;
+    if (cuisine !== "any") {
+      list = list.filter((r) => r.cuisines.includes(cuisine));
+    }
+    if (tab === "done") return list.filter((r) => visits[r.id]?.done);
+    if (tab === "todo") return list.filter((r) => !visits[r.id]?.done);
+    return list;
+  }, [results, cuisine, tab, visits]);
+
+  // Counts scoped to the current cuisine filter (ignoring tab).
+  const cuisineScoped = useMemo(
+    () =>
+      cuisine === "any"
+        ? results
+        : results.filter((r) => r.cuisines.includes(cuisine)),
+    [results, cuisine],
+  );
+  const doneInScope = cuisineScoped.filter((r) => visits[r.id]?.done).length;
+  const todoCount = cuisineScoped.length - doneInScope;
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstance.current) return;
-    const initial = CITY_OPTIONS.find((c) => c.key === city) ?? CITY_OPTIONS[0];
     mapInstance.current = new window.google!.maps.Map(mapRef.current, {
-      center: { lat: initial.lat, lng: initial.lng },
-      zoom: initial.zoom,
+      center: TOULOUSE_CENTER,
+      zoom: TOULOUSE_ZOOM,
       disableDefaultUI: true,
       zoomControl: true,
       clickableIcons: false,
@@ -174,16 +186,7 @@ function Index() {
       gestureHandling: "greedy",
       styles: minimalMapStyle,
     });
-  }, [mapReady, city]);
-
-  // Recenter when city changes
-  useEffect(() => {
-    if (!mapInstance.current) return;
-    const opt = CITY_OPTIONS.find((c) => c.key === city);
-    if (!opt) return;
-    mapInstance.current.panTo({ lat: opt.lat, lng: opt.lng });
-    mapInstance.current.setZoom(opt.zoom);
-  }, [city]);
+  }, [mapReady]);
 
   useEffect(() => {
     if (!mapInstance.current || !window.google) return;
@@ -215,12 +218,10 @@ function Index() {
   }, [filtered, selected, visits]);
 
   useEffect(() => {
-    mutation.mutate({ cuisine, minRating, city });
+    mutation.mutate({ minRating });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cuisine, minRating, city]);
+  }, [minRating]);
 
-  const todoCount = results.length - results.filter((r) => visits[r.id]?.done).length;
-  const doneInResults = results.filter((r) => visits[r.id]?.done).length;
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
