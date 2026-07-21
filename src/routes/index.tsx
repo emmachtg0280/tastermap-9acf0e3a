@@ -522,19 +522,27 @@ function Index() {
       {/* Top tabs: Nouveautés / Hype / Cuisines — pushed to very top */}
       <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)]">
         <div className="mx-auto max-w-3xl px-2 pt-0.5">
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-1 pb-1 -mx-1">
-            <button
-              onClick={() => { setShowFilters(false); setListMode("new"); }}
-              className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 transition"
-            >
-              <span>✨</span> Nouveautés
-            </button>
-            <button
-              onClick={() => { setShowFilters(false); setListMode("hype"); }}
-              className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 transition"
-            >
-              <span>🔥</span> Hype
-            </button>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 pb-1 -mx-1">
+            {/* Discovery tabs */}
+            <div className="flex gap-1.5 shrink-0">
+              <button
+                onClick={() => { setShowFilters(false); setListMode("new"); }}
+                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 transition"
+              >
+                <span>✨</span> Nouveautés
+              </button>
+              <button
+                onClick={() => { setShowFilters(false); setListMode("hype"); }}
+                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 transition"
+              >
+                <span>🔥</span> Hype
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="w-px bg-foreground/15 self-stretch my-1 shrink-0" />
+
+            {/* Cuisine chips — Uber Eats style: big emoji, small label */}
             {CUISINES.filter((c) => c.value !== "any").map((c) => {
               const active = c.value === cuisine;
               return (
@@ -546,14 +554,14 @@ function Index() {
                     }
                     setCuisine(active ? "any" : c.value);
                   }}
-                  className={`shrink-0 inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full backdrop-blur shadow-sm transition active:scale-95 ${
+                  className={`shrink-0 inline-flex flex-col items-center justify-center gap-0.5 w-[58px] h-[58px] rounded-2xl backdrop-blur shadow-sm transition active:scale-95 ${
                     active
                       ? "bg-white text-foreground font-semibold border-2 border-white ring-2 ring-white/80 shadow-md scale-105"
                       : "bg-white/40 border border-white/50 text-foreground/80 hover:bg-white/60"
                   }`}
                 >
-                  <span className="text-sm leading-none">{c.emoji}</span>
-                  {c.label}
+                  <span className="text-[22px] leading-none">{c.emoji}</span>
+                  <span className="text-[10px] leading-tight">{c.label}</span>
                 </button>
               );
             })}
