@@ -334,12 +334,13 @@ export const searchRestaurants = createServerFn({ method: "POST" })
     ];
     await runBatch(jobs, 5);
 
+    // Only trust Google's primary_type / types for cuisine tagging.
+    // Query-source tagging (e.g. results returned by a search for "restaurants
+    // italiens") is unreliable — Google returns bistros/brasseries in those
+    // results too, which caused wrong emojis on the map.
     const restaurants = Array.from(pool.values())
       .filter((p) => p.location)
-      .map((p) => {
-        const src = sources.get(p.id) ?? new Set<Cuisine>();
-        return toRestaurant(p, detectCuisines(p).concat(Array.from(src)));
-      })
+      .map((p) => toRestaurant(p, detectCuisines(p)))
       .map((r) => ({ ...r, cuisines: Array.from(new Set(r.cuisines)) }))
       .sort((a, b) => {
         const score = (r: Restaurant) =>
