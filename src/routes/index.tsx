@@ -91,7 +91,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Tastemap · Restaurants de France" },
       {
         property: "og:description",
-        content: "Carte des meilleurs restaurants de France, filtrée à votre goût.",
+        content: "Explorez les meilleurs restaurants des grandes villes de France sur une carte minimaliste. Filtrez, marquez, commentez et synchronisez.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
