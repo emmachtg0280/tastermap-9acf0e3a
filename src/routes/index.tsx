@@ -522,7 +522,24 @@ function Index() {
           </div>
         </div>
 
+        {/* Top pills: Nouveautés / Hype */}
+        <div className="mx-auto px-3 mt-1 max-w-3xl flex justify-center gap-1.5">
+          <button
+            onClick={() => { setShowFilters(false); setListMode("new"); }}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm text-foreground/80 hover:bg-muted transition"
+          >
+            <span>✨</span> Nouveautés
+          </button>
+          <button
+            onClick={() => { setShowFilters(false); setListMode("hype"); }}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm text-foreground/80 hover:bg-muted transition"
+          >
+            <span>🔥</span> Hype
+          </button>
+        </div>
+
         {/* Cuisine strip */}
+
         <div className="mx-auto px-2 mt-1 max-w-3xl">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-1 pb-1 -mx-1">
             {CUISINES.filter((c) => c.value !== "any").map((c) => {
