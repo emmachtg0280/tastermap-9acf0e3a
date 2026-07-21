@@ -966,7 +966,7 @@ function DetailCard({
             href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-emerald-500 text-white hover:opacity-90 transition"
+            className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-[color:var(--duo-green)] text-white font-semibold btn-pop hover:brightness-105 transition"
           >
             <Navigation className="h-3 w-3" /> Itinéraire
           </a>
