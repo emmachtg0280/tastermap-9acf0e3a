@@ -135,6 +135,7 @@ function useVisits() {
 }
 
 function Index() {
+  const [city, setCity] = useState<CityKey | null>(null);
   const [cuisine, setCuisine] = useState<Cuisine>("any");
   const [minRating, setMinRating] = useState(4);
   const [tab, setTab] = useState<Tab>("all");
@@ -147,9 +148,14 @@ function Index() {
   const mapInstance = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
 
+  const currentCity = useMemo(
+    () => CITIES.find((c) => c.key === city) ?? null,
+    [city],
+  );
+
   const search = useServerFn(searchRestaurants);
   const mutation = useMutation({
-    mutationFn: (vars: { minRating: number; force?: boolean }) =>
+    mutationFn: (vars: { city: CityKey; minRating: number; force?: boolean }) =>
       search({ data: vars }),
     onSuccess: (data) => {
       setResults(data);
@@ -166,7 +172,6 @@ function Index() {
     return list;
   }, [results, cuisine, tab, visits]);
 
-  // Counts scoped to the current cuisine filter (ignoring tab).
   const cuisineScoped = useMemo(
     () =>
       cuisine === "any"
@@ -180,8 +185,8 @@ function Index() {
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstance.current) return;
     mapInstance.current = new window.google!.maps.Map(mapRef.current, {
-      center: TOULOUSE_CENTER,
-      zoom: TOULOUSE_ZOOM,
+      center: DEFAULT_CENTER,
+      zoom: DEFAULT_ZOOM,
       disableDefaultUI: true,
       zoomControl: true,
       clickableIcons: false,
@@ -190,6 +195,13 @@ function Index() {
       styles: minimalMapStyle,
     });
   }, [mapReady]);
+
+  // Recenter map when city changes
+  useEffect(() => {
+    if (!mapInstance.current || !currentCity) return;
+    mapInstance.current.panTo({ lat: currentCity.lat, lng: currentCity.lng });
+    mapInstance.current.setZoom(CITY_ZOOM);
+  }, [currentCity]);
 
   useEffect(() => {
     if (!mapInstance.current || !window.google) return;
@@ -220,10 +232,17 @@ function Index() {
     });
   }, [filtered, selected, visits]);
 
+  // Fetch whenever city or minRating change — only if a city is selected
   useEffect(() => {
-    mutation.mutate({ minRating });
+    if (!city) {
+      setResults([]);
+      setSelected(null);
+      return;
+    }
+    mutation.mutate({ city, minRating });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [minRating]);
+  }, [city, minRating]);
+
 
   // Pull-to-refresh (mobile)
   const [pull, setPull] = useState(0);
