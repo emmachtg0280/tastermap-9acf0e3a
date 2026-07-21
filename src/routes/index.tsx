@@ -334,7 +334,7 @@ function sortRestaurants(
 }
 
 function Index() {
-  const [city, setCity] = useState<CityKey | null>(null);
+  const [city, setCity] = useState<CityKey | null>("toulouse");
 
   const [cuisine, setCuisine] = useState<Cuisine>("any");
   const [minRating, setMinRating] = useState(4);
