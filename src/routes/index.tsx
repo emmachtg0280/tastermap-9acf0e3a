@@ -931,33 +931,41 @@ function Mascot({
   ];
 
   return (
-    <div className="absolute inset-x-0 top-24 z-50 flex justify-center pointer-events-none px-4">
-      <div className="pointer-events-auto max-w-xs w-full flex items-end gap-2 animate-pop-in">
-        <div className="flex-shrink-0 h-14 w-14 rounded-full bg-[#FFC800] border-2 border-[#2b2b2b] shadow-md grid place-items-center text-3xl leading-none">
-          🐥
+    <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
+      <button
+        aria-label="Fermer"
+        onClick={() => setVisible(false)}
+        className="absolute inset-0 bg-black/40 backdrop-blur-[2px] animate-mascot-backdrop"
+      />
+      <div className="relative pointer-events-auto flex flex-col items-center gap-3 w-full max-w-[320px]">
+        <div className="animate-mascot-enter">
+          <div className="animate-mascot-hop">
+            <ChickSvg />
+          </div>
         </div>
-        <div className="relative flex-1 rounded-2xl bg-card border-2 border-[#2b2b2b] shadow-md px-3 py-2">
+        <div className="relative w-full rounded-3xl bg-card border-[3px] border-[#2b2b2b] shadow-[0_6px_0_0_#2b2b2b] px-4 py-3 animate-mascot-bubble">
+          <span
+            aria-hidden
+            className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-card border-l-[3px] border-t-[3px] border-[#2b2b2b] rounded-sm"
+          />
           <button
             onClick={() => setVisible(false)}
-            className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-card border border-[#2b2b2b] grid place-items-center text-[10px]"
+            className="absolute -top-2.5 -right-2.5 h-6 w-6 rounded-full bg-card border-2 border-[#2b2b2b] grid place-items-center shadow-[0_2px_0_0_#2b2b2b]"
             aria-label="Fermer"
           >
             <X className="h-3 w-3" />
           </button>
           {step === 0 ? (
             <>
-              <p className="text-xs font-semibold text-foreground">
-                Coucou ! Tu manges quoi aujourd'hui ?
+              <p className="text-sm font-extrabold text-foreground text-center">
+                Coucou&nbsp;! Tu manges quoi&nbsp;?
               </p>
-              <div className="mt-1.5 flex flex-wrap gap-1">
+              <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
                 {quickPicks.map((p) => (
                   <button
                     key={p.value}
-                    onClick={() => {
-                      onPickCuisine(p.value);
-                      setStep(1);
-                    }}
-                    className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted hover:bg-muted/70 border border-border/60"
+                    onClick={() => { onPickCuisine(p.value); setStep(1); }}
+                    className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-muted hover:bg-muted/70 border-2 border-[#2b2b2b] shadow-[0_2px_0_0_#2b2b2b] active:translate-y-[1px] active:shadow-none"
                   >
                     <span>{p.emoji}</span> {p.label}
                   </button>
@@ -966,15 +974,20 @@ function Mascot({
             </>
           ) : (
             <>
-              <p className="text-xs font-semibold text-foreground">
-                🎯 Défi de la semaine : découvre 3 nouveaux restos !
+              <p className="text-sm font-extrabold text-foreground text-center">
+                🎯 Défi de la semaine
               </p>
-              <button
-                onClick={() => { onOpenHype(); setVisible(false); }}
-                className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[color:var(--duo-green)] text-white"
-              >
-                🔥 Voir les plus hype
-              </button>
+              <p className="mt-0.5 text-xs text-muted-foreground text-center">
+                Découvre 3 nouveaux restos cette semaine&nbsp;!
+              </p>
+              <div className="mt-2 flex justify-center">
+                <button
+                  onClick={() => { onOpenHype(); setVisible(false); }}
+                  className="inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white border-2 border-[#2b2b2b] shadow-[0_2px_0_0_#2b2b2b] active:translate-y-[1px] active:shadow-none"
+                >
+                  🔥 Voir les plus hype
+                </button>
+              </div>
             </>
           )}
         </div>
@@ -982,6 +995,52 @@ function Mascot({
     </div>
   );
 }
+
+function ChickSvg() {
+  return (
+    <svg
+      width="150"
+      height="150"
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+      className="drop-shadow-[0_8px_0_rgba(43,43,43,0.9)]"
+    >
+      {/* feet */}
+      <path d="M78 178 l-8 10 M78 178 l0 12 M78 178 l8 10" stroke="#E58A00" strokeWidth="6" strokeLinecap="round" fill="none" />
+      <path d="M122 178 l-8 10 M122 178 l0 12 M122 178 l8 10" stroke="#E58A00" strokeWidth="6" strokeLinecap="round" fill="none" />
+      {/* body */}
+      <ellipse cx="100" cy="115" rx="70" ry="65" fill="#FFD534" stroke="#2b2b2b" strokeWidth="6" />
+      {/* belly highlight */}
+      <ellipse cx="100" cy="135" rx="42" ry="30" fill="#FFE680" opacity="0.7" />
+      {/* wing (animated) */}
+      <path
+        d="M52 118 q-14 8 -6 30 q10 14 30 8 q6 -2 8 -10 z"
+        fill="#F5B800"
+        stroke="#2b2b2b"
+        strokeWidth="5"
+        strokeLinejoin="round"
+        className="animate-mascot-wing"
+      />
+      {/* cheek blush */}
+      <circle cx="58" cy="118" r="9" fill="#FF9BB3" opacity="0.55" />
+      <circle cx="142" cy="118" r="9" fill="#FF9BB3" opacity="0.55" />
+      {/* eyes */}
+      <g>
+        <ellipse cx="82" cy="92" rx="9" ry="11" fill="#2b2b2b" className="animate-mascot-blink" />
+        <circle cx="85" cy="88" r="3" fill="#ffffff" />
+      </g>
+      <g>
+        <ellipse cx="118" cy="92" rx="9" ry="11" fill="#2b2b2b" className="animate-mascot-blink" />
+        <circle cx="121" cy="88" r="3" fill="#ffffff" />
+      </g>
+      {/* beak */}
+      <path d="M92 108 q8 10 16 0 q-8 -6 -16 0 z" fill="#FF9E1B" stroke="#2b2b2b" strokeWidth="4" strokeLinejoin="round" />
+      {/* hair tuft */}
+      <path d="M96 52 q4 -14 10 -2 q6 -12 8 4" stroke="#2b2b2b" strokeWidth="5" strokeLinecap="round" fill="none" />
+    </svg>
+  );
+}
+
 
 
 
