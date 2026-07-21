@@ -69,6 +69,12 @@ type PlaceRaw = {
   priceLevel?: string;
   primaryTypeDisplayName?: { text: string };
   googleMapsUri?: string;
+  websiteUri?: string;
+  nationalPhoneNumber?: string;
+  editorialSummary?: { text: string };
+  generativeSummary?: { overview?: { text: string } };
+  regularOpeningHours?: { openNow?: boolean };
+  reservable?: boolean;
   photos?: Array<{ name: string }>;
 };
 
@@ -82,6 +88,12 @@ const FIELD_MASK = [
   "places.priceLevel",
   "places.primaryTypeDisplayName",
   "places.googleMapsUri",
+  "places.websiteUri",
+  "places.nationalPhoneNumber",
+  "places.editorialSummary",
+  "places.generativeSummary",
+  "places.regularOpeningHours.openNow",
+  "places.reservable",
   "places.photos",
   "nextPageToken",
 ].join(",");
