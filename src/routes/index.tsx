@@ -579,7 +579,11 @@ function Index() {
 
 
       {/* Floating action buttons — bottom right */}
-      <div className="absolute right-3 bottom-3 z-30 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)]">
+      <div
+        className={`absolute right-3 z-30 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] transition-[bottom] duration-300 ease-out ${
+          selected ? "bottom-[calc(52vh+16px)] lg:bottom-3" : "bottom-3"
+        }`}
+      >
         <button
           onClick={() => { setListMode(null); setShowFilters(true); }}
           aria-label="Filtres"
@@ -1227,7 +1231,7 @@ function DetailCard({
               <span className={`inline-flex items-center justify-center rounded-full transition ${visit.done ? "bg-white/20" : "bg-[color:var(--duo-green)] text-white"} h-5 w-5`}>
                 <Check className={`h-3.5 w-3.5 ${visit.done ? "" : "text-white"}`} strokeWidth={3} />
               </span>
-              {visit.done ? "Fait" : "Marquer fait"}
+              Fait
             </button>
             <button
               onClick={() => onUpdate({ favorite: !visit.favorite })}
