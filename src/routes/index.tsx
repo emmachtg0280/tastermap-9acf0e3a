@@ -72,7 +72,7 @@ const DEFAULT_ZOOM = 13;
 const CITY_ZOOM = 13;
 
 
-type Tab = "all" | "todo" | "done" | "favorites";
+
 
 type VisitEntry = { done: boolean; comment: string; favorite: boolean; personalRating?: number };
 type VisitMap = Record<string, VisitEntry>;
@@ -338,8 +338,8 @@ function Index() {
 
   const [cuisine, setCuisine] = useState<Cuisine>("any");
   const [minRating, setMinRating] = useState(4);
-  const [tab, setTab] = useState<Tab>("all");
   const [selected, setSelected] = useState<Restaurant | null>(null);
+
   const [results, setResults] = useState<Restaurant[]>([]);
   const [searchText, setSearchText] = useState("");
   const [onlyOpenNow, setOnlyOpenNow] = useState(false);
@@ -389,24 +389,15 @@ function Index() {
     return list;
   }, [results, cuisine, searchText, onlyOpenNow]);
 
-  const cuisineScoped = baseFiltered;
   const doneInScope = useMemo(
-    () => cuisineScoped.filter((r) => visits[r.id]?.done).length,
-    [cuisineScoped, visits],
-  );
-  const todoCount = cuisineScoped.length - doneInScope;
-  const favoritesInScope = useMemo(
-    () => cuisineScoped.filter((r) => visits[r.id]?.favorite).length,
-    [cuisineScoped, visits],
+    () => baseFiltered.filter((r) => visits[r.id]?.done).length,
+    [baseFiltered, visits],
   );
 
   const filtered = useMemo(() => {
-    let list = baseFiltered;
-    if (tab === "done") list = list.filter((r) => visits[r.id]?.done);
-    if (tab === "todo") list = list.filter((r) => !visits[r.id]?.done);
-    if (tab === "favorites") list = list.filter((r) => visits[r.id]?.favorite);
-    return [...list].sort((a, b) => sortRestaurants(a, b, sortBy, userLocation, currentCity));
-  }, [baseFiltered, tab, visits, sortBy, userLocation, currentCity]);
+    return [...baseFiltered].sort((a, b) => sortRestaurants(a, b, sortBy, userLocation, currentCity));
+  }, [baseFiltered, sortBy, userLocation, currentCity]);
+
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstance.current) return;
