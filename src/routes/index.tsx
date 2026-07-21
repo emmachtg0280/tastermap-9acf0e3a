@@ -497,7 +497,7 @@ function Index() {
 
       {/* Floating top bar */}
       <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto px-3 pt-3 flex items-center justify-between gap-2 max-w-3xl">
+        <div className="mx-auto px-3 pt-1.5 flex items-center justify-between gap-2 max-w-3xl">
           <div className="flex items-center gap-2 rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm pl-3 pr-2 py-1.5 min-w-0">
             <span className="text-base leading-none">🍽️</span>
             <h1 className="font-display text-sm font-extrabold tracking-tight truncate">
@@ -519,7 +519,7 @@ function Index() {
         </div>
 
         {/* Small pill tabs */}
-        <div className="mx-auto px-3 mt-2 flex justify-center">
+        <div className="mx-auto px-3 mt-1 flex justify-center">
           <div className="inline-flex rounded-full bg-card/95 backdrop-blur border border-border/70 shadow-sm p-0.5 gap-0.5">
             {(
               [
