@@ -371,6 +371,15 @@ function Index() {
     },
   });
 
+  const serverHype = useServerFn(getHypeStats);
+  const hypeQuery = useQuery({
+    queryKey: ["hype-stats"],
+    queryFn: () => serverHype(),
+    staleTime: 60 * 1000,
+  });
+  const hypeStats: HypeStats = hypeQuery.data ?? {};
+
+
   const baseFiltered = useMemo(() => {
     let list = results;
     if (cuisine !== "any") {
