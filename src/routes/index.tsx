@@ -3,27 +3,29 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Star, MapPin, Search, Loader2 } from "lucide-react";
+import { Star, MapPin, Search, Loader2, X } from "lucide-react";
 
 import { searchRestaurants, type Cuisine, type Restaurant } from "@/lib/places.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 
-const CUISINES: { value: Cuisine; label: string; emoji: string }[] = [
-  { value: "any", label: "Tous", emoji: "🍽️" },
-  { value: "french", label: "Français", emoji: "🥐" },
-  { value: "italian", label: "Italien", emoji: "🍝" },
-  { value: "chinese", label: "Chinois", emoji: "🥡" },
-  { value: "japanese", label: "Japonais", emoji: "🍣" },
-  { value: "indian", label: "Indien", emoji: "🍛" },
-  { value: "mexican", label: "Mexicain", emoji: "🌮" },
-  { value: "thai", label: "Thaï", emoji: "🍜" },
-  { value: "spanish", label: "Espagnol", emoji: "🥘" },
-  { value: "greek", label: "Grec", emoji: "🥙" },
-  { value: "american", label: "Américain", emoji: "🍔" },
-  { value: "vegetarian", label: "Végétarien", emoji: "🥗" },
+const CUISINES: { value: Cuisine; label: string }[] = [
+  { value: "any", label: "Tous" },
+  { value: "french", label: "Français" },
+  { value: "italian", label: "Italien" },
+  { value: "chinese", label: "Chinois" },
+  { value: "japanese", label: "Japonais" },
+  { value: "indian", label: "Indien" },
+  { value: "mexican", label: "Mexicain" },
+  { value: "thai", label: "Thaï" },
+  { value: "spanish", label: "Espagnol" },
+  { value: "greek", label: "Grec" },
+  { value: "american", label: "Américain" },
+  { value: "vegetarian", label: "Végétarien" },
 ];
+
+const TOULOUSE_CENTER = { lat: 43.6047, lng: 1.4442 };
 
 declare global {
   interface Window {
@@ -35,16 +37,16 @@ declare global {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Tastemap · Carte des restaurants en France" },
+      { title: "Tastemap · Restaurants de Toulouse" },
       {
         name: "description",
         content:
-          "Explorez les restaurants de France sur une carte interactive. Filtrez par cuisine et par note, découvrez photos, avis et adresses.",
+          "Découvrez les restaurants de Toulouse sur une carte minimaliste. Filtrez par cuisine et par note, parcourez les photos des plats.",
       },
-      { property: "og:title", content: "Tastemap · Carte des restaurants en France" },
+      { property: "og:title", content: "Tastemap · Restaurants de Toulouse" },
       {
         property: "og:description",
-        content: "Carte interactive pour trouver les meilleurs restaurants en France.",
+        content: "Carte des restaurants de Toulouse, filtrée à votre goût.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -98,48 +100,46 @@ function Index() {
     },
   });
 
-  // init map
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstance.current) return;
     mapInstance.current = new window.google!.maps.Map(mapRef.current, {
-      center: { lat: 46.6, lng: 2.5 },
-      zoom: 6,
+      center: TOULOUSE_CENTER,
+      zoom: 13,
       disableDefaultUI: true,
       zoomControl: true,
-      styles: mapStyle,
+      clickableIcons: false,
+      backgroundColor: "#f7f5f0",
+      styles: minimalMapStyle,
     });
   }, [mapReady]);
 
-  // render markers
   useEffect(() => {
     if (!mapInstance.current || !window.google) return;
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
     if (results.length === 0) return;
 
-    const bounds = new window.google.maps.LatLngBounds();
     results.forEach((r) => {
+      const active = selected?.id === r.id;
       const marker = new window.google!.maps.Marker({
         position: { lat: r.lat, lng: r.lng },
         map: mapInstance.current!,
         title: r.name,
         icon: {
           path: window.google!.maps.SymbolPath.CIRCLE,
-          scale: 10,
-          fillColor: "#e11d48",
+          scale: active ? 9 : 6,
+          fillColor: active ? "#111111" : "#c2410c",
           fillOpacity: 1,
-          strokeColor: "#fff",
+          strokeColor: "#ffffff",
           strokeWeight: 2,
         },
+        zIndex: active ? 999 : 1,
       });
       marker.addListener("click", () => setSelected(r));
       markersRef.current.push(marker);
-      bounds.extend({ lat: r.lat, lng: r.lng });
     });
-    mapInstance.current.fitBounds(bounds, 60);
-  }, [results]);
+  }, [results, selected]);
 
-  // initial + on filter change search
   useEffect(() => {
     mutation.mutate({ cuisine, minRating });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -147,27 +147,31 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-primary text-primary-foreground grid place-items-center font-bold">
-            T
+      <header className="border-b border-border/60 bg-background/80 backdrop-blur sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-2 w-2 rounded-full bg-foreground" />
+            <div className="leading-tight">
+              <h1 className="text-sm font-semibold tracking-tight">Tastemap</h1>
+              <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                Toulouse
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-semibold leading-tight">Tastemap</h1>
-            <p className="text-xs text-muted-foreground">
-              Les restaurants de France, filtrés à votre goût
-            </p>
+          <div className="text-xs text-muted-foreground">
+            {results.length} adresses
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto w-full px-4 py-4 grid gap-4 lg:grid-cols-[320px_1fr]">
-        {/* Filters + list */}
-        <aside className="space-y-4">
-          <div className="rounded-2xl border bg-card p-4 space-y-4">
+      <div className="max-w-7xl mx-auto w-full px-5 py-5 grid gap-5 lg:grid-cols-[340px_1fr]">
+        <aside className="space-y-5">
+          <div className="rounded-xl border border-border/60 bg-card p-5 space-y-5">
             <div>
-              <h2 className="text-sm font-semibold mb-2">Type de cuisine</h2>
-              <div className="flex flex-wrap gap-2">
+              <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">
+                Cuisine
+              </h2>
+              <div className="flex flex-wrap gap-1.5">
                 {CUISINES.map((c) => {
                   const active = c.value === cuisine;
                   return (
@@ -176,11 +180,10 @@ function Index() {
                       onClick={() => setCuisine(c.value)}
                       className={`text-xs px-3 py-1.5 rounded-full border transition ${
                         active
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background hover:bg-accent border-border"
+                          ? "bg-foreground text-background border-foreground"
+                          : "bg-background hover:bg-muted border-border/70 text-foreground"
                       }`}
                     >
-                      <span className="mr-1">{c.emoji}</span>
                       {c.label}
                     </button>
                   );
@@ -189,8 +192,10 @@ function Index() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold">Note minimum</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                  Note minimum
+                </h2>
                 <span className="text-sm font-medium flex items-center gap-1">
                   <Star className="h-3.5 w-3.5 fill-amber-400 stroke-amber-400" />
                   {minRating.toFixed(1)}
@@ -206,37 +211,42 @@ function Index() {
             </div>
 
             <Button
+              variant="outline"
               className="w-full"
               onClick={() => mutation.mutate({ cuisine, minRating })}
               disabled={mutation.isPending}
             >
               {mutation.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Recherche...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Recherche…
                 </>
               ) : (
                 <>
-                  <Search className="mr-2 h-4 w-4" /> Rechercher
+                  <Search className="mr-2 h-4 w-4" /> Actualiser
                 </>
               )}
             </Button>
           </div>
 
-          <div className="rounded-2xl border bg-card">
-            <div className="px-4 py-3 border-b flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Résultats</h2>
-              <Badge variant="secondary">{results.length}</Badge>
+          <div className="rounded-xl border border-border/60 bg-card">
+            <div className="px-5 py-3 border-b border-border/60 flex items-center justify-between">
+              <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                Résultats
+              </h2>
+              <Badge variant="secondary" className="rounded-full">
+                {results.length}
+              </Badge>
             </div>
-            <div className="max-h-[420px] overflow-auto divide-y">
-              {mutation.isPending && (
+            <div className="max-h-[520px] overflow-auto divide-y divide-border/50">
+              {mutation.isPending && results.length === 0 && (
                 <div className="p-6 text-center text-sm text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-                  Chargement...
+                  Chargement…
                 </div>
               )}
               {!mutation.isPending && results.length === 0 && (
                 <div className="p-6 text-center text-sm text-muted-foreground">
-                  Aucun restaurant trouvé. Essayez d'assouplir les filtres.
+                  Aucun restaurant trouvé.
                 </div>
               )}
               {results.map((r) => (
@@ -245,15 +255,15 @@ function Index() {
                   onClick={() => {
                     setSelected(r);
                     mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
-                    mapInstance.current?.setZoom(14);
+                    mapInstance.current?.setZoom(15);
                   }}
-                  className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-accent transition ${
-                    selected?.id === r.id ? "bg-accent" : ""
+                  className={`w-full text-left px-5 py-3 flex gap-3 hover:bg-muted/60 transition ${
+                    selected?.id === r.id ? "bg-muted/70" : ""
                   }`}
                 >
-                  {r.photoUrl ? (
+                  {r.photoUrls[0] ? (
                     <img
-                      src={r.photoUrl}
+                      src={r.photoUrls[0]}
                       alt={r.name}
                       className="h-14 w-14 rounded-lg object-cover flex-shrink-0"
                       loading="lazy"
@@ -288,44 +298,49 @@ function Index() {
           </div>
         </aside>
 
-        {/* Map */}
         <main className="relative">
           <div
             ref={mapRef}
-            className="w-full h-[70vh] lg:h-[calc(100vh-8rem)] rounded-2xl border overflow-hidden bg-muted"
+            className="w-full h-[65vh] lg:h-[calc(100vh-7rem)] rounded-xl border border-border/60 overflow-hidden"
+            style={{ backgroundColor: "#f7f5f0" }}
           />
           {!mapReady && (
             <div className="absolute inset-0 grid place-items-center pointer-events-none">
-              <div className="rounded-full bg-card/90 px-4 py-2 text-sm text-muted-foreground shadow flex items-center gap-2">
+              <div className="rounded-full bg-card/90 border border-border/60 px-4 py-2 text-sm text-muted-foreground shadow-sm flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Chargement de la carte...
+                Chargement de la carte…
               </div>
             </div>
           )}
 
           {selected && (
-            <div className="absolute left-4 right-4 bottom-4 lg:left-6 lg:right-auto lg:bottom-6 lg:w-96 rounded-2xl bg-card border shadow-lg overflow-hidden">
-              {selected.photoUrl && (
-                <img
-                  src={selected.photoUrl}
-                  alt={selected.name}
-                  className="h-40 w-full object-cover"
-                />
+            <div className="absolute left-4 right-4 bottom-4 lg:left-6 lg:right-auto lg:bottom-6 lg:w-[420px] rounded-xl bg-card border border-border/70 shadow-xl overflow-hidden">
+              {selected.photoUrls.length > 0 && (
+                <div className="flex overflow-x-auto snap-x snap-mandatory">
+                  {selected.photoUrls.map((url, i) => (
+                    <img
+                      key={url}
+                      src={url}
+                      alt={`${selected.name} — plat ${i + 1}`}
+                      className="h-44 w-full flex-shrink-0 object-cover snap-start"
+                    />
+                  ))}
+                </div>
               )}
-              <div className="p-4">
+              <div className="p-5">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <h3 className="font-semibold">{selected.name}</h3>
+                    <h3 className="font-semibold tracking-tight">{selected.name}</h3>
                     <p className="text-xs text-muted-foreground">
                       {selected.primaryType ?? "Restaurant"}
                     </p>
                   </div>
                   <button
                     onClick={() => setSelected(null)}
-                    className="text-muted-foreground hover:text-foreground text-lg leading-none"
+                    className="text-muted-foreground hover:text-foreground p-1 -m-1"
                     aria-label="Fermer"
                   >
-                    ×
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
                 <div className="mt-2 flex items-center gap-3 text-sm">
@@ -345,6 +360,11 @@ function Index() {
                       {priceLabel(selected.priceLevel)}
                     </span>
                   )}
+                  {selected.photoUrls.length > 1 && (
+                    <span className="text-xs text-muted-foreground">
+                      {selected.photoUrls.length} photos
+                    </span>
+                  )}
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground flex items-start gap-1">
                   <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -355,7 +375,7 @@ function Index() {
                     href={selected.googleMapsUri}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-3 inline-block text-sm text-primary font-medium hover:underline"
+                    className="mt-3 inline-block text-sm font-medium underline underline-offset-4"
                   >
                     Voir sur Google Maps →
                   </a>
@@ -380,7 +400,22 @@ function priceLabel(level: string) {
   return map[level] ?? "";
 }
 
-const mapStyle: google.maps.MapTypeStyle[] = [
-  { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+// Minimalist monochrome map style — warm off-white land, muted roads, no POIs.
+const minimalMapStyle: google.maps.MapTypeStyle[] = [
+  { elementType: "geometry", stylers: [{ color: "#f7f5f0" }] },
+  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#8a8578" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#f7f5f0" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
+  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
+  { featureType: "administrative.neighborhood", stylers: [{ visibility: "off" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#eeeae0" }] },
+  { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#e8e3d6" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#e2dcc9" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#f7f5f0" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#d9e2e6" }] },
+  { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
 ];
