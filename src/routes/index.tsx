@@ -345,7 +345,7 @@ function Index() {
   const [onlyOpenNow, setOnlyOpenNow] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("score");
   const [showFilters, setShowFilters] = useState(false);
-  const [showList, setShowList] = useState(false);
+  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites">(null);
   const { user } = useAuthSession();
   const { visits, update } = useVisits(user?.id ?? null);
   const userLocation = useGeolocation();
@@ -538,15 +538,29 @@ function Index() {
       {/* Floating action buttons — bottom right */}
       <div className="absolute right-3 bottom-3 z-30 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)]">
         <button
-          onClick={() => { setShowList(false); setShowFilters(true); }}
+          onClick={() => { setListMode(null); setShowFilters(true); }}
           aria-label="Filtres"
           className="h-12 w-12 rounded-full bg-[color:var(--duo-green)] text-white btn-pop grid place-items-center hover:brightness-105 transition"
         >
           <SlidersHorizontal className="h-5 w-5" />
         </button>
         <button
-          onClick={() => { setShowFilters(false); setShowList(true); }}
-          aria-label="Liste"
+          onClick={() => { setShowFilters(false); setListMode("favorites"); }}
+          aria-label="Favoris"
+          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-rose-500 grid place-items-center hover:bg-muted transition"
+        >
+          <Heart className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => { setShowFilters(false); setListMode("done"); }}
+          aria-label="Restaurants faits"
+          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-[color:var(--duo-green-dark)] grid place-items-center hover:bg-muted transition"
+        >
+          <Check className="h-5 w-5" strokeWidth={3} />
+        </button>
+        <button
+          onClick={() => { setShowFilters(false); setListMode("all"); }}
+          aria-label="Liste des restaurants"
           className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-foreground grid place-items-center hover:bg-muted transition"
         >
           <Utensils className="h-5 w-5" />
@@ -680,19 +694,28 @@ function Index() {
       )}
 
       {/* List overlay */}
-      {showList && (
+      {listMode && (() => {
+        const listItems =
+          listMode === "done"
+            ? filtered.filter((r) => visits[r.id]?.done)
+            : listMode === "favorites"
+              ? filtered.filter((r) => visits[r.id]?.favorite)
+              : filtered;
+        const listTitle =
+          listMode === "done" ? "Faits" : listMode === "favorites" ? "Favoris" : "Restaurants";
+        return (
         <>
           <div
             className="absolute inset-0 z-30 bg-black/30 backdrop-blur-sm"
-            onClick={() => setShowList(false)}
+            onClick={() => setListMode(null)}
           />
           <div className="absolute z-40 left-2 right-2 bottom-2 top-20 sm:left-4 sm:right-auto sm:top-4 sm:bottom-4 sm:w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl overflow-hidden flex flex-col animate-pop-in">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
               <h2 className="font-display font-bold text-sm">
-                Restaurants <span className="text-muted-foreground font-semibold">· {filtered.length}</span>
+                {listTitle} <span className="text-muted-foreground font-semibold">· {listItems.length}</span>
               </h2>
               <button
-                onClick={() => setShowList(false)}
+                onClick={() => setListMode(null)}
                 className="p-1 -m-1 text-muted-foreground hover:text-foreground"
                 aria-label="Fermer"
               >
@@ -706,15 +729,19 @@ function Index() {
                   Chargement…
                 </div>
               )}
-              {!mutation.isPending && filtered.length === 0 && (
+              {!mutation.isPending && listItems.length === 0 && (
                 <div className="p-6 text-center text-sm text-muted-foreground">
                   {!city
                     ? "Sélectionnez une ville pour lancer la recherche."
-                    : "Aucun restaurant trouvé."}
+                    : listMode === "done"
+                      ? "Aucun restaurant marqué fait pour l'instant."
+                      : listMode === "favorites"
+                        ? "Aucun restaurant en favori pour l'instant."
+                        : "Aucun restaurant trouvé."}
                 </div>
               )}
 
-              {filtered.map((r) => {
+              {listItems.map((r) => {
                 const done = !!visits[r.id]?.done;
                 const favorite = !!visits[r.id]?.favorite;
                 return (
@@ -724,7 +751,7 @@ function Index() {
                       setSelected(r);
                       mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
                       mapInstance.current?.setZoom(15);
-                      setShowList(false);
+                      setListMode(null);
                     }}
                     className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-muted/60 transition ${
                       selected?.id === r.id ? "bg-muted/70" : ""
@@ -796,7 +823,8 @@ function Index() {
             </div>
           </div>
         </>
-      )}
+        );
+      })()}
 
       {/* Detail card */}
       {selected && (
