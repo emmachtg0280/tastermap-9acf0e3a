@@ -741,7 +741,7 @@ function Index() {
                 </div>
               )}
 
-              {filtered.map((r) => {
+              {listItems.map((r) => {
                 const done = !!visits[r.id]?.done;
                 const favorite = !!visits[r.id]?.favorite;
                 return (
@@ -751,7 +751,7 @@ function Index() {
                       setSelected(r);
                       mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
                       mapInstance.current?.setZoom(15);
-                      setShowList(false);
+                      setListMode(null);
                     }}
                     className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-muted/60 transition ${
                       selected?.id === r.id ? "bg-muted/70" : ""
@@ -823,7 +823,8 @@ function Index() {
             </div>
           </div>
         </>
-      )}
+        );
+      })()}
 
       {/* Detail card */}
       {selected && (
