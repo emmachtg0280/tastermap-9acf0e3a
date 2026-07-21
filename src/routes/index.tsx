@@ -228,10 +228,6 @@ function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cuisine, minRating, city]);
 
-  const doneCount = useMemo(
-    () => Object.values(visits).filter((v) => v.done).length,
-    [visits],
-  );
   const todoCount = results.length - results.filter((r) => visits[r.id]?.done).length;
   const doneInResults = results.filter((r) => visits[r.id]?.done).length;
 
