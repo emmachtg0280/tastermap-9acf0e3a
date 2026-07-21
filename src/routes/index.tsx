@@ -46,20 +46,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const CUISINES: { value: Cuisine; label: string }[] = [
-  { value: "any", label: "Tous" },
-  { value: "french", label: "Français" },
-  { value: "italian", label: "Italien" },
-  { value: "chinese", label: "Chinois" },
-  { value: "japanese", label: "Japonais" },
-  { value: "indian", label: "Indien" },
-  { value: "mexican", label: "Mexicain" },
-  { value: "thai", label: "Thaï" },
-  { value: "spanish", label: "Espagnol" },
-  { value: "greek", label: "Grec" },
-  { value: "american", label: "Américain" },
-  { value: "vegetarian", label: "Végétarien" },
+const CUISINES: { value: Cuisine; label: string; emoji: string }[] = [
+  { value: "any", label: "Tous", emoji: "🍽️" },
+  { value: "french", label: "Français", emoji: "🥖" },
+  { value: "italian", label: "Italien", emoji: "🍕" },
+  { value: "chinese", label: "Chinois", emoji: "🥟" },
+  { value: "japanese", label: "Japonais", emoji: "🍣" },
+  { value: "indian", label: "Indien", emoji: "🍛" },
+  { value: "mexican", label: "Mexicain", emoji: "🌮" },
+  { value: "thai", label: "Thaï", emoji: "🍜" },
+  { value: "spanish", label: "Espagnol", emoji: "🥘" },
+  { value: "greek", label: "Grec", emoji: "🥙" },
+  { value: "american", label: "Américain", emoji: "🍔" },
+  { value: "vegetarian", label: "Végétarien", emoji: "🥗" },
 ];
+
+function cuisineEmoji(cs: Cuisine[]): string {
+  const priority: Cuisine[] = ["italian","japanese","french","chinese","indian","mexican","thai","spanish","greek","american","vegetarian"];
+  for (const p of priority) if (cs.includes(p)) return CUISINES.find(c => c.value === p)!.emoji;
+  return "🍽️";
+}
 
 const DEFAULT_CENTER = { lat: 46.6, lng: 2.4 };
 const DEFAULT_ZOOM = 6;
