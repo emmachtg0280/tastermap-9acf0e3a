@@ -263,8 +263,8 @@ function Index() {
       else setPull(0);
     };
     const onTouchEnd = () => {
-      if (pull >= PTR_THRESHOLD) {
-        mutation.mutate({ minRating, force: true });
+      if (pull >= PTR_THRESHOLD && city) {
+        mutation.mutate({ city, minRating, force: true });
       }
       pullStart.current = null;
       setPull(0);
