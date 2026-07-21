@@ -253,21 +253,11 @@ function Index() {
               <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
                 Ville
               </h2>
-              <div className="relative">
-                <select
-                  value={city}
-                  onChange={(e) => setCity(e.target.value as CityKey)}
-                  className="w-full appearance-none text-sm bg-background border border-border/70 rounded-md px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {CITY_OPTIONS.map((c) => (
-                    <option key={c.key} value={c.key}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="text-sm px-3 py-2 rounded-md border border-border/60 bg-background/60 text-foreground/80">
+                Toulouse
               </div>
             </div>
+
 
             <div>
               <h2 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">
