@@ -25,6 +25,11 @@ export interface Restaurant {
   priceLevel: string | null;
   primaryType: string | null;
   googleMapsUri: string | null;
+  websiteUri: string | null;
+  phone: string | null;
+  summary: string | null;
+  openNow: boolean | null;
+  reservable: boolean | null;
   photoUrls: string[];
 }
 
@@ -64,6 +69,12 @@ type PlaceRaw = {
   priceLevel?: string;
   primaryTypeDisplayName?: { text: string };
   googleMapsUri?: string;
+  websiteUri?: string;
+  nationalPhoneNumber?: string;
+  editorialSummary?: { text: string };
+  generativeSummary?: { overview?: { text: string } };
+  regularOpeningHours?: { openNow?: boolean };
+  reservable?: boolean;
   photos?: Array<{ name: string }>;
 };
 
@@ -77,6 +88,12 @@ const FIELD_MASK = [
   "places.priceLevel",
   "places.primaryTypeDisplayName",
   "places.googleMapsUri",
+  "places.websiteUri",
+  "places.nationalPhoneNumber",
+  "places.editorialSummary",
+  "places.generativeSummary",
+  "places.regularOpeningHours.openNow",
+  "places.reservable",
   "places.photos",
   "nextPageToken",
 ].join(",");
@@ -168,6 +185,14 @@ export const searchRestaurants = createServerFn({ method: "POST" })
         priceLevel: p.priceLevel ?? null,
         primaryType: p.primaryTypeDisplayName?.text ?? null,
         googleMapsUri: p.googleMapsUri ?? null,
+        websiteUri: p.websiteUri ?? null,
+        phone: p.nationalPhoneNumber ?? null,
+        summary:
+          p.editorialSummary?.text ??
+          p.generativeSummary?.overview?.text ??
+          null,
+        openNow: p.regularOpeningHours?.openNow ?? null,
+        reservable: p.reservable ?? null,
         photoUrls: (p.photos ?? [])
           .slice(0, 6)
           .map(

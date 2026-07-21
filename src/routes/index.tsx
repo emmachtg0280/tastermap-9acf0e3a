@@ -2,13 +2,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { Star, MapPin, Search, Loader2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Star,
+  MapPin,
+  Search,
+  Loader2,
+  X,
+  Check,
+  Globe,
+  Phone,
+  CalendarClock,
+  Clock,
+} from "lucide-react";
 
 import { searchRestaurants, type Cuisine, type Restaurant } from "@/lib/places.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 
 const CUISINES: { value: Cuisine; label: string }[] = [
   { value: "any", label: "Tous" },
@@ -27,6 +39,10 @@ const CUISINES: { value: Cuisine; label: string }[] = [
 
 const TOULOUSE_CENTER = { lat: 43.6047, lng: 1.4442 };
 
+type VisitEntry = { done: boolean; comment: string };
+type VisitMap = Record<string, VisitEntry>;
+const VISITS_KEY = "tastemap.visits.v1";
+
 declare global {
   interface Window {
     google?: typeof google;
@@ -41,7 +57,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Découvrez les restaurants de Toulouse sur une carte minimaliste. Filtrez par cuisine et par note, parcourez les photos des plats.",
+          "Découvrez les restaurants de Toulouse sur une carte minimaliste. Filtrez, marquez ceux que vous avez faits et ajoutez vos commentaires.",
       },
       { property: "og:title", content: "Tastemap · Restaurants de Toulouse" },
       {
@@ -79,11 +95,41 @@ function useGoogleMaps() {
   return ready;
 }
 
+function useVisits() {
+  const [visits, setVisits] = useState<VisitMap>({});
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(VISITS_KEY);
+      if (raw) setVisits(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const update = (id: string, patch: Partial<VisitEntry>) => {
+    setVisits((prev) => {
+      const current = prev[id] ?? { done: false, comment: "" };
+      const next = { ...current, ...patch };
+      const merged = { ...prev, [id]: next };
+      // Remove empty entries
+      if (!next.done && !next.comment.trim()) delete merged[id];
+      try {
+        localStorage.setItem(VISITS_KEY, JSON.stringify(merged));
+      } catch {
+        /* ignore */
+      }
+      return merged;
+    });
+  };
+  return { visits, update };
+}
+
 function Index() {
   const [cuisine, setCuisine] = useState<Cuisine>("any");
   const [minRating, setMinRating] = useState(4);
+  const [showDoneOnly, setShowDoneOnly] = useState(false);
   const [selected, setSelected] = useState<Restaurant | null>(null);
   const [results, setResults] = useState<Restaurant[]>([]);
+  const { visits, update } = useVisits();
 
   const mapReady = useGoogleMaps();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -100,6 +146,11 @@ function Index() {
     },
   });
 
+  const filtered = useMemo(
+    () => (showDoneOnly ? results.filter((r) => visits[r.id]?.done) : results),
+    [results, showDoneOnly, visits],
+  );
+
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstance.current) return;
     mapInstance.current = new window.google!.maps.Map(mapRef.current, {
@@ -108,7 +159,8 @@ function Index() {
       disableDefaultUI: true,
       zoomControl: true,
       clickableIcons: false,
-      backgroundColor: "#f7f5f0",
+      backgroundColor: "#eef3ee",
+      gestureHandling: "greedy",
       styles: minimalMapStyle,
     });
   }, [mapReady]);
@@ -117,40 +169,47 @@ function Index() {
     if (!mapInstance.current || !window.google) return;
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
-    if (results.length === 0) return;
+    if (filtered.length === 0) return;
 
-    results.forEach((r) => {
+    filtered.forEach((r) => {
       const active = selected?.id === r.id;
+      const done = !!visits[r.id]?.done;
+      const color = active ? "#111111" : done ? "#16a34a" : "#e11d48";
       const marker = new window.google!.maps.Marker({
         position: { lat: r.lat, lng: r.lng },
         map: mapInstance.current!,
         title: r.name,
         icon: {
           path: window.google!.maps.SymbolPath.CIRCLE,
-          scale: active ? 9 : 6,
-          fillColor: active ? "#111111" : "#c2410c",
+          scale: active ? 9 : 6.5,
+          fillColor: color,
           fillOpacity: 1,
           strokeColor: "#ffffff",
           strokeWeight: 2,
         },
-        zIndex: active ? 999 : 1,
+        zIndex: active ? 999 : done ? 5 : 1,
       });
       marker.addListener("click", () => setSelected(r));
       markersRef.current.push(marker);
     });
-  }, [results, selected]);
+  }, [filtered, selected, visits]);
 
   useEffect(() => {
     mutation.mutate({ cuisine, minRating });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cuisine, minRating]);
 
+  const doneCount = useMemo(
+    () => Object.values(visits).filter((v) => v.done).length,
+    [visits],
+  );
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       <header className="border-b border-border/60 bg-background/80 backdrop-blur sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="h-2 w-2 rounded-full bg-foreground" />
+            <div className="h-2 w-2 rounded-full bg-emerald-500" />
             <div className="leading-tight">
               <h1 className="text-sm font-semibold tracking-tight">Tastemap</h1>
               <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
@@ -158,8 +217,14 @@ function Index() {
               </p>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            {results.length} adresses
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span>{filtered.length} adresses</span>
+            {doneCount > 0 && (
+              <span className="flex items-center gap-1 text-emerald-600">
+                <Check className="h-3 w-3" />
+                {doneCount} faits
+              </span>
+            )}
           </div>
         </div>
       </header>
@@ -210,6 +275,16 @@ function Index() {
               />
             </div>
 
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showDoneOnly}
+                onChange={(e) => setShowDoneOnly(e.target.checked)}
+                className="h-4 w-4 rounded border-border accent-emerald-600"
+              />
+              N'afficher que les restaurants faits
+            </label>
+
             <Button
               variant="outline"
               className="w-full"
@@ -234,7 +309,7 @@ function Index() {
                 Résultats
               </h2>
               <Badge variant="secondary" className="rounded-full">
-                {results.length}
+                {filtered.length}
               </Badge>
             </div>
             <div className="max-h-[520px] overflow-auto divide-y divide-border/50">
@@ -244,56 +319,72 @@ function Index() {
                   Chargement…
                 </div>
               )}
-              {!mutation.isPending && results.length === 0 && (
+              {!mutation.isPending && filtered.length === 0 && (
                 <div className="p-6 text-center text-sm text-muted-foreground">
                   Aucun restaurant trouvé.
                 </div>
               )}
-              {results.map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => {
-                    setSelected(r);
-                    mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
-                    mapInstance.current?.setZoom(15);
-                  }}
-                  className={`w-full text-left px-5 py-3 flex gap-3 hover:bg-muted/60 transition ${
-                    selected?.id === r.id ? "bg-muted/70" : ""
-                  }`}
-                >
-                  {r.photoUrls[0] ? (
-                    <img
-                      src={r.photoUrls[0]}
-                      alt={r.name}
-                      className="h-14 w-14 rounded-lg object-cover flex-shrink-0"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="h-14 w-14 rounded-lg bg-muted grid place-items-center flex-shrink-0">
-                      <MapPin className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium truncate">{r.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {r.primaryType ?? "Restaurant"}
-                    </div>
-                    <div className="mt-1 flex items-center gap-2 text-xs">
-                      {r.rating != null && (
-                        <span className="flex items-center gap-0.5">
-                          <Star className="h-3 w-3 fill-amber-400 stroke-amber-400" />
-                          {r.rating.toFixed(1)}
-                          {r.userRatingCount != null && (
-                            <span className="text-muted-foreground ml-1">
-                              ({r.userRatingCount})
-                            </span>
-                          )}
+              {filtered.map((r) => {
+                const done = !!visits[r.id]?.done;
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => {
+                      setSelected(r);
+                      mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
+                      mapInstance.current?.setZoom(15);
+                    }}
+                    className={`w-full text-left px-5 py-3 flex gap-3 hover:bg-muted/60 transition ${
+                      selected?.id === r.id ? "bg-muted/70" : ""
+                    }`}
+                  >
+                    <div className="relative flex-shrink-0">
+                      {r.photoUrls[0] ? (
+                        <img
+                          src={r.photoUrls[0]}
+                          alt={r.name}
+                          className="h-14 w-14 rounded-lg object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="h-14 w-14 rounded-lg bg-muted grid place-items-center">
+                          <MapPin className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      {done && (
+                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 text-white grid place-items-center ring-2 ring-card">
+                          <Check className="h-3 w-3" strokeWidth={3} />
                         </span>
                       )}
                     </div>
-                  </div>
-                </button>
-              ))}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium truncate">{r.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {r.primaryType ?? "Restaurant"}
+                      </div>
+                      <div className="mt-1 flex items-center gap-2 text-xs">
+                        {r.rating != null && (
+                          <span className="flex items-center gap-0.5">
+                            <Star className="h-3 w-3 fill-amber-400 stroke-amber-400" />
+                            {r.rating.toFixed(1)}
+                            {r.userRatingCount != null && (
+                              <span className="text-muted-foreground ml-1">
+                                ({r.userRatingCount})
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        {r.openNow === true && (
+                          <span className="text-emerald-600">Ouvert</span>
+                        )}
+                        {r.openNow === false && (
+                          <span className="text-muted-foreground">Fermé</span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </aside>
@@ -301,8 +392,8 @@ function Index() {
         <main className="relative">
           <div
             ref={mapRef}
-            className="w-full h-[65vh] lg:h-[calc(100vh-7rem)] rounded-xl border border-border/60 overflow-hidden"
-            style={{ backgroundColor: "#f7f5f0" }}
+            className="w-full h-[65vh] lg:h-[calc(100vh-7rem)] rounded-xl border border-border/60 overflow-hidden touch-pan-y touch-pan-x"
+            style={{ backgroundColor: "#eef3ee" }}
           />
           {!mapReady && (
             <div className="absolute inset-0 grid place-items-center pointer-events-none">
@@ -314,76 +405,175 @@ function Index() {
           )}
 
           {selected && (
-            <div className="absolute left-4 right-4 bottom-4 lg:left-6 lg:right-auto lg:bottom-6 lg:w-[420px] rounded-xl bg-card border border-border/70 shadow-xl overflow-hidden">
-              {selected.photoUrls.length > 0 && (
-                <div className="flex overflow-x-auto snap-x snap-mandatory">
-                  {selected.photoUrls.map((url, i) => (
-                    <img
-                      key={url}
-                      src={url}
-                      alt={`${selected.name} — plat ${i + 1}`}
-                      className="h-44 w-full flex-shrink-0 object-cover snap-start"
-                    />
-                  ))}
-                </div>
-              )}
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="font-semibold tracking-tight">{selected.name}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {selected.primaryType ?? "Restaurant"}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setSelected(null)}
-                    className="text-muted-foreground hover:text-foreground p-1 -m-1"
-                    aria-label="Fermer"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="mt-2 flex items-center gap-3 text-sm">
-                  {selected.rating != null && (
-                    <span className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-amber-400 stroke-amber-400" />
-                      <span className="font-medium">{selected.rating.toFixed(1)}</span>
-                      {selected.userRatingCount != null && (
-                        <span className="text-muted-foreground text-xs">
-                          ({selected.userRatingCount})
-                        </span>
-                      )}
-                    </span>
-                  )}
-                  {selected.priceLevel && (
-                    <span className="text-xs text-muted-foreground">
-                      {priceLabel(selected.priceLevel)}
-                    </span>
-                  )}
-                  {selected.photoUrls.length > 1 && (
-                    <span className="text-xs text-muted-foreground">
-                      {selected.photoUrls.length} photos
-                    </span>
-                  )}
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground flex items-start gap-1">
-                  <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  {selected.address}
-                </p>
-                {selected.googleMapsUri && (
-                  <a
-                    href={selected.googleMapsUri}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-3 inline-block text-sm font-medium underline underline-offset-4"
-                  >
-                    Voir sur Google Maps →
-                  </a>
-                )}
-              </div>
-            </div>
+            <DetailCard
+              key={selected.id}
+              restaurant={selected}
+              visit={visits[selected.id] ?? { done: false, comment: "" }}
+              onUpdate={(patch) => update(selected.id, patch)}
+              onClose={() => setSelected(null)}
+            />
           )}
         </main>
+      </div>
+    </div>
+  );
+}
+
+function DetailCard({
+  restaurant: r,
+  visit,
+  onUpdate,
+  onClose,
+}: {
+  restaurant: Restaurant;
+  visit: VisitEntry;
+  onUpdate: (patch: Partial<VisitEntry>) => void;
+  onClose: () => void;
+}) {
+  const [comment, setComment] = useState(visit.comment);
+  useEffect(() => setComment(visit.comment), [visit.comment, r.id]);
+
+  return (
+    <div className="absolute left-4 right-4 bottom-4 lg:left-6 lg:right-auto lg:bottom-6 lg:w-[440px] rounded-xl bg-card border border-border/70 shadow-xl overflow-hidden max-h-[80vh] flex flex-col">
+      {r.photoUrls.length > 0 && (
+        <div
+          className="flex overflow-x-auto snap-x snap-mandatory flex-shrink-0"
+          style={{ overscrollBehaviorX: "contain", touchAction: "pan-x" }}
+        >
+          {r.photoUrls.map((url, i) => (
+            <img
+              key={url}
+              src={url}
+              alt={`${r.name} — plat ${i + 1}`}
+              className="h-44 w-full flex-shrink-0 object-cover snap-start"
+            />
+          ))}
+        </div>
+      )}
+      <div className="p-5 overflow-y-auto">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="font-semibold tracking-tight truncate">{r.name}</h3>
+            <p className="text-xs text-muted-foreground">
+              {r.primaryType ?? "Restaurant"}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground p-1 -m-1"
+            aria-label="Fermer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+          {r.rating != null && (
+            <span className="flex items-center gap-1">
+              <Star className="h-4 w-4 fill-amber-400 stroke-amber-400" />
+              <span className="font-medium">{r.rating.toFixed(1)}</span>
+              {r.userRatingCount != null && (
+                <span className="text-muted-foreground text-xs">
+                  ({r.userRatingCount})
+                </span>
+              )}
+            </span>
+          )}
+          {r.priceLevel && (
+            <span className="text-xs text-muted-foreground">
+              {priceLabel(r.priceLevel)}
+            </span>
+          )}
+          {r.openNow === true && (
+            <span className="text-xs text-emerald-600 flex items-center gap-1">
+              <Clock className="h-3 w-3" /> Ouvert
+            </span>
+          )}
+          {r.openNow === false && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Clock className="h-3 w-3" /> Fermé
+            </span>
+          )}
+        </div>
+
+        {r.summary && (
+          <p className="mt-3 text-sm text-foreground/80 leading-relaxed">
+            {r.summary}
+          </p>
+        )}
+
+        <p className="mt-3 text-sm text-muted-foreground flex items-start gap-1.5">
+          <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <span>{r.address}</span>
+        </p>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {r.websiteUri && (
+            <a
+              href={r.websiteUri}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border/70 hover:bg-muted transition"
+            >
+              <Globe className="h-3.5 w-3.5" /> Site web
+            </a>
+          )}
+          {r.reservable && r.websiteUri && (
+            <a
+              href={r.websiteUri}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-foreground text-background hover:opacity-90 transition"
+            >
+              <CalendarClock className="h-3.5 w-3.5" /> Réserver
+            </a>
+          )}
+          {r.phone && (
+            <a
+              href={`tel:${r.phone.replace(/\s/g, "")}`}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border/70 hover:bg-muted transition"
+            >
+              <Phone className="h-3.5 w-3.5" /> {r.phone}
+            </a>
+          )}
+          {r.googleMapsUri && (
+            <a
+              href={r.googleMapsUri}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border/70 hover:bg-muted transition"
+            >
+              <MapPin className="h-3.5 w-3.5" /> Google Maps
+            </a>
+          )}
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-border/60">
+          <div className="flex items-center justify-between">
+            <h4 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              Mon carnet
+            </h4>
+            <button
+              onClick={() => onUpdate({ done: !visit.done })}
+              className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition ${
+                visit.done
+                  ? "bg-emerald-500 border-emerald-500 text-white"
+                  : "border-border/70 hover:bg-muted"
+              }`}
+            >
+              <Check className="h-3.5 w-3.5" strokeWidth={3} />
+              {visit.done ? "Fait" : "Marquer comme fait"}
+            </button>
+          </div>
+          <Textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            onBlur={() => onUpdate({ comment })}
+            placeholder="Un petit commentaire ? (plats préférés, ambiance, prix…)"
+            rows={3}
+            className="mt-3 resize-none text-sm"
+          />
+        </div>
       </div>
     </div>
   );
@@ -400,22 +590,24 @@ function priceLabel(level: string) {
   return map[level] ?? "";
 }
 
-// Minimalist monochrome map style — warm off-white land, muted roads, no POIs.
+// Minimalist but not monochrome: soft greens for parks, blue water, warm land.
 const minimalMapStyle: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#f7f5f0" }] },
+  { elementType: "geometry", stylers: [{ color: "#f5f3ee" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#8a8578" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#f7f5f0" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#6b6a63" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#f5f3ee" }] },
   { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
   { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
   { featureType: "administrative.neighborhood", stylers: [{ visibility: "off" }] },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#dfeadb" }, { visibility: "on" }] },
+  { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#eeeae0" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
   { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#e8e3d6" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#e2dcc9" }] },
-  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#f7f5f0" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#d9e2e6" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#ffe9b8" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#f5f3ee" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#bcd7e6" }] },
   { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
 ];
