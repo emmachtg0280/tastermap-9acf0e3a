@@ -15,6 +15,10 @@ import {
   CalendarClock,
   Clock,
   ChevronDown,
+  Route as RouteIcon,
+  Navigation,
+  DollarSign,
+  Utensils,
 } from "lucide-react";
 
 import {
