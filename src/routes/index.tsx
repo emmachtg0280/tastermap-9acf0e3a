@@ -527,14 +527,14 @@ function Index() {
             {/* Discovery tabs */}
             <div className="flex gap-1.5 shrink-0">
               <button
-                onClick={() => { setShowFilters(false); setListMode("new"); }}
-                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 transition"
+                onClick={() => { haptic(); setShowFilters(false); setListMode("new"); }}
+                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
                 <span>✨</span> Nouveautés
               </button>
               <button
-                onClick={() => { setShowFilters(false); setListMode("hype"); }}
-                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 transition"
+                onClick={() => { haptic(); setShowFilters(false); setListMode("hype"); }}
+                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
                 <span>🔥</span> Hype
               </button>
@@ -549,13 +549,8 @@ function Index() {
               return (
                 <button
                   key={c.value}
-                  onClick={() => {
-                    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-                      try { navigator.vibrate(15); } catch { /* ignore */ }
-                    }
-                    setCuisine(active ? "any" : c.value);
-                  }}
-                  className={`shrink-0 inline-flex flex-col items-center justify-center gap-0.5 w-[58px] h-[58px] rounded-2xl backdrop-blur shadow-sm transition active:scale-95 ${
+                  onClick={() => { haptic(); setCuisine(active ? "any" : c.value); }}
+                  className={`shrink-0 inline-flex flex-col items-center justify-center gap-0.5 w-[58px] h-[58px] rounded-2xl backdrop-blur shadow-sm tap-bounce transition ${
                     active
                       ? "bg-white text-foreground font-semibold border-2 border-white ring-2 ring-white/80 shadow-md scale-105"
                       : "bg-white/40 border border-white/50 text-foreground/80 hover:bg-white/60"
