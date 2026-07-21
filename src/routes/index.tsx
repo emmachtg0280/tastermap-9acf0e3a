@@ -1102,30 +1102,55 @@ function DetailCard({
           ))}
         </div>
       )}
-      <div className="p-3.5 overflow-y-auto">
+      <div className="p-4 overflow-y-auto">
         <div className="flex items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-lg">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-xl">
             {emoji}
           </span>
           <div className="min-w-0 flex-1">
-            <h3 className="font-display font-bold text-sm leading-tight truncate">{r.name}</h3>
-            <p className="text-xs text-muted-foreground truncate">
+            <h3 className="font-display font-bold text-base leading-tight">{r.name}</h3>
+            <p className="text-sm text-muted-foreground truncate">
               {r.primaryType ?? "Restaurant"}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground p-1 -m-1"
-            aria-label="Fermer"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button
+              onClick={() => onUpdate({ done: !visit.done })}
+              className={`inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-full text-sm font-extrabold btn-pop transition ${
+                visit.done
+                  ? "bg-[color:var(--duo-green)] text-white"
+                  : "bg-muted border border-border/60 text-foreground hover:bg-muted/80"
+              }`}
+              aria-label={visit.done ? "Marquer non fait" : "Marquer fait"}
+            >
+              <Check className="h-4 w-4" strokeWidth={3} />
+              Fait
+            </button>
+            <button
+              onClick={() => onUpdate({ favorite: !visit.favorite })}
+              className={`inline-flex items-center justify-center h-8 w-8 rounded-full btn-pop transition ${
+                visit.favorite
+                  ? "bg-rose-50 border-rose-200 text-rose-500"
+                  : "bg-muted border border-border/60 text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label={visit.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+            >
+              <Heart className={`h-4 w-4 ${visit.favorite ? "fill-rose-500 text-rose-500" : ""}`} />
+            </button>
+            <button
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground p-1 -m-1"
+              aria-label="Fermer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
           {r.rating != null && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium">
-              <Star className="h-3 w-3 fill-amber-400 stroke-amber-400" />
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-medium">
+              <Star className="h-4 w-4 fill-amber-400 stroke-amber-400" />
               {r.rating.toFixed(1)}
               {r.userRatingCount != null && (
                 <span className="text-amber-600/70 font-normal">
@@ -1135,35 +1160,35 @@ function DetailCard({
             </span>
           )}
           {r.priceLevel && (
-            <span className="text-muted-foreground">
+            <span className="text-muted-foreground font-medium">
               {priceLabel(r.priceLevel)}
             </span>
           )}
           {isNewRestaurant(r) && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 font-medium">
-              <Sparkles className="h-3 w-3" /> Nouveau
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-medium">
+              <Sparkles className="h-4 w-4" /> Nouveau
             </span>
           )}
           {r.openNow === true && (
             <span className="text-emerald-600 font-medium flex items-center gap-1">
-              <Clock className="h-3 w-3" /> Ouvert
+              <Clock className="h-4 w-4" /> Ouvert
             </span>
           )}
           {r.openNow === false && (
-            <span className="text-muted-foreground flex items-center gap-1">
-              <Clock className="h-3 w-3" /> Fermé
+            <span className="text-muted-foreground font-medium flex items-center gap-1">
+              <Clock className="h-4 w-4" /> Fermé
             </span>
           )}
         </div>
 
         {r.summary && (
-          <p className="mt-2.5 text-xs text-foreground/80 leading-relaxed line-clamp-2">
+          <p className="mt-3 text-sm text-foreground/80 leading-relaxed line-clamp-2">
             {r.summary}
           </p>
         )}
 
-        <p className="mt-2.5 text-xs text-muted-foreground flex items-start gap-1.5">
-          <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+        <p className="mt-3 text-sm text-muted-foreground flex items-start gap-1.5">
+          <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
           <span className="line-clamp-2">{r.address}</span>
         </p>
 
@@ -1171,16 +1196,16 @@ function DetailCard({
           <div className="mt-2">
             <button
               onClick={() => setShowHours((v) => !v)}
-              className="inline-flex items-center gap-1 text-[11px] text-foreground/70 hover:text-foreground bg-muted/60 px-2 py-1 rounded-full transition"
+              className="inline-flex items-center gap-1 text-xs text-foreground/70 hover:text-foreground bg-muted/60 px-2.5 py-1.5 rounded-full transition"
             >
-              <CalendarClock className="h-3 w-3" />
+              <CalendarClock className="h-3.5 w-3.5" />
               Horaires
               <ChevronDown
-                className={`h-3 w-3 transition-transform ${showHours ? "rotate-180" : ""}`}
+                className={`h-3.5 w-3.5 transition-transform ${showHours ? "rotate-180" : ""}`}
               />
             </button>
             {showHours && (
-              <ul className="mt-1.5 space-y-0 text-[10px] text-muted-foreground leading-tight bg-muted/30 rounded-lg p-2">
+              <ul className="mt-1.5 space-y-0.5 text-xs text-muted-foreground leading-tight bg-muted/30 rounded-lg p-2.5">
                 {r.weekdayDescriptions.map((d) => (
                   <li key={d}>{d}</li>
                 ))}
@@ -1189,75 +1214,50 @@ function DetailCard({
           </div>
         )}
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="mt-3 flex flex-wrap gap-2">
           {r.googleMapsUri && (
             <a
               href={r.googleMapsUri}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white font-semibold btn-pop hover:brightness-105 transition"
+              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white font-semibold btn-pop hover:brightness-105 transition"
             >
-              <MapPin className="h-3 w-3" /> Google Maps
+              <MapPin className="h-3.5 w-3.5" /> Google Maps
             </a>
           )}
           <a
             href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold transition"
+            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold transition"
           >
-            <Navigation className="h-3 w-3" /> Itinéraire
+            <Navigation className="h-3.5 w-3.5" /> Itinéraire
           </a>
           {r.phone && (
             <a
               href={`tel:${r.phone.replace(/\s/g, "")}`}
-              className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold transition"
+              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 font-semibold transition"
             >
-              <Phone className="h-3 w-3" /> {r.phone}
+              <Phone className="h-3.5 w-3.5" /> {r.phone}
             </a>
           )}
         </div>
 
         <div className="mt-3 pt-3 border-t border-border/50">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onUpdate({ done: !visit.done })}
-              className={`flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-extrabold px-3 py-2.5 rounded-xl btn-pop transition ${
-                visit.done
-                  ? "bg-[color:var(--duo-green)] text-white border-[color:var(--duo-green)]"
-                  : "bg-muted hover:bg-muted/80 border border-border/60 text-foreground"
-              }`}
-            >
-              <span className={`inline-flex items-center justify-center rounded-full transition ${visit.done ? "bg-white/20" : "bg-[color:var(--duo-green)] text-white"} h-5 w-5`}>
-                <Check className={`h-3.5 w-3.5 ${visit.done ? "" : "text-white"}`} strokeWidth={3} />
-              </span>
-              Fait
-            </button>
-            <button
-              onClick={() => onUpdate({ favorite: !visit.favorite })}
-              className={`inline-flex items-center justify-center gap-1 h-10 w-10 rounded-xl btn-pop transition ${
-                visit.favorite
-                  ? "bg-rose-50 border-rose-200 text-rose-500"
-                  : "bg-muted border border-border/60 text-muted-foreground hover:text-foreground"
-              }`}
-              aria-label={visit.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-            >
-              <Heart className={`h-4 w-4 ${visit.favorite ? "fill-rose-500 text-rose-500" : ""}`} />
-            </button>
-          </div>
           <Textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             onBlur={() => onUpdate({ comment })}
             placeholder="Un petit mot sur ce resto ?"
             rows={2}
-            className="mt-2.5 resize-none text-xs border-border/40 bg-muted/30 focus:bg-card"
+            className="resize-none text-sm border-border/40 bg-muted/30 focus:bg-card"
           />
         </div>
       </div>
     </div>
   );
 }
+
 
 
 function priceLabel(level: string) {
