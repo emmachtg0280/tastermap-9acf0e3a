@@ -172,24 +172,23 @@ export function ChefBuddy() {
       <ellipse cx="100" cy="104" rx="6" ry="4.5" fill="#2b2b2b" />
       <ellipse cx="98" cy="102.5" rx="2" ry="1.2" fill="#ffffff" opacity="0.7" />
 
-      {/* mouth — opens and closes as if talking */}
-      <g className="animate-mascot-mouth" style={{ transformOrigin: "100px 114px", transformBox: "fill-box" as const }}>
-        {/* outer mouth shape (dark) */}
-        <path
-          d="M86 114 q14 16 28 0 q-4 14 -14 14 q-10 0 -14 -14 z"
-          fill="#2b2b2b"
-        />
-        {/* tongue */}
-        <path
-          d="M92 120 q8 10 16 0 q0 8 -8 8 q-8 0 -8 -8 z"
-          fill="#FF6F91"
-        />
-        {/* tiny tooth highlight */}
-        <rect x="97" y="114" width="6" height="3" rx="1" fill="#ffffff" />
+      {/* permanent smile line — so the mouth never disappears */}
+      <path
+        d="M88 116 q12 10 24 0"
+        stroke="#2b2b2b"
+        strokeWidth="3"
+        fill="none"
+        strokeLinecap="round"
+      />
+      {/* animated open mouth on top — scales vertically as if talking */}
+      <g
+        className="animate-mascot-mouth"
+        style={{ transformOrigin: "100px 118px", transformBox: "fill-box" as const }}
+      >
+        <ellipse cx="100" cy="119" rx="11" ry="7" fill="#2b2b2b" />
+        <ellipse cx="100" cy="122" rx="7" ry="4" fill="#FF6F91" />
+        <rect x="96" y="114" width="8" height="2.5" rx="1" fill="#ffffff" />
       </g>
-      {/* mouth corners — stay put for smile shape */}
-      <path d="M86 114 q-2 -2 -4 -1" stroke="#2b2b2b" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      <path d="M114 114 q2 -2 4 -1" stroke="#2b2b2b" strokeWidth="2.5" fill="none" strokeLinecap="round" />
 
       {/* chef toque */}
       <ellipse cx="100" cy="38" rx="34" ry="20" fill="#ffffff" />
