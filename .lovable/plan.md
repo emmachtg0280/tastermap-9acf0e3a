@@ -1,41 +1,75 @@
-# Plan : réparer et uniformiser le feedback haptique au tap
-
-## Problème constaté
-Seules les chips de cuisine déclenchent `navigator.vibrate(15)` au tap. Les autres icônes / boutons (Nouveautés, Hype, Filtres, Favoris, Faits, Restaurants, actions de fiche) n'ont aucune vibration. De plus, `navigator.vibrate` n'est pas supportée sur iOS Safari, donc le feedback est silencieux pour une grande partie des utilisateurs.
+# Plan — charte graphique custom style Duolingo/UberEats
 
 ## Objectif
-Donner un feedback haptique / visuel clair et cohérent sur **tous** les boutons/icônes tapables, avec une solution qui fonctionne aussi sur iOS.
+Remplacer tous les emojis système Apple par des illustrations SVG dessinées à la main, style **sticker Duolingo** (volumes doux, contour blanc, ombre douce, 2-3 aplats de couleur). Rendu cohérent, léger, net à toute taille.
 
-## Étapes
+## 1. Bibliothèque d'icônes SVG (`src/components/icons/`)
 
-1. **Créer un helper `haptic.ts`**
-   - Tente `navigator.vibrate(pattern)` si disponible (Android).
-   - Retourne un flag `supported` pour que l'interface puisse ajouter un fallback visuel sur les appareils non-haptiques.
-   - Pattern court de 15 ms pour les petits boutons, 20 ms pour les grosses cibles.
+Nouveau dossier avec un composant SVG par icône, taille pilotée par prop `size`, palette figée.
 
-2. **Ajouter un feedback visuel universel au tap**
-   - Classe utilitaire `.tap-bounce` : `active:scale-95` + courte transition + micro-impulsion via keyframe `tap-pop` (scale 0.92 → 1.0) pour compenser l'absence de vibration sur iOS.
-   - Appliquer cette classe aux boutons flottants, aux chips de cuisine et aux boutons d'action de fiche.
+### Cuisines (11 icônes — remplace 🍝 🥖 🥟 🍣 🍛 🌮 🌶️ 🥘 🫒 🍔 🥗)
+- `PastaIcon` (italien) — assiette de pâtes fumante
+- `BaguetteIcon` (français) — baguette + béret stylisés
+- `DumplingIcon` (chinois) — raviolis vapeur
+- `SushiIcon` (japonais) — nigiri saumon
+- `CurryIcon` (indien) — bol curry + naan
+- `TacoIcon` (mexicain) — taco garni
+- `ChiliIcon` (thaï) — piment souriant
+- `PaellaIcon` (espagnol) — poêle paella
+- `OliveIcon` (grec) — olive + feuille
+- `BurgerIcon` (américain) — burger étagé
+- `SaladIcon` (végé) — bol vert
 
-3. **Brancher le helper sur tous les boutons interactifs**
-   - **Top bar** : Nouveautés, Hype, chaque chip cuisine.
-   - **Floating action buttons** : Filtres, Favoris, Faits, Restaurants.
-   - **Fiche restaurant** : Fait, Favori, fermeture, liens (téléphone, site, itinéraire), commentaire.
-   - **Overlays** : boutons d'ouverture/fermeture des modales Filtres / Liste / Faits / Favoris.
+### Discovery & états (remplace ✨ 🔥 ⭐ 📍 🍽️ ❤️ ✓)
+- `SparkleIcon` (Nouveautés)
+- `FlameIcon` (Hype)
+- `StarIcon` (note)
+- `PinIcon` (localisation)
+- `PlateIcon` (Restaurants FAB)
+- `HeartIcon` (Favoris FAB, plein/vide)
+- `CheckIcon` (Faits FAB + badge marqueur)
 
-4. **Vérifier la cohérence mobile**
-   - S'assurer que les animations CSS ne bloquent pas le rendu (`will-change: transform` sur les cibles fréquemment tapées).
-   - Empêcher le double-déclenclement si le navigateur supporte à la fois la vibration et le fallback visuel : le visuel s'applique toujours, la vibration en plus quand disponible.
+### Style commun
+- viewBox 24x24, contour blanc de 1.5px, ombre `drop-shadow`, 2 aplats + highlight
+- Palette accordée aux couleurs Duo déjà en place (`--duo-green`, `--duo-yellow`, `--duo-coral`, `--duo-sky`)
 
-5. **Validation**
-   - Build (`bun run build`) sans erreur.
-   - Test sur le preview mobile : vérifier que chaque icône donne un retour visuel au tap, et qu'Android vibre en plus.
+## 2. Nouvelle mascotte : `ChefBuddy` (remplace `ChickSvg`)
 
-## Fichiers concernés
-- `src/lib/haptic.ts` (nouveau)
-- `src/styles.css` (keyframes tap-pop + classe utilitaire)
-- `src/routes/index.tsx` (ajout du helper sur tous les boutons interactifs)
+Petit **renard orange pétant** (ou choix équivalent) avec **toque de chef blanche**, style sticker Duo :
+- Corps orange vif (#FF7A1A), ventre crème, joues rosées
+- Toque blanche gonflée avec bande
+- Yeux ronds noirs + petit sourire
+- Réutilise les animations existantes (`mascot-hop`, `mascot-blink`, `mascot-wing` renommée en `mascot-tail`)
 
-## Non inclus
-- Pas d'ajout de son au tap par défaut (demanderait une permission / politique utilisateur).
-- Pas de remplacement de l'API Google Maps par AdvancedMarkerElement (hors sujet).
+Bulle de dialogue : fond **blanc semi-opaque** (`bg-white/85 backdrop-blur`), coin arrondi, petite queue vers la mascotte, texte foncé. Remplace l'actuelle bulle jaune.
+
+## 3. Marqueurs de carte
+
+Le SVG de marqueur (généré côté client pour Google Maps) intègre actuellement l'emoji système via `<text>`. Remplacement :
+- Génère le marqueur en SVG avec l'icône cuisine correspondante **inline** (dessin vectoriel, pas de `<text>` emoji)
+- Badge ✓ des restos faits → mini `CheckIcon` blanc sur pastille verte
+- Badge ✨ Nouveau → mini `SparkleIcon`
+
+## 4. Points d'intégration (`src/routes/index.tsx`)
+
+- Bandeau chips cuisines : `<Icon />` centré à la place de l'emoji, label inchangé
+- Onglets Nouveautés/Hype : `<SparkleIcon />` / `<FlameIcon />`
+- FABs (Filtres/Favoris/Faits/Restaurants) : icônes SVG
+- Fiche resto : icône cuisine dans la pastille ronde, `StarIcon` pour la note, `HeartIcon`/`CheckIcon` pour boutons état
+- Badges "Nouveau" et "Hype" : icône SVG au lieu d'emoji
+- Overlays (headers Filtres/Faits/Favoris/Restaurants) : icônes SVG
+
+## 5. Nettoyage
+- Suppression du composant `ChickSvg` inline
+- Suppression des emojis restants dans les strings JSX (garder uniquement dans les données Google si présents dans les noms)
+- Un mapping unique `CUISINE_ICON: Record<Cuisine, ComponentType>` remplace `CUISINE_EMOJI`
+
+## Fichiers touchés
+- **Nouveaux** : `src/components/icons/index.tsx` (barrel), un fichier par icône OU un seul fichier regroupé si concis
+- **Nouveau** : `src/components/mascot/ChefBuddy.tsx`
+- **Modifiés** : `src/routes/index.tsx` (imports, mapping, marqueurs, mascotte, bulle), `src/styles.css` (ajustements animations mascotte si besoin)
+
+## Hors périmètre
+- Pas de changement des données restaurants ni de la logique de filtres
+- Pas de refonte des couleurs globales de l'app (on garde la palette Duo actuelle)
+- Pas d'images PNG générées : 100% SVG inline
