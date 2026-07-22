@@ -57,6 +57,19 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import newTabAsset from "@/assets/tabs/new.png.asset.json";
+import hypeTabAsset from "@/assets/tabs/hype.png.asset.json";
+
+const NewStickerIcon = ({ size = 20 }: { size?: number }) => (
+  <img src={newTabAsset.url} alt="" width={size} height={size} loading="lazy" draggable={false}
+    className="object-contain select-none pointer-events-none"
+    style={{ width: size, height: size, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" }} />
+);
+const HypeStickerIcon = ({ size = 20 }: { size?: number }) => (
+  <img src={hypeTabAsset.url} alt="" width={size} height={size} loading="lazy" draggable={false}
+    className="object-contain select-none pointer-events-none"
+    style={{ width: size, height: size, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" }} />
+);
 
 const CUISINE_ORDER: Cuisine[] = [
   "french", "italian", "chinese", "japanese", "indian",
@@ -447,22 +460,25 @@ function Index() {
       const done = !!visits[r.id]?.done;
       const favorite = !!visits[r.id]?.favorite;
       const isNew = isNewRestaurant(r);
-      const borderColor = done ? "#58CC02" : favorite ? "#FFC800" : active ? "#1CB0F6" : "#2b2b2b";
+      const highlight = done || favorite || active;
+      const borderColor = done ? "#58CC02" : favorite ? "#FFC800" : active ? "#1CB0F6" : "#e5dfd3";
+      const strokeWidth = highlight ? 3 : 1.5;
+      const iconOpacity = highlight ? 1 : 0.7;
       const size = active ? 54 : 46;
       const cuisineKey = pickCuisine(r.cuisines);
       const dataUrl = cuisineDataUrls?.[cuisineKey];
       const iconSize = size * 0.78;
       const iconOffset = (size - iconSize) / 2;
       const imageTag = dataUrl
-        ? `<image href='${dataUrl}' x='${iconOffset}' y='${iconOffset}' width='${iconSize}' height='${iconSize}' preserveAspectRatio='xMidYMid meet'/>`
-        : `<g transform='translate(${iconOffset} ${iconOffset}) scale(${iconSize / 24})'>${cuisineInnerSvg(r.cuisines)}</g>`;
+        ? `<image href='${dataUrl}' x='${iconOffset}' y='${iconOffset}' width='${iconSize}' height='${iconSize}' opacity='${iconOpacity}' preserveAspectRatio='xMidYMid meet'/>`
+        : `<g opacity='${iconOpacity}' transform='translate(${iconOffset} ${iconOffset}) scale(${iconSize / 24})'>${cuisineInnerSvg(r.cuisines)}</g>`;
       const newBadge = isNew
-        ? `<g><circle cx='8' cy='9' r='7' fill='#FFC94A' stroke='#2b2b2b' stroke-width='1.5'/><path d='M8 5.4 l0.9 1.9 l2.1 0.3 l-1.5 1.4 l0.4 2.1 l-1.9 -1 l-1.9 1 l0.4 -2.1 l-1.5 -1.4 l2.1 -0.3 z' fill='#ffffff' stroke='#2b2b2b' stroke-width='0.7' stroke-linejoin='round'/></g>`
+        ? `<g><circle cx='8' cy='9' r='7' fill='#FFC94A'/><path d='M8 5.4 l0.9 1.9 l2.1 0.3 l-1.5 1.4 l0.4 2.1 l-1.9 -1 l-1.9 1 l0.4 -2.1 l-1.5 -1.4 l2.1 -0.3 z' fill='#ffffff' stroke-linejoin='round'/></g>`
         : "";
       const svg = `
 <svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size + 6}' viewBox='0 0 ${size} ${size + 6}'>
-  <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.18)'/>
-  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 3}' fill='#ffffff' stroke='${borderColor}' stroke-width='3'/>
+  <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.15)'/>
+  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 3}' fill='#ffffff' stroke='${borderColor}' stroke-width='${strokeWidth}'/>
   ${imageTag}
   ${newBadge}
   ${done ? `<circle cx='${size - 8}' cy='9' r='7' fill='#58CC02' stroke='#ffffff' stroke-width='2'/><path d='M${size - 11} 9 l2.5 2.5 L${size - 5} 6.5' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
@@ -530,13 +546,13 @@ function Index() {
                 onClick={() => { haptic(); setShowFilters(false); setListMode("new"); }}
                 className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
-                <SparkleIcon size={16} /> Nouveautés
+                <NewStickerIcon size={20} /> Nouveautés
               </button>
               <button
                 onClick={() => { haptic(); setShowFilters(false); setListMode("hype"); }}
                 className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
-                <FlameIcon size={16} /> Hype
+                <HypeStickerIcon size={20} /> Hype
               </button>
             </div>
 
@@ -757,8 +773,8 @@ function Index() {
                       .sort((a, b) => (hypeStats[b.id]?.score ?? 0) - (hypeStats[a.id]?.score ?? 0))
                   : filtered;
         const titleIcon =
-          listMode === "new" ? <SparkleIcon size={16} /> :
-          listMode === "hype" ? <FlameIcon size={16} /> : null;
+          listMode === "new" ? <NewStickerIcon size={20} /> :
+          listMode === "hype" ? <HypeStickerIcon size={20} /> : null;
         const listTitle =
           listMode === "done"
             ? "Faits"
@@ -868,7 +884,7 @@ function Index() {
                           )}
                           {isNewRestaurant(r) && (
                             <span className="inline-flex items-center gap-0.5 text-sky-600 font-medium">
-                              <SparkleIcon size={12} /> Nouveau
+                              <NewStickerIcon size={14} /> Nouveau
                             </span>
                           )}
                           {r.openNow === true && (
@@ -1019,7 +1035,7 @@ function Mascot({
                   onClick={() => { haptic(20); onOpenHype(); setVisible(false); }}
                   className="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white shadow-md active:translate-y-[1px] tap-bounce"
                 >
-                  <FlameIcon size={14} /> Voir les plus hype
+                  <HypeStickerIcon size={16} /> Voir les plus hype
                 </button>
               </div>
             </>
@@ -1132,7 +1148,7 @@ function DetailCard({
           )}
           {isNewRestaurant(r) && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-medium">
-              <SparkleIcon size={14} /> Nouveau
+              <NewStickerIcon size={16} /> Nouveau
             </span>
           )}
           {r.openNow === true && (
