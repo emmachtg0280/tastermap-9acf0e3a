@@ -446,16 +446,19 @@ function Index() {
       const favorite = !!visits[r.id]?.favorite;
       const isNew = isNewRestaurant(r);
       const borderColor = done ? "#58CC02" : favorite ? "#FFC800" : active ? "#1CB0F6" : "#2b2b2b";
-      const emoji = cuisineEmoji(r.cuisines);
+      const inner = cuisineInnerSvg(r.cuisines);
       const size = active ? 46 : 38;
+      const iconSize = size * 0.72;
+      const iconOffset = (size - iconSize) / 2;
+      const scale = iconSize / 24;
       const newBadge = isNew
-        ? `<circle cx='8' cy='9' r='7' fill='#0EA5E9' stroke='#ffffff' stroke-width='2'/><text x='8' y='10' text-anchor='middle' dominant-baseline='central' font-size='9' fill='#ffffff'>✨</text>`
+        ? `<g><circle cx='8' cy='9' r='7' fill='#FFC94A' stroke='#2b2b2b' stroke-width='1.5'/><path d='M8 5.4 l0.9 1.9 l2.1 0.3 l-1.5 1.4 l0.4 2.1 l-1.9 -1 l-1.9 1 l0.4 -2.1 l-1.5 -1.4 l2.1 -0.3 z' fill='#ffffff' stroke='#2b2b2b' stroke-width='0.7' stroke-linejoin='round'/></g>`
         : "";
       const svg = `
 <svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size + 6}' viewBox='0 0 ${size} ${size + 6}'>
   <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.18)'/>
   <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 3}' fill='#ffffff' stroke='${borderColor}' stroke-width='3'/>
-  <text x='${size / 2}' y='${size / 2}' text-anchor='middle' dominant-baseline='central' font-size='${size * 0.5}' font-family='Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif'>${emoji}</text>
+  <g transform='translate(${iconOffset} ${iconOffset}) scale(${scale})'>${inner}</g>
   ${newBadge}
   ${done ? `<circle cx='${size - 8}' cy='9' r='7' fill='#58CC02' stroke='#ffffff' stroke-width='2'/><path d='M${size - 11} 9 l2.5 2.5 L${size - 5} 6.5' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
 </svg>`.trim();
