@@ -358,6 +358,7 @@ function Index() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
+  const cuisineDataUrls = useCuisineDataUrls();
 
   const currentCity = useMemo(
     () => CITIES.find((c) => c.key === city) ?? null,
