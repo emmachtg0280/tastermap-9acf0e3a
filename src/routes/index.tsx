@@ -461,8 +461,6 @@ function Index() {
       const favorite = !!visits[r.id]?.favorite;
       const isNew = isNewRestaurant(r);
       const highlight = done || favorite || active;
-      const borderColor = done ? "#58CC02" : favorite ? "#FFC800" : active ? "#1CB0F6" : "#e5dfd3";
-      const strokeWidth = highlight ? 3 : 1.5;
       const bgOpacity = highlight ? 1 : 0.7;
       const size = active ? 54 : 46;
       const cuisineKey = pickCuisine(r.cuisines);
