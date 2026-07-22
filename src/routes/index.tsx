@@ -10,20 +10,17 @@ import {
   Loader2,
   X,
   Check,
-  Globe,
   Phone,
   CalendarClock,
   Clock,
   ChevronDown,
   Navigation,
-  DollarSign,
   Utensils,
   SlidersHorizontal,
   Heart,
   LogIn,
   LogOut,
   User,
-  Sparkles,
 } from "lucide-react";
 
 import {
@@ -43,6 +40,16 @@ import { haptic } from "@/lib/haptic";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 
+import {
+  CUISINE_META,
+  CuisineIcon,
+  SparkleIcon,
+  FlameIcon,
+  cuisineInnerSvg,
+  pickCuisine,
+} from "@/components/icons/CuisineIcons";
+import { ChefBuddy } from "@/components/mascot/ChefBuddy";
+
 
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
@@ -50,26 +57,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const CUISINES: { value: Cuisine; label: string; emoji: string }[] = [
-  { value: "any", label: "Tous", emoji: "🍽️" },
-  { value: "french", label: "Français", emoji: "🥖" },
-  { value: "italian", label: "Italien", emoji: "🍕" },
-  { value: "chinese", label: "Chinois", emoji: "🥟" },
-  { value: "japanese", label: "Japonais", emoji: "🍣" },
-  { value: "indian", label: "Indien", emoji: "🍛" },
-  { value: "mexican", label: "Mexicain", emoji: "🌮" },
-  { value: "thai", label: "Thaï", emoji: "🍜" },
-  { value: "spanish", label: "Espagnol", emoji: "🥘" },
-  { value: "greek", label: "Grec", emoji: "🥙" },
-  { value: "american", label: "Américain", emoji: "🍔" },
-  { value: "vegetarian", label: "Végétarien", emoji: "🥗" },
+const CUISINE_ORDER: Cuisine[] = [
+  "french", "italian", "chinese", "japanese", "indian",
+  "mexican", "thai", "spanish", "greek", "american", "vegetarian",
 ];
 
-function cuisineEmoji(cs: Cuisine[]): string {
-  const priority: Cuisine[] = ["italian","japanese","french","chinese","indian","mexican","thai","spanish","greek","american","vegetarian"];
-  for (const p of priority) if (cs.includes(p)) return CUISINES.find(c => c.value === p)!.emoji;
-  return "🍽️";
-}
 
 // Google Places API does not expose an opening date. We use a low review count
 // as a proxy for "opened in the last rolling year".
@@ -454,16 +446,19 @@ function Index() {
       const favorite = !!visits[r.id]?.favorite;
       const isNew = isNewRestaurant(r);
       const borderColor = done ? "#58CC02" : favorite ? "#FFC800" : active ? "#1CB0F6" : "#2b2b2b";
-      const emoji = cuisineEmoji(r.cuisines);
+      const inner = cuisineInnerSvg(r.cuisines);
       const size = active ? 46 : 38;
+      const iconSize = size * 0.72;
+      const iconOffset = (size - iconSize) / 2;
+      const scale = iconSize / 24;
       const newBadge = isNew
-        ? `<circle cx='8' cy='9' r='7' fill='#0EA5E9' stroke='#ffffff' stroke-width='2'/><text x='8' y='10' text-anchor='middle' dominant-baseline='central' font-size='9' fill='#ffffff'>✨</text>`
+        ? `<g><circle cx='8' cy='9' r='7' fill='#FFC94A' stroke='#2b2b2b' stroke-width='1.5'/><path d='M8 5.4 l0.9 1.9 l2.1 0.3 l-1.5 1.4 l0.4 2.1 l-1.9 -1 l-1.9 1 l0.4 -2.1 l-1.5 -1.4 l2.1 -0.3 z' fill='#ffffff' stroke='#2b2b2b' stroke-width='0.7' stroke-linejoin='round'/></g>`
         : "";
       const svg = `
 <svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size + 6}' viewBox='0 0 ${size} ${size + 6}'>
   <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.18)'/>
   <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 3}' fill='#ffffff' stroke='${borderColor}' stroke-width='3'/>
-  <text x='${size / 2}' y='${size / 2}' text-anchor='middle' dominant-baseline='central' font-size='${size * 0.5}' font-family='Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif'>${emoji}</text>
+  <g transform='translate(${iconOffset} ${iconOffset}) scale(${scale})'>${inner}</g>
   ${newBadge}
   ${done ? `<circle cx='${size - 8}' cy='9' r='7' fill='#58CC02' stroke='#ffffff' stroke-width='2'/><path d='M${size - 11} 9 l2.5 2.5 L${size - 5} 6.5' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
 </svg>`.trim();
@@ -528,36 +523,38 @@ function Index() {
             <div className="flex gap-1.5 shrink-0">
               <button
                 onClick={() => { haptic(); setShowFilters(false); setListMode("new"); }}
-                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
+                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
-                <span>✨</span> Nouveautés
+                <SparkleIcon size={16} /> Nouveautés
               </button>
               <button
                 onClick={() => { haptic(); setShowFilters(false); setListMode("hype"); }}
-                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
+                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
-                <span>🔥</span> Hype
+                <FlameIcon size={16} /> Hype
               </button>
             </div>
 
             {/* Divider */}
             <div className="w-px bg-foreground/15 self-stretch my-1 shrink-0" />
 
-            {/* Cuisine chips — Uber Eats style: big emoji, small label */}
-            {CUISINES.filter((c) => c.value !== "any").map((c) => {
-              const active = c.value === cuisine;
+            {/* Cuisine chips — Uber Eats style: big icon, small label */}
+            {CUISINE_ORDER.map((value) => {
+              const meta = CUISINE_META[value];
+              const active = value === cuisine;
+              const Icon = meta.Icon;
               return (
                 <button
-                  key={c.value}
-                  onClick={() => { haptic(); setCuisine(active ? "any" : c.value); }}
+                  key={value}
+                  onClick={() => { haptic(); setCuisine(active ? "any" : value); }}
                   className={`shrink-0 inline-flex flex-col items-center justify-center gap-0.5 w-[58px] h-[58px] rounded-2xl backdrop-blur shadow-sm tap-bounce transition ${
                     active
                       ? "bg-white text-foreground font-semibold border-2 border-white ring-2 ring-white/80 shadow-md scale-105"
                       : "bg-white/40 border border-white/50 text-foreground/80 hover:bg-white/60"
                   }`}
                 >
-                  <span className="text-[22px] leading-none">{c.emoji}</span>
-                  <span className="text-[10px] leading-tight">{c.label}</span>
+                  <Icon size={26} />
+                  <span className="text-[10px] leading-tight">{meta.label}</span>
                 </button>
               );
             })}
@@ -746,15 +743,18 @@ function Index() {
                       .filter((r) => (hypeStats[r.id]?.score ?? 0) > 0)
                       .sort((a, b) => (hypeStats[b.id]?.score ?? 0) - (hypeStats[a.id]?.score ?? 0))
                   : filtered;
+        const titleIcon =
+          listMode === "new" ? <SparkleIcon size={16} /> :
+          listMode === "hype" ? <FlameIcon size={16} /> : null;
         const listTitle =
           listMode === "done"
             ? "Faits"
             : listMode === "favorites"
               ? "Favoris"
               : listMode === "new"
-                ? "✨ Nouveautés"
+                ? "Nouveautés"
                 : listMode === "hype"
-                  ? "🔥 Hype"
+                  ? "Hype"
                   : "Restaurants";
 
         return (
@@ -765,8 +765,8 @@ function Index() {
           />
           <div className="absolute z-40 left-2 right-2 bottom-2 top-20 sm:left-4 sm:right-auto sm:top-4 sm:bottom-4 sm:w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl overflow-hidden flex flex-col animate-pop-in">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
-              <h2 className="font-display font-bold text-sm">
-                {listTitle} <span className="text-muted-foreground font-semibold">· {listItems.length}</span>
+              <h2 className="font-display font-bold text-sm inline-flex items-center gap-1.5">
+                {titleIcon}{listTitle} <span className="text-muted-foreground font-semibold">· {listItems.length}</span>
               </h2>
               <button
                 onClick={() => { haptic(); setListMode(null); }}
@@ -855,7 +855,7 @@ function Index() {
                           )}
                           {isNewRestaurant(r) && (
                             <span className="inline-flex items-center gap-0.5 text-sky-600 font-medium">
-                              <Sparkles className="h-3 w-3" /> Nouveau
+                              <SparkleIcon size={12} /> Nouveau
                             </span>
                           )}
                           {r.openNow === true && (
@@ -936,12 +936,7 @@ function Mascot({
 
   if (!visible) return null;
 
-  const quickPicks: { emoji: string; label: string; value: Cuisine }[] = [
-    { emoji: "🍕", label: "Italien", value: "italian" },
-    { emoji: "🍣", label: "Japonais", value: "japanese" },
-    { emoji: "🥖", label: "Français", value: "french" },
-    { emoji: "🍔", label: "Burger", value: "american" },
-  ];
+  const quickPicks: Cuisine[] = ["italian", "japanese", "french", "american"];
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
@@ -953,17 +948,17 @@ function Mascot({
       <div className="relative pointer-events-auto flex flex-col items-center gap-3 w-full max-w-[320px]">
         <div className="animate-mascot-enter">
           <div className="animate-mascot-hop">
-            <ChickSvg />
+            <ChefBuddy />
           </div>
         </div>
-        <div className="relative w-full rounded-3xl bg-card border-[3px] border-[#2b2b2b] shadow-[0_6px_0_0_#2b2b2b] px-4 py-3 animate-mascot-bubble">
+        <div className="relative w-full rounded-3xl bg-white/90 backdrop-blur border border-white/70 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.35)] px-4 py-3 animate-mascot-bubble">
           <span
             aria-hidden
-            className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-card border-l-[3px] border-t-[3px] border-[#2b2b2b] rounded-sm"
+            className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-white/90 border-l border-t border-white/70 rounded-sm"
           />
           <button
             onClick={() => { haptic(); setVisible(false); }}
-            className="absolute -top-2.5 -right-2.5 h-6 w-6 rounded-full bg-card border-2 border-[#2b2b2b] grid place-items-center shadow-[0_2px_0_0_#2b2b2b] tap-bounce"
+            className="absolute -top-2.5 -right-2.5 h-6 w-6 rounded-full bg-white border border-border/60 grid place-items-center shadow-md tap-bounce"
             aria-label="Fermer"
           >
             <X className="h-3 w-3" />
@@ -974,21 +969,25 @@ function Mascot({
                 Coucou&nbsp;! Tu manges quoi&nbsp;?
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
-                {quickPicks.map((p) => (
-                  <button
-                    key={p.value}
-                    onClick={() => { haptic(); onPickCuisine(p.value); setStep(1); }}
-                    className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-muted hover:bg-muted/70 border-2 border-[#2b2b2b] shadow-[0_2px_0_0_#2b2b2b] active:translate-y-[1px] active:shadow-none tap-bounce"
-                  >
-                    <span>{p.emoji}</span> {p.label}
-                  </button>
-                ))}
+                {quickPicks.map((value) => {
+                  const meta = CUISINE_META[value];
+                  const Icon = meta.Icon;
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => { haptic(); onPickCuisine(value); setStep(1); }}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold pl-1.5 pr-3 py-1 rounded-full bg-white hover:bg-muted/60 border border-border/70 shadow-sm active:translate-y-[1px] tap-bounce"
+                    >
+                      <Icon size={18} /> {meta.label}
+                    </button>
+                  );
+                })}
               </div>
             </>
           ) : (
             <>
               <p className="text-sm font-extrabold text-foreground text-center">
-                🎯 Défi de la semaine
+                Défi de la semaine
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground text-center">
                 Découvre 3 nouveaux restos cette semaine&nbsp;!
@@ -996,9 +995,9 @@ function Mascot({
               <div className="mt-2 flex justify-center">
                 <button
                   onClick={() => { haptic(20); onOpenHype(); setVisible(false); }}
-                  className="inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white border-2 border-[#2b2b2b] shadow-[0_2px_0_0_#2b2b2b] active:translate-y-[1px] active:shadow-none tap-bounce"
+                  className="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white shadow-md active:translate-y-[1px] tap-bounce"
                 >
-                  🔥 Voir les plus hype
+                  <FlameIcon size={14} /> Voir les plus hype
                 </button>
               </div>
             </>
@@ -1009,50 +1008,6 @@ function Mascot({
   );
 }
 
-function ChickSvg() {
-  return (
-    <svg
-      width="150"
-      height="150"
-      viewBox="0 0 200 200"
-      xmlns="http://www.w3.org/2000/svg"
-      className="drop-shadow-[0_8px_0_rgba(43,43,43,0.9)]"
-    >
-      {/* feet */}
-      <path d="M78 178 l-8 10 M78 178 l0 12 M78 178 l8 10" stroke="#E58A00" strokeWidth="6" strokeLinecap="round" fill="none" />
-      <path d="M122 178 l-8 10 M122 178 l0 12 M122 178 l8 10" stroke="#E58A00" strokeWidth="6" strokeLinecap="round" fill="none" />
-      {/* body */}
-      <ellipse cx="100" cy="115" rx="70" ry="65" fill="#FFD534" stroke="#2b2b2b" strokeWidth="6" />
-      {/* belly highlight */}
-      <ellipse cx="100" cy="135" rx="42" ry="30" fill="#FFE680" opacity="0.7" />
-      {/* wing (animated) */}
-      <path
-        d="M52 118 q-14 8 -6 30 q10 14 30 8 q6 -2 8 -10 z"
-        fill="#F5B800"
-        stroke="#2b2b2b"
-        strokeWidth="5"
-        strokeLinejoin="round"
-        className="animate-mascot-wing"
-      />
-      {/* cheek blush */}
-      <circle cx="58" cy="118" r="9" fill="#FF9BB3" opacity="0.55" />
-      <circle cx="142" cy="118" r="9" fill="#FF9BB3" opacity="0.55" />
-      {/* eyes */}
-      <g>
-        <ellipse cx="82" cy="92" rx="9" ry="11" fill="#2b2b2b" className="animate-mascot-blink" />
-        <circle cx="85" cy="88" r="3" fill="#ffffff" />
-      </g>
-      <g>
-        <ellipse cx="118" cy="92" rx="9" ry="11" fill="#2b2b2b" className="animate-mascot-blink" />
-        <circle cx="121" cy="88" r="3" fill="#ffffff" />
-      </g>
-      {/* beak */}
-      <path d="M92 108 q8 10 16 0 q-8 -6 -16 0 z" fill="#FF9E1B" stroke="#2b2b2b" strokeWidth="4" strokeLinejoin="round" />
-      {/* hair tuft */}
-      <path d="M96 52 q4 -14 10 -2 q6 -12 8 4" stroke="#2b2b2b" strokeWidth="5" strokeLinecap="round" fill="none" />
-    </svg>
-  );
-}
 
 
 
@@ -1072,8 +1027,6 @@ function DetailCard({
   const [comment, setComment] = useState(visit.comment);
   const [showHours, setShowHours] = useState(false);
   useEffect(() => setComment(visit.comment), [visit.comment, r.id]);
-
-  const emoji = cuisineEmoji(r.cuisines);
 
   return (
     <div className="absolute left-3 right-3 bottom-3 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[360px] rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.12)] overflow-hidden max-h-[52vh] lg:max-h-[70vh] flex flex-col">
@@ -1095,8 +1048,8 @@ function DetailCard({
       )}
       <div className="p-4 overflow-y-auto">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-xl">
-            {emoji}
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+            <CuisineIcon cuisines={r.cuisines} size={22} />
           </span>
           <div className="min-w-0 flex-1">
             <h3 className="font-display font-bold text-base leading-tight">{r.name}</h3>
@@ -1157,7 +1110,7 @@ function DetailCard({
           )}
           {isNewRestaurant(r) && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-medium">
-              <Sparkles className="h-4 w-4" /> Nouveau
+              <SparkleIcon size={14} /> Nouveau
             </span>
           )}
           {r.openNow === true && (
