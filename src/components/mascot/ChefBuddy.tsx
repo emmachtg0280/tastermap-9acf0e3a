@@ -1,16 +1,18 @@
 /**
- * ChefBuddy — Duolingo-inspired sticker mascot.
- * A warm, expressive orange fox chef with living eyes that track the
- * pointer, a soft hop, gentle blink, and an always-visible open-mouth
- * smile with a subtly animated tongue (so the mouth never disappears while
- * she "talks"). Fox ears, a less round body, and distinct paw pads.
+ * ChefBuddy — chibi fox mascot inspired by soft sticker illustrations.
+ * Thick dark outlines, big round expressive eyes with living pupils that
+ * track the pointer, pink blush cheeks, cream muzzle & belly, and a small
+ * animated mouth so she feels like she's really talking.
  */
 
 import { useEffect, useRef, useState } from "react";
 
-const EYE_LEFT = { cx: 78, cy: 90 };
-const EYE_RIGHT = { cx: 122, cy: 90 };
-const PUPIL_RADIUS = 4;
+const EYE_LEFT = { cx: 82, cy: 96 };
+const EYE_RIGHT = { cx: 128, cy: 96 };
+const PUPIL_RADIUS = 3.5;
+
+const STROKE = "#2a1508";
+const STROKE_W = 3.2;
 
 export function ChefBuddy() {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -72,190 +74,184 @@ export function ChefBuddy() {
   return (
     <svg
       ref={svgRef}
-      width="164"
+      width="168"
       height="180"
-      viewBox="0 0 200 220"
+      viewBox="0 0 210 220"
       xmlns="http://www.w3.org/2000/svg"
-      className="drop-shadow-[0_14px_18px_rgba(43,20,0,0.28)]"
+      className="drop-shadow-[0_14px_18px_rgba(43,20,0,0.25)]"
     >
       <defs>
-        {/* Clip the tongue so it stays inside the open-mouth shape */}
-        <clipPath id="mouthClip">
-          <path d="M84 116 q16 16 32 0 q-4 12 -16 12 q-12 0 -16 -12 z" />
+        <clipPath id="mouthClip2">
+          <path d="M92 122 q13 12 26 0 q-3 11 -13 11 q-10 0 -13 -11 z" />
         </clipPath>
-        {/* Warm, healthy gradient for the head */}
-        <radialGradient id="headGrad" cx="35%" cy="30%" r="80%">
-          <stop offset="0%" stopColor="#FFC48A" />
-          <stop offset="55%" stopColor="#FF8F33" />
-          <stop offset="100%" stopColor="#F06A0E" />
-        </radialGradient>
-        <radialGradient id="bodyGrad" cx="40%" cy="30%" r="85%">
-          <stop offset="0%" stopColor="#FFB56A" />
-          <stop offset="70%" stopColor="#FF8F33" />
-          <stop offset="100%" stopColor="#E3650C" />
-        </radialGradient>
       </defs>
 
-      {/* soft ground shadow */}
-      <ellipse cx="100" cy="206" rx="52" ry="6" fill="rgba(0,0,0,0.18)" />
+      {/* ground shadow */}
+      <ellipse cx="105" cy="208" rx="52" ry="6" fill="rgba(0,0,0,0.16)" />
 
-      {/* feet — distinct fox paws with pads */}
+      {/* ---- BODY ---- */}
+      {/* back paws */}
       <g>
-        <ellipse cx="78" cy="198" rx="14" ry="8" fill="#B84200" />
-        <ellipse cx="75" cy="202" rx="5" ry="3" fill="#7A2E00" />
-        <ellipse cx="81" cy="202" rx="5" ry="3" fill="#7A2E00" />
-        <circle cx="78" cy="196" r="3.5" fill="#7A2E00" />
-      </g>
-      <g>
-        <ellipse cx="122" cy="198" rx="14" ry="8" fill="#B84200" />
-        <ellipse cx="119" cy="202" rx="5" ry="3" fill="#7A2E00" />
-        <ellipse cx="125" cy="202" rx="5" ry="3" fill="#7A2E00" />
-        <circle cx="122" cy="196" r="3.5" fill="#7A2E00" />
+        <ellipse cx="78" cy="196" rx="16" ry="10"
+          fill="#6B3A1E" stroke={STROKE} strokeWidth={STROKE_W} strokeLinejoin="round" />
+        <ellipse cx="132" cy="196" rx="16" ry="10"
+          fill="#6B3A1E" stroke={STROKE} strokeWidth={STROKE_W} strokeLinejoin="round" />
       </g>
 
-      {/* body — taller, less round fox shape */}
+      {/* torso — chibi sitting shape */}
       <path
-        d="M100 76
-           q-42 0 -48 44
-           q-4 34 14 62
-           q20 14 68 14
-           q48 0 68 -14
-           q18 -28 14 -62
-           q-6 -44 -48 -44
-           z"
-        fill="url(#bodyGrad)"
-      />
-      {/* belly */}
-      <ellipse cx="100" cy="158" rx="38" ry="32" fill="#FFF1DC" />
-
-      {/* arms — more defined little fox arms */}
-      <path d="M42 128 q-16 14 -10 38 q8 10 20 4 q6 -24 -10 -42 z" fill="#FF8F33" />
-      <ellipse cx="36" cy="166" rx="6" ry="8" fill="#E8620A" opacity="0.6" />
-      <path d="M158 128 q16 14 10 38 q-8 10 -20 4 q-6 -24 10 -42 z" fill="#FF8F33" />
-      <ellipse cx="164" cy="166" rx="6" ry="8" fill="#E8620A" opacity="0.6" />
-
-      {/* ears — tall, pointy fox ears */}
-      <path d="M50 58 q-18 -44 30 -46 q14 30 2 48 z" fill="#FF8F33" />
-      <path d="M56 42 q-4 -22 16 -24 q8 16 4 28 z" fill="#FFC8A0" />
-      <path d="M150 58 q18 -44 -30 -46 q-14 30 -2 48 z" fill="#FF8F33" />
-      <path d="M144 42 q4 -22 -16 -24 q-8 16 -4 28 z" fill="#FFC8A0" />
-
-      {/* head — less round, more fox-like tapered face */}
-      <path
-        d="M100 46
-           q-40 2 -56 36
-           q-12 28 -2 56
-           q16 26 58 28
-           q42 -2 58 -28
-           q10 -28 -2 -56
-           q-16 -34 -56 -36
-           z"
-        fill="url(#headGrad)"
+        d="M60 148
+           q-4 -30 20 -42
+           q25 -8 50 0
+           q24 12 20 42
+           q-2 32 -20 40
+           q-25 6 -50 0
+           q-18 -8 -20 -40 z"
+        fill="#F58A2E"
+        stroke={STROKE}
+        strokeWidth={STROKE_W}
+        strokeLinejoin="round"
       />
 
-      {/* forehead fur tuft */}
+      {/* cream belly */}
       <path
-        d="M92 48 q4 -8 8 -2 q4 -6 8 2 q-6 6 -16 0 z"
-        fill="#FFB067"
-        opacity="0.85"
+        d="M78 152
+           q-2 -22 12 -30
+           q15 -6 30 0
+           q14 8 12 30
+           q-4 22 -14 26
+           q-13 4 -26 0
+           q-10 -4 -14 -26 z"
+        fill="#FFF2DC"
+        stroke={STROKE}
+        strokeWidth={STROKE_W}
+        strokeLinejoin="round"
+        opacity="0.98"
+      />
+      {/* belly fur hint */}
+      <path d="M100 168 v14" stroke={STROKE} strokeWidth="1.8" strokeLinecap="round" opacity="0.4" />
+      <path d="M94 172 v8" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" opacity="0.35" />
+      <path d="M106 172 v8" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" opacity="0.35" />
+
+      {/* ---- HEAD ---- */}
+      {/* ears — outer orange, inner cream + dark tips */}
+      <g>
+        {/* left ear */}
+        <path
+          d="M52 78 q-14 -46 24 -52 q10 24 8 46 z"
+          fill="#F58A2E"
+          stroke={STROKE}
+          strokeWidth={STROKE_W}
+          strokeLinejoin="round"
+        />
+        <path
+          d="M60 66 q-6 -26 16 -32 q6 16 6 30 z"
+          fill="#FFE2C0"
+        />
+        {/* dark ear tip */}
+        <path d="M56 46 q6 -18 20 -20 q-4 12 -12 22 z" fill="#5A3B1D" />
+        {/* right ear */}
+        <path
+          d="M158 78 q14 -46 -24 -52 q-10 24 -8 46 z"
+          fill="#F58A2E"
+          stroke={STROKE}
+          strokeWidth={STROKE_W}
+          strokeLinejoin="round"
+        />
+        <path
+          d="M150 66 q6 -26 -16 -32 q-6 16 -6 30 z"
+          fill="#FFE2C0"
+        />
+        <path d="M154 46 q-6 -18 -20 -20 q4 12 12 22 z" fill="#5A3B1D" />
+      </g>
+
+      {/* head shape — round chibi with side cheek fluff */}
+      <path
+        d="M105 50
+           q-46 0 -58 40
+           q-6 26 6 46
+           q22 22 52 22
+           q30 0 52 -22
+           q12 -20 6 -46
+           q-12 -40 -58 -40 z"
+        fill="#F58A2E"
+        stroke={STROKE}
+        strokeWidth={STROKE_W}
+        strokeLinejoin="round"
       />
 
-      {/* soft cheek fluff (jowls) — humanizes the face */}
-      <ellipse cx="58" cy="112" rx="14" ry="12" fill="#FFB067" opacity="0.85" />
-      <ellipse cx="142" cy="112" rx="14" ry="12" fill="#FFB067" opacity="0.85" />
-
-      {/* face highlight (top light) */}
-      <ellipse cx="80" cy="76" rx="26" ry="18" fill="#FFD1A0" opacity="0.55" />
-
-      {/* muzzle / lower face — larger, rounder for warmth */}
-      <ellipse cx="100" cy="112" rx="32" ry="24" fill="#FFF6E4" />
-      {/* muzzle shadow to give a soft chin */}
-      <ellipse cx="100" cy="122" rx="24" ry="10" fill="#F4E4C4" opacity="0.6" />
+      {/* cream muzzle / cheeks — big soft mask */}
+      <path
+        d="M60 110
+           q6 -14 22 -14
+           q10 -4 23 -4
+           q13 0 23 4
+           q16 0 22 14
+           q4 20 -14 34
+           q-14 10 -31 10
+           q-17 0 -31 -10
+           q-18 -14 -14 -34 z"
+        fill="#FFF2DC"
+        stroke={STROKE}
+        strokeWidth={STROKE_W}
+        strokeLinejoin="round"
+      />
 
       {/* pink blush cheeks */}
-      <ellipse cx="62" cy="108" rx="9" ry="6" fill="#FF9BB3" opacity="0.75" />
-      <ellipse cx="138" cy="108" rx="9" ry="6" fill="#FF9BB3" opacity="0.75" />
+      <ellipse cx="68" cy="118" rx="9" ry="6" fill="#FFA6B5" opacity="0.85" />
+      <ellipse cx="142" cy="118" rx="9" ry="6" fill="#FFA6B5" opacity="0.85" />
 
-      {/* eyes — larger, glossier, more expressive */}
+      {/* eyes — big round black with white highlights, tracking */}
       <g>
-        {/* subtle eye shadow to seat them into the face */}
-        <ellipse cx={EYE_LEFT.cx} cy={EYE_LEFT.cy + 2} rx="13" ry="14" fill="#E8620A" opacity="0.25" />
-        <ellipse cx={EYE_RIGHT.cx} cy={EYE_RIGHT.cy + 2} rx="13" ry="14" fill="#E8620A" opacity="0.25" />
-
-        <ellipse cx={EYE_LEFT.cx} cy={EYE_LEFT.cy} rx="12" ry="14" fill="#ffffff" />
-        <ellipse cx={EYE_RIGHT.cx} cy={EYE_RIGHT.cy} rx="12" ry="14" fill="#ffffff" />
-
-        {/* pupils translate with gaze; blink scales vertically */}
         <g className="animate-mascot-blink" style={{ transformOrigin: `${EYE_LEFT.cx}px ${EYE_LEFT.cy}px`, transformBox: "fill-box" as const }}>
+          <circle cx={EYE_LEFT.cx} cy={EYE_LEFT.cy} r="8.5" fill="#1a0d05" />
           <g transform={`translate(${px} ${py})`}>
-            <ellipse cx={EYE_LEFT.cx} cy={EYE_LEFT.cy + 1} rx="7" ry="9" fill="#2b1810" />
-            <circle cx={EYE_LEFT.cx + 2.5} cy={EYE_LEFT.cy - 3} r="2.8" fill="#ffffff" />
-            <circle cx={EYE_LEFT.cx - 2.8} cy={EYE_LEFT.cy + 4} r="1.4" fill="#ffffff" />
+            <circle cx={EYE_LEFT.cx + 2.2} cy={EYE_LEFT.cy - 2.6} r="2.6" fill="#ffffff" />
+            <circle cx={EYE_LEFT.cx - 2.6} cy={EYE_LEFT.cy + 3} r="1.2" fill="#ffffff" />
           </g>
         </g>
         <g className="animate-mascot-blink" style={{ transformOrigin: `${EYE_RIGHT.cx}px ${EYE_RIGHT.cy}px`, transformBox: "fill-box" as const }}>
+          <circle cx={EYE_RIGHT.cx} cy={EYE_RIGHT.cy} r="8.5" fill="#1a0d05" />
           <g transform={`translate(${px} ${py})`}>
-            <ellipse cx={EYE_RIGHT.cx} cy={EYE_RIGHT.cy + 1} rx="7" ry="9" fill="#2b1810" />
-            <circle cx={EYE_RIGHT.cx + 2.5} cy={EYE_RIGHT.cy - 3} r="2.8" fill="#ffffff" />
-            <circle cx={EYE_RIGHT.cx - 2.8} cy={EYE_RIGHT.cy + 4} r="1.4" fill="#ffffff" />
+            <circle cx={EYE_RIGHT.cx + 2.2} cy={EYE_RIGHT.cy - 2.6} r="2.6" fill="#ffffff" />
+            <circle cx={EYE_RIGHT.cx - 2.6} cy={EYE_RIGHT.cy + 3} r="1.2" fill="#ffffff" />
           </g>
         </g>
-
-        {/* upper eyelid line adds warmth */}
-        <path d="M67 82 q11 -5 22 0" stroke="#5a2a08" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.55" />
-        <path d="M111 82 q11 -5 22 0" stroke="#5a2a08" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.55" />
       </g>
 
-      {/* eyebrows — slight arch, kind expression */}
-      <path d="M64 68 q12 -8 24 -2" stroke="#3a1a06" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-      <path d="M112 66 q12 -6 24 2" stroke="#3a1a06" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+      {/* tiny eyebrows — subtle arches */}
+      <path d="M72 82 q10 -3 20 1" stroke={STROKE} strokeWidth="2.4" fill="none" strokeLinecap="round" opacity="0.75" />
+      <path d="M118 83 q10 -4 20 -1" stroke={STROKE} strokeWidth="2.4" fill="none" strokeLinecap="round" opacity="0.75" />
 
-      {/* nose — heart-shaped tip */}
+      {/* nose — small heart button */}
       <path
-        d="M100 98
-           q-8 0 -8 6
-           q0 6 8 10
-           q8 -4 8 -10
-           q0 -6 -8 -6 z"
-        fill="#2b1810"
+        d="M105 112
+           q-6 0 -6 4.5
+           q0 5 6 8
+           q6 -3 6 -8
+           q0 -4.5 -6 -4.5 z"
+        fill="#1a0d05"
       />
-      <ellipse cx="97" cy="100" rx="2.2" ry="1.4" fill="#ffffff" opacity="0.8" />
-      {/* nose-to-mouth crease */}
-      <path d="M100 110 v6" stroke="#5a2a08" strokeWidth="1.6" strokeLinecap="round" opacity="0.55" />
+      <ellipse cx="103" cy="114" rx="1.6" ry="1" fill="#ffffff" opacity="0.85" />
+      {/* philtrum */}
+      <path d="M105 122 v6" stroke={STROKE} strokeWidth="2" strokeLinecap="round" />
 
-      {/* MOUTH — always visible, open smile with tongue that talks */}
+      {/* MOUTH — cute chibi smile, animated so she "speaks" */}
       <g>
-        {/* Dark open-mouth shape (always drawn) */}
-        <path
-          d="M84 116 q16 16 32 0 q-4 14 -16 14 q-12 0 -16 -14 z"
-          fill="#3a1409"
-        />
-        {/* Animated tongue — scales inside the clipped mouth */}
-        <g clipPath="url(#mouthClip)">
+        {/* the smile: two soft curves */}
+        <path d="M105 128 q-8 8 -13 4" stroke={STROKE} strokeWidth="2.8" fill="none" strokeLinecap="round" />
+        <path d="M105 128 q8 8 13 4" stroke={STROKE} strokeWidth="2.8" fill="none" strokeLinecap="round" />
+        {/* small mouth opening that pulses when talking */}
+        <g clipPath="url(#mouthClip2)">
+          <path d="M92 122 q13 12 26 0 q-3 11 -13 11 q-10 0 -13 -11 z" fill="#3a1409" />
           <g
             className="animate-mascot-mouth"
-            style={{ transformOrigin: "100px 122px", transformBox: "fill-box" as const }}
+            style={{ transformOrigin: "105px 130px", transformBox: "fill-box" as const }}
           >
-            <ellipse cx="100" cy="126" rx="12" ry="7" fill="#FF6F91" />
-            <ellipse cx="100" cy="124" rx="9" ry="3" fill="#FF95AC" opacity="0.9" />
+            <ellipse cx="105" cy="132" rx="9" ry="5" fill="#FF7A98" />
           </g>
-          {/* Little tooth */}
-          <rect x="96" y="115" width="8" height="4" rx="1.2" fill="#ffffff" />
         </g>
-        {/* Smile corners so the mouth reads even at small sizes */}
-        <path d="M82 114 q2 4 6 6" stroke="#3a1409" strokeWidth="2.4" fill="none" strokeLinecap="round" />
-        <path d="M118 114 q-2 4 -6 6" stroke="#3a1409" strokeWidth="2.4" fill="none" strokeLinecap="round" />
       </g>
-
-      {/* chef toque */}
-      <ellipse cx="100" cy="38" rx="34" ry="20" fill="#ffffff" />
-      <circle cx="78" cy="30" r="16" fill="#ffffff" />
-      <circle cx="122" cy="30" r="16" fill="#ffffff" />
-      <circle cx="100" cy="20" r="17" fill="#ffffff" />
-      <ellipse cx="90" cy="18" rx="6" ry="4" fill="#f5f0e6" opacity="0.7" />
-      {/* toque band */}
-      <rect x="68" y="52" width="64" height="12" rx="5" fill="#F0E9D8" />
-      <rect x="68" y="52" width="64" height="4" rx="2" fill="#ffffff" opacity="0.7" />
     </svg>
   );
 }
