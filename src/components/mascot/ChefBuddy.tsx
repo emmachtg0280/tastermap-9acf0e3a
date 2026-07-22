@@ -103,19 +103,16 @@ export function ChefBuddy() {
       <ellipse cx="80" cy="198" rx="15" ry="7" fill="#B84200" />
       <ellipse cx="120" cy="198" rx="15" ry="7" fill="#B84200" />
 
-      {/* tail */}
-      <g
-        className="animate-mascot-wing"
-        style={{ transformOrigin: "168px 148px" }}
-      >
+      {/* tail — soft, rounded and tucked behind the body so it does not peek through */}
+      <g>
         <path
-          d="M162 132 q30 -4 26 28 q-2 20 -26 16 q-16 -4 -14 -22 z"
+          d="M164 150 q22 -2 18 20 q-2 14 -18 12 q-12 -2 -10 -16 z"
           fill="#FF7A1A"
         />
         <path
-          d="M178 152 q10 6 4 22"
+          d="M176 166 q7 4 3 16"
           stroke="#FFF1DC"
-          strokeWidth="7"
+          strokeWidth="6"
           fill="none"
           strokeLinecap="round"
         />
