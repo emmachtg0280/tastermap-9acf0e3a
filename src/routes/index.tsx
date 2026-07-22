@@ -523,36 +523,38 @@ function Index() {
             <div className="flex gap-1.5 shrink-0">
               <button
                 onClick={() => { haptic(); setShowFilters(false); setListMode("new"); }}
-                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
+                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
-                <span>✨</span> Nouveautés
+                <SparkleIcon size={16} /> Nouveautés
               </button>
               <button
                 onClick={() => { haptic(); setShowFilters(false); setListMode("hype"); }}
-                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
+                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
-                <span>🔥</span> Hype
+                <FlameIcon size={16} /> Hype
               </button>
             </div>
 
             {/* Divider */}
             <div className="w-px bg-foreground/15 self-stretch my-1 shrink-0" />
 
-            {/* Cuisine chips — Uber Eats style: big emoji, small label */}
-            {CUISINES.filter((c) => c.value !== "any").map((c) => {
-              const active = c.value === cuisine;
+            {/* Cuisine chips — Uber Eats style: big icon, small label */}
+            {CUISINE_ORDER.map((value) => {
+              const meta = CUISINE_META[value];
+              const active = value === cuisine;
+              const Icon = meta.Icon;
               return (
                 <button
-                  key={c.value}
-                  onClick={() => { haptic(); setCuisine(active ? "any" : c.value); }}
+                  key={value}
+                  onClick={() => { haptic(); setCuisine(active ? "any" : value); }}
                   className={`shrink-0 inline-flex flex-col items-center justify-center gap-0.5 w-[58px] h-[58px] rounded-2xl backdrop-blur shadow-sm tap-bounce transition ${
                     active
                       ? "bg-white text-foreground font-semibold border-2 border-white ring-2 ring-white/80 shadow-md scale-105"
                       : "bg-white/40 border border-white/50 text-foreground/80 hover:bg-white/60"
                   }`}
                 >
-                  <span className="text-[22px] leading-none">{c.emoji}</span>
-                  <span className="text-[10px] leading-tight">{c.label}</span>
+                  <Icon size={26} />
+                  <span className="text-[10px] leading-tight">{meta.label}</span>
                 </button>
               );
             })}
