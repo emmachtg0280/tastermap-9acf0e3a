@@ -159,7 +159,7 @@ export const FlameIcon = (p: IconProps) => wrapper(INNER_FLAME, p.size, p);
 
 export const CUISINE_META: Record<
   Cuisine,
-  { label: string; Icon: (p: IconProps) => JSX.Element; inner: string }
+  { label: string; Icon: (p: IconProps) => ReactElement; inner: string }
 > = {
   any:        { label: "Tous",        Icon: PlateIcon,    inner: INNER_PLATE    },
   french:     { label: "Français",    Icon: BaguetteIcon, inner: INNER_BAGUETTE },
