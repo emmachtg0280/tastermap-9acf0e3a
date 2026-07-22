@@ -743,15 +743,18 @@ function Index() {
                       .filter((r) => (hypeStats[r.id]?.score ?? 0) > 0)
                       .sort((a, b) => (hypeStats[b.id]?.score ?? 0) - (hypeStats[a.id]?.score ?? 0))
                   : filtered;
+        const titleIcon =
+          listMode === "new" ? <SparkleIcon size={16} /> :
+          listMode === "hype" ? <FlameIcon size={16} /> : null;
         const listTitle =
           listMode === "done"
             ? "Faits"
             : listMode === "favorites"
               ? "Favoris"
               : listMode === "new"
-                ? "✨ Nouveautés"
+                ? "Nouveautés"
                 : listMode === "hype"
-                  ? "🔥 Hype"
+                  ? "Hype"
                   : "Restaurants";
 
         return (
@@ -762,8 +765,8 @@ function Index() {
           />
           <div className="absolute z-40 left-2 right-2 bottom-2 top-20 sm:left-4 sm:right-auto sm:top-4 sm:bottom-4 sm:w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl overflow-hidden flex flex-col animate-pop-in">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
-              <h2 className="font-display font-bold text-sm">
-                {listTitle} <span className="text-muted-foreground font-semibold">· {listItems.length}</span>
+              <h2 className="font-display font-bold text-sm inline-flex items-center gap-1.5">
+                {titleIcon}{listTitle} <span className="text-muted-foreground font-semibold">· {listItems.length}</span>
               </h2>
               <button
                 onClick={() => { haptic(); setListMode(null); }}
