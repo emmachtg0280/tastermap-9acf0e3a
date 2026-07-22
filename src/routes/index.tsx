@@ -10,20 +10,17 @@ import {
   Loader2,
   X,
   Check,
-  Globe,
   Phone,
   CalendarClock,
   Clock,
   ChevronDown,
   Navigation,
-  DollarSign,
   Utensils,
   SlidersHorizontal,
   Heart,
   LogIn,
   LogOut,
   User,
-  Sparkles,
 } from "lucide-react";
 
 import {
@@ -43,6 +40,16 @@ import { haptic } from "@/lib/haptic";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 
+import {
+  CUISINE_META,
+  CuisineIcon,
+  SparkleIcon,
+  FlameIcon,
+  cuisineInnerSvg,
+  pickCuisine,
+} from "@/components/icons/CuisineIcons";
+import { ChefBuddy } from "@/components/mascot/ChefBuddy";
+
 
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
@@ -50,26 +57,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const CUISINES: { value: Cuisine; label: string; emoji: string }[] = [
-  { value: "any", label: "Tous", emoji: "🍽️" },
-  { value: "french", label: "Français", emoji: "🥖" },
-  { value: "italian", label: "Italien", emoji: "🍕" },
-  { value: "chinese", label: "Chinois", emoji: "🥟" },
-  { value: "japanese", label: "Japonais", emoji: "🍣" },
-  { value: "indian", label: "Indien", emoji: "🍛" },
-  { value: "mexican", label: "Mexicain", emoji: "🌮" },
-  { value: "thai", label: "Thaï", emoji: "🍜" },
-  { value: "spanish", label: "Espagnol", emoji: "🥘" },
-  { value: "greek", label: "Grec", emoji: "🥙" },
-  { value: "american", label: "Américain", emoji: "🍔" },
-  { value: "vegetarian", label: "Végétarien", emoji: "🥗" },
+const CUISINE_ORDER: Cuisine[] = [
+  "french", "italian", "chinese", "japanese", "indian",
+  "mexican", "thai", "spanish", "greek", "american", "vegetarian",
 ];
 
-function cuisineEmoji(cs: Cuisine[]): string {
-  const priority: Cuisine[] = ["italian","japanese","french","chinese","indian","mexican","thai","spanish","greek","american","vegetarian"];
-  for (const p of priority) if (cs.includes(p)) return CUISINES.find(c => c.value === p)!.emoji;
-  return "🍽️";
-}
 
 // Google Places API does not expose an opening date. We use a low review count
 // as a proxy for "opened in the last rolling year".
