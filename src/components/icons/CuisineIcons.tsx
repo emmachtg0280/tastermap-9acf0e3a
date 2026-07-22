@@ -157,22 +157,36 @@ export const FlameIcon = (p: IconProps) => wrapper(INNER_FLAME, p.size, p);
 
 /* ─────────── Mapping ─────────── */
 
+import frenchAsset from "@/assets/cuisines/french.png.asset.json";
+import italianAsset from "@/assets/cuisines/italian.png.asset.json";
+import chineseAsset from "@/assets/cuisines/chinese.png.asset.json";
+import japaneseAsset from "@/assets/cuisines/japanese.png.asset.json";
+import indianAsset from "@/assets/cuisines/indian.png.asset.json";
+import mexicanAsset from "@/assets/cuisines/mexican.png.asset.json";
+import thaiAsset from "@/assets/cuisines/thai.png.asset.json";
+import spanishAsset from "@/assets/cuisines/spanish.png.asset.json";
+import greekAsset from "@/assets/cuisines/greek.png.asset.json";
+import americanAsset from "@/assets/cuisines/american.png.asset.json";
+import vegetarianAsset from "@/assets/cuisines/vegetarian.png.asset.json";
+import anyAsset from "@/assets/cuisines/any.png.asset.json";
+import { useEffect, useState } from "react";
+
 export const CUISINE_META: Record<
   Cuisine,
-  { label: string; Icon: (p: IconProps) => ReactElement; inner: string }
+  { label: string; Icon: (p: IconProps) => ReactElement; inner: string; image: string }
 > = {
-  any:        { label: "Tous",        Icon: PlateIcon,    inner: INNER_PLATE    },
-  french:     { label: "Français",    Icon: BaguetteIcon, inner: INNER_BAGUETTE },
-  italian:    { label: "Italien",     Icon: PastaIcon,    inner: INNER_PASTA    },
-  chinese:    { label: "Chinois",     Icon: DumplingIcon, inner: INNER_DUMPLING },
-  japanese:   { label: "Japonais",    Icon: SushiIcon,    inner: INNER_SUSHI    },
-  indian:     { label: "Indien",      Icon: CurryIcon,    inner: INNER_CURRY    },
-  mexican:    { label: "Mexicain",    Icon: TacoIcon,     inner: INNER_TACO     },
-  thai:       { label: "Thaï",        Icon: ChiliIcon,    inner: INNER_CHILI    },
-  spanish:    { label: "Espagnol",    Icon: PaellaIcon,   inner: INNER_PAELLA   },
-  greek:      { label: "Grec",        Icon: OliveIcon,    inner: INNER_OLIVE    },
-  american:   { label: "Américain",   Icon: BurgerIcon,   inner: INNER_BURGER   },
-  vegetarian: { label: "Végétarien",  Icon: SaladIcon,    inner: INNER_SALAD    },
+  any:        { label: "Tous",        Icon: PlateIcon,    inner: INNER_PLATE,    image: anyAsset.url        },
+  french:     { label: "Français",    Icon: BaguetteIcon, inner: INNER_BAGUETTE, image: frenchAsset.url     },
+  italian:    { label: "Italien",     Icon: PastaIcon,    inner: INNER_PASTA,    image: italianAsset.url    },
+  chinese:    { label: "Chinois",     Icon: DumplingIcon, inner: INNER_DUMPLING, image: chineseAsset.url    },
+  japanese:   { label: "Japonais",    Icon: SushiIcon,    inner: INNER_SUSHI,    image: japaneseAsset.url   },
+  indian:     { label: "Indien",      Icon: CurryIcon,    inner: INNER_CURRY,    image: indianAsset.url     },
+  mexican:    { label: "Mexicain",    Icon: TacoIcon,     inner: INNER_TACO,     image: mexicanAsset.url    },
+  thai:       { label: "Thaï",        Icon: ChiliIcon,    inner: INNER_CHILI,    image: thaiAsset.url       },
+  spanish:    { label: "Espagnol",    Icon: PaellaIcon,   inner: INNER_PAELLA,   image: spanishAsset.url    },
+  greek:      { label: "Grec",        Icon: OliveIcon,    inner: INNER_OLIVE,    image: greekAsset.url      },
+  american:   { label: "Américain",   Icon: BurgerIcon,   inner: INNER_BURGER,   image: americanAsset.url   },
+  vegetarian: { label: "Végétarien",  Icon: SaladIcon,    inner: INNER_SALAD,    image: vegetarianAsset.url },
 };
 
 const PRIORITY: Cuisine[] = [
@@ -185,18 +199,70 @@ export function pickCuisine(cs: Cuisine[]): Cuisine {
   return "any";
 }
 
+/** PNG-based appetizing cuisine icon (sticker illustration). */
 export function CuisineIcon({
   cuisines,
-  size = 22,
+  size = 32,
+  className = "",
 }: {
   cuisines: Cuisine[];
   size?: number;
+  className?: string;
 }) {
-  const { Icon } = CUISINE_META[pickCuisine(cuisines)];
-  return <Icon size={size} />;
+  const c = pickCuisine(cuisines);
+  return (
+    <img
+      src={CUISINE_META[c].image}
+      alt={CUISINE_META[c].label}
+      width={size}
+      height={size}
+      loading="lazy"
+      draggable={false}
+      className={`object-contain select-none pointer-events-none ${className}`}
+      style={{ width: size, height: size, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.18))" }}
+    />
+  );
 }
 
-/** Raw inner SVG for embedding inside another SVG (e.g. map marker). */
+/** Raw inner SVG (legacy fallback). */
 export function cuisineInnerSvg(cuisines: Cuisine[]): string {
   return CUISINE_META[pickCuisine(cuisines)].inner;
 }
+
+/** Fetch a cuisine PNG once and return it as a base64 data URL,
+ *  needed for embedding inside a Google Maps marker SVG data-URL
+ *  (external URL refs are blocked in browser-rendered SVG images). */
+const dataUrlCache = new Map<Cuisine, string>();
+export async function loadCuisineDataUrl(c: Cuisine): Promise<string> {
+  const cached = dataUrlCache.get(c);
+  if (cached) return cached;
+  const res = await fetch(CUISINE_META[c].image);
+  const blob = await res.blob();
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+  dataUrlCache.set(c, dataUrl);
+  return dataUrl;
+}
+
+/** Preload every cuisine PNG as a base64 data URL. Returns null until ready. */
+export function useCuisineDataUrls(): Record<Cuisine, string> | null {
+  const [urls, setUrls] = useState<Record<Cuisine, string> | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const keys = Object.keys(CUISINE_META) as Cuisine[];
+    Promise.all(keys.map(async (c) => [c, await loadCuisineDataUrl(c)] as const))
+      .then((entries) => {
+        if (!cancelled) setUrls(Object.fromEntries(entries) as Record<Cuisine, string>);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return urls;
+}
+
