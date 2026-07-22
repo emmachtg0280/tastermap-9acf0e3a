@@ -964,7 +964,7 @@ function Mascot({
 
   if (!visible) return null;
 
-  const quickPicks: Cuisine[] = ["italian", "japanese", "french", "american", "asian", "burger"];
+  const quickPicks: Cuisine[] = ["italian", "japanese", "french", "american", "mexican", "thai"];
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
