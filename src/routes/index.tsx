@@ -852,7 +852,7 @@ function Index() {
                           )}
                           {isNewRestaurant(r) && (
                             <span className="inline-flex items-center gap-0.5 text-sky-600 font-medium">
-                              <Sparkles className="h-3 w-3" /> Nouveau
+                              <SparkleIcon size={12} /> Nouveau
                             </span>
                           )}
                           {r.openNow === true && (
