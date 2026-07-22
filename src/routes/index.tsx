@@ -546,13 +546,13 @@ function Index() {
                 onClick={() => { haptic(); setShowFilters(false); setListMode("new"); }}
                 className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
-                <SparkleIcon size={16} /> Nouveautés
+                <NewStickerIcon size={20} /> Nouveautés
               </button>
               <button
                 onClick={() => { haptic(); setShowFilters(false); setListMode("hype"); }}
                 className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
-                <FlameIcon size={16} /> Hype
+                <HypeStickerIcon size={20} /> Hype
               </button>
             </div>
 
@@ -773,8 +773,8 @@ function Index() {
                       .sort((a, b) => (hypeStats[b.id]?.score ?? 0) - (hypeStats[a.id]?.score ?? 0))
                   : filtered;
         const titleIcon =
-          listMode === "new" ? <SparkleIcon size={16} /> :
-          listMode === "hype" ? <FlameIcon size={16} /> : null;
+          listMode === "new" ? <NewStickerIcon size={20} /> :
+          listMode === "hype" ? <HypeStickerIcon size={20} /> : null;
         const listTitle =
           listMode === "done"
             ? "Faits"
@@ -884,7 +884,7 @@ function Index() {
                           )}
                           {isNewRestaurant(r) && (
                             <span className="inline-flex items-center gap-0.5 text-sky-600 font-medium">
-                              <SparkleIcon size={12} /> Nouveau
+                              <NewStickerIcon size={14} /> Nouveau
                             </span>
                           )}
                           {r.openNow === true && (
@@ -1035,7 +1035,7 @@ function Mascot({
                   onClick={() => { haptic(20); onOpenHype(); setVisible(false); }}
                   className="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white shadow-md active:translate-y-[1px] tap-bounce"
                 >
-                  <FlameIcon size={14} /> Voir les plus hype
+                  <HypeStickerIcon size={16} /> Voir les plus hype
                 </button>
               </div>
             </>
@@ -1148,7 +1148,7 @@ function DetailCard({
           )}
           {isNewRestaurant(r) && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-medium">
-              <SparkleIcon size={14} /> Nouveau
+              <NewStickerIcon size={16} /> Nouveau
             </span>
           )}
           {r.openNow === true && (
