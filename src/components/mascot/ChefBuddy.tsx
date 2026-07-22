@@ -83,16 +83,16 @@ export function ChefBuddy() {
         <clipPath id="mouthClip">
           <path d="M84 116 q16 16 32 0 q-4 12 -16 12 q-12 0 -16 -12 z" />
         </clipPath>
-        {/* Warm gradient for the head to give volume */}
+        {/* Warm, healthy gradient for the head */}
         <radialGradient id="headGrad" cx="35%" cy="30%" r="80%">
-          <stop offset="0%" stopColor="#FFB067" />
-          <stop offset="55%" stopColor="#FF7A1A" />
-          <stop offset="100%" stopColor="#E8620A" />
+          <stop offset="0%" stopColor="#FFC48A" />
+          <stop offset="55%" stopColor="#FF8F33" />
+          <stop offset="100%" stopColor="#F06A0E" />
         </radialGradient>
         <radialGradient id="bodyGrad" cx="40%" cy="30%" r="85%">
-          <stop offset="0%" stopColor="#FFA254" />
-          <stop offset="70%" stopColor="#FF7A1A" />
-          <stop offset="100%" stopColor="#D45500" />
+          <stop offset="0%" stopColor="#FFB56A" />
+          <stop offset="70%" stopColor="#FF8F33" />
+          <stop offset="100%" stopColor="#E3650C" />
         </radialGradient>
       </defs>
 
