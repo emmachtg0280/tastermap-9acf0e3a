@@ -933,7 +933,7 @@ function Index() {
 
       <Mascot
         onPickCuisine={(c) => setCuisine(c)}
-        onOpenHype={() => { setShowFilters(false); setListMode("hype"); }}
+        onShowAll={() => setCuisine(null)}
       />
     </div>
   );
@@ -941,13 +941,13 @@ function Index() {
 
 function Mascot({
   onPickCuisine,
-  onOpenHype,
+  onShowAll,
 }: {
   onPickCuisine: (c: Cuisine) => void;
-  onOpenHype: () => void;
+  onShowAll: () => void;
 }) {
   const [visible, setVisible] = useState(false);
-  const [step, setStep] = useState<0 | 1>(0);
+  const [step, setStep] = useState<"ask" | "pick">("ask");
 
   useEffect(() => {
     try {
@@ -959,13 +959,12 @@ function Mascot({
       /* ignore */
     }
     const t1 = setTimeout(() => setVisible(true), 900);
-    const t2 = setTimeout(() => setVisible(false), 14000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => { clearTimeout(t1); };
   }, []);
 
   if (!visible) return null;
 
-  const quickPicks: Cuisine[] = ["italian", "japanese", "french", "american"];
+  const quickPicks: Cuisine[] = ["italian", "japanese", "french", "american", "asian", "burger"];
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
@@ -974,7 +973,7 @@ function Mascot({
         onClick={() => { haptic(); setVisible(false); }}
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px] animate-mascot-backdrop"
       />
-      <div className="relative pointer-events-auto flex flex-col items-center gap-3 w-full max-w-[320px]">
+      <div className="relative pointer-events-auto flex flex-col items-center gap-3 w-full max-w-[340px]">
         <div className="animate-mascot-enter">
           <div className="animate-mascot-hop">
             <ChefBuddy />
@@ -992,10 +991,30 @@ function Mascot({
           >
             <X className="h-3 w-3" />
           </button>
-          {step === 0 ? (
+          {step === "ask" ? (
             <>
               <p className="text-sm font-extrabold text-foreground text-center">
-                Coucou&nbsp;! Tu manges quoi&nbsp;?
+                Coucou&nbsp;! Tu veux manger un truc en particulier&nbsp;?
+              </p>
+              <div className="mt-3 flex gap-2 justify-center">
+                <button
+                  onClick={() => { haptic(); onShowAll(); setVisible(false); }}
+                  className="inline-flex items-center text-xs font-extrabold px-4 py-1.5 rounded-full bg-white hover:bg-muted/60 border border-border/70 shadow-sm active:translate-y-[1px] tap-bounce"
+                >
+                  Non
+                </button>
+                <button
+                  onClick={() => { haptic(20); setStep("pick"); }}
+                  className="inline-flex items-center text-xs font-extrabold px-4 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white shadow-md active:translate-y-[1px] tap-bounce"
+                >
+                  Oui
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-extrabold text-foreground text-center">
+                Choisis ton envie&nbsp;!
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
                 {quickPicks.map((value) => {
@@ -1003,7 +1022,7 @@ function Mascot({
                   return (
                     <button
                       key={value}
-                      onClick={() => { haptic(); onPickCuisine(value); setStep(1); }}
+                      onClick={() => { haptic(); onPickCuisine(value); setVisible(false); }}
                       className="inline-flex items-center gap-1.5 text-xs font-bold pl-1.5 pr-3 py-1 rounded-full bg-white hover:bg-muted/60 border border-border/70 shadow-sm active:translate-y-[1px] tap-bounce"
                     >
                       <img
@@ -1020,23 +1039,6 @@ function Mascot({
                     </button>
                   );
                 })}
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-sm font-extrabold text-foreground text-center">
-                Défi de la semaine
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground text-center">
-                Découvre 3 nouveaux restos cette semaine&nbsp;!
-              </p>
-              <div className="mt-2 flex justify-center">
-                <button
-                  onClick={() => { haptic(20); onOpenHype(); setVisible(false); }}
-                  className="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white shadow-md active:translate-y-[1px] tap-bounce"
-                >
-                  <HypeStickerIcon size={16} /> Voir les plus hype
-                </button>
               </div>
             </>
           )}
