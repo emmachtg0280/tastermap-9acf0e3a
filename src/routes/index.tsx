@@ -57,6 +57,19 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import newTabAsset from "@/assets/tabs/new.png.asset.json";
+import hypeTabAsset from "@/assets/tabs/hype.png.asset.json";
+
+const NewStickerIcon = ({ size = 20 }: { size?: number }) => (
+  <img src={newTabAsset.url} alt="" width={size} height={size} loading="lazy" draggable={false}
+    className="object-contain select-none pointer-events-none"
+    style={{ width: size, height: size, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" }} />
+);
+const HypeStickerIcon = ({ size = 20 }: { size?: number }) => (
+  <img src={hypeTabAsset.url} alt="" width={size} height={size} loading="lazy" draggable={false}
+    className="object-contain select-none pointer-events-none"
+    style={{ width: size, height: size, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" }} />
+);
 
 const CUISINE_ORDER: Cuisine[] = [
   "french", "italian", "chinese", "japanese", "indian",
