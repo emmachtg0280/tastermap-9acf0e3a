@@ -543,22 +543,30 @@ function Index() {
             {/* Divider */}
             <div className="w-px bg-foreground/15 self-stretch my-1 shrink-0" />
 
-            {/* Cuisine chips — Uber Eats style: big icon, small label */}
+            {/* Cuisine chips — big appetizing PNG, small label */}
             {CUISINE_ORDER.map((value) => {
               const meta = CUISINE_META[value];
               const active = value === cuisine;
-              const Icon = meta.Icon;
               return (
                 <button
                   key={value}
                   onClick={() => { haptic(); setCuisine(active ? "any" : value); }}
-                  className={`shrink-0 inline-flex flex-col items-center justify-center gap-0.5 w-[58px] h-[58px] rounded-2xl backdrop-blur shadow-sm tap-bounce transition ${
+                  className={`shrink-0 inline-flex flex-col items-center justify-center gap-0.5 w-[70px] h-[74px] rounded-2xl backdrop-blur shadow-sm tap-bounce transition ${
                     active
                       ? "bg-white text-foreground font-semibold border-2 border-white ring-2 ring-white/80 shadow-md scale-105"
                       : "bg-white/40 border border-white/50 text-foreground/80 hover:bg-white/60"
                   }`}
                 >
-                  <Icon size={26} />
+                  <img
+                    src={meta.image}
+                    alt={meta.label}
+                    width={44}
+                    height={44}
+                    loading="lazy"
+                    draggable={false}
+                    className="object-contain select-none pointer-events-none"
+                    style={{ width: 44, height: 44, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.18))" }}
+                  />
                   <span className="text-[10px] leading-tight">{meta.label}</span>
                 </button>
               );
