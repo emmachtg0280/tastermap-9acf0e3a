@@ -99,44 +99,59 @@ export function ChefBuddy() {
       {/* soft ground shadow */}
       <ellipse cx="100" cy="206" rx="52" ry="6" fill="rgba(0,0,0,0.18)" />
 
-      {/* feet */}
-      <ellipse cx="80" cy="198" rx="15" ry="7" fill="#B84200" />
-      <ellipse cx="120" cy="198" rx="15" ry="7" fill="#B84200" />
-
-      {/* tail — soft, rounded and tucked behind the body so it does not peek through */}
+      {/* feet — distinct fox paws with pads */}
       <g>
-        <path
-          d="M164 150 q22 -2 18 20 q-2 14 -18 12 q-12 -2 -10 -16 z"
-          fill="#FF7A1A"
-        />
-        <path
-          d="M176 166 q7 4 3 16"
-          stroke="#FFF1DC"
-          strokeWidth="6"
-          fill="none"
-          strokeLinecap="round"
-        />
+        <ellipse cx="78" cy="198" rx="14" ry="8" fill="#B84200" />
+        <ellipse cx="75" cy="202" rx="5" ry="3" fill="#7A2E00" />
+        <ellipse cx="81" cy="202" rx="5" ry="3" fill="#7A2E00" />
+        <circle cx="78" cy="196" r="3.5" fill="#7A2E00" />
+      </g>
+      <g>
+        <ellipse cx="122" cy="198" rx="14" ry="8" fill="#B84200" />
+        <ellipse cx="119" cy="202" rx="5" ry="3" fill="#7A2E00" />
+        <ellipse cx="125" cy="202" rx="5" ry="3" fill="#7A2E00" />
+        <circle cx="122" cy="196" r="3.5" fill="#7A2E00" />
       </g>
 
-      {/* body */}
-      <ellipse cx="100" cy="140" rx="66" ry="58" fill="url(#bodyGrad)" />
+      {/* body — taller, less round fox shape */}
+      <path
+        d="M100 76
+           q-42 0 -48 44
+           q-4 34 14 62
+           q20 14 68 14
+           q48 0 68 -14
+           q18 -28 14 -62
+           q-6 -44 -48 -44
+           z"
+        fill="url(#bodyGrad)"
+      />
       {/* belly */}
-      <ellipse cx="100" cy="158" rx="40" ry="28" fill="#FFF1DC" />
+      <ellipse cx="100" cy="158" rx="38" ry="32" fill="#FFF1DC" />
 
-      {/* arms */}
-      <ellipse cx="40" cy="138" rx="15" ry="20" fill="#FF7A1A" />
-      <ellipse cx="35" cy="146" rx="7" ry="9" fill="#E8620A" opacity="0.6" />
-      <ellipse cx="160" cy="138" rx="15" ry="20" fill="#FF7A1A" />
-      <ellipse cx="165" cy="146" rx="7" ry="9" fill="#E8620A" opacity="0.6" />
+      {/* arms — more defined little fox arms */}
+      <path d="M42 128 q-16 14 -10 38 q8 10 20 4 q6 -24 -10 -42 z" fill="#FF8F33" />
+      <ellipse cx="36" cy="166" rx="6" ry="8" fill="#E8620A" opacity="0.6" />
+      <path d="M158 128 q16 14 10 38 q-8 10 -20 4 q-6 -24 10 -42 z" fill="#FF8F33" />
+      <ellipse cx="164" cy="166" rx="6" ry="8" fill="#E8620A" opacity="0.6" />
 
-      {/* ears */}
-      <path d="M56 62 q-10 -28 14 -36 q10 16 6 36 z" fill="#FF7A1A" />
-      <path d="M62 52 q0 -14 10 -18 q4 12 2 22 z" fill="#FFC8A0" />
-      <path d="M144 62 q10 -28 -14 -36 q-10 16 -6 36 z" fill="#FF7A1A" />
-      <path d="M138 52 q0 -14 -10 -18 q-4 12 -2 22 z" fill="#FFC8A0" />
+      {/* ears — tall, pointy fox ears */}
+      <path d="M50 58 q-18 -44 30 -46 q14 30 2 48 z" fill="#FF8F33" />
+      <path d="M56 42 q-4 -22 16 -24 q8 16 4 28 z" fill="#FFC8A0" />
+      <path d="M150 58 q18 -44 -30 -46 q-14 30 -2 48 z" fill="#FF8F33" />
+      <path d="M144 42 q4 -22 -16 -24 q-8 16 -4 28 z" fill="#FFC8A0" />
 
-      {/* head — rounder & more human proportion */}
-      <ellipse cx="100" cy="94" rx="56" ry="50" fill="url(#headGrad)" />
+      {/* head — less round, more fox-like tapered face */}
+      <path
+        d="M100 46
+           q-40 2 -56 36
+           q-12 28 -2 56
+           q16 26 58 28
+           q42 -2 58 -28
+           q10 -28 -2 -56
+           q-16 -34 -56 -36
+           z"
+        fill="url(#headGrad)"
+      />
 
       {/* forehead fur tuft */}
       <path
