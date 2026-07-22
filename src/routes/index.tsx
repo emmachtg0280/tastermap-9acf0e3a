@@ -1070,8 +1070,6 @@ function DetailCard({
   const [showHours, setShowHours] = useState(false);
   useEffect(() => setComment(visit.comment), [visit.comment, r.id]);
 
-  const emoji = cuisineEmoji(r.cuisines);
-
   return (
     <div className="absolute left-3 right-3 bottom-3 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[360px] rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.12)] overflow-hidden max-h-[52vh] lg:max-h-[70vh] flex flex-col">
       {r.photoUrls.length > 0 && (
@@ -1092,8 +1090,8 @@ function DetailCard({
       )}
       <div className="p-4 overflow-y-auto">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-xl">
-            {emoji}
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+            <CuisineIcon cuisines={r.cuisines} size={22} />
           </span>
           <div className="min-w-0 flex-1">
             <h3 className="font-display font-bold text-base leading-tight">{r.name}</h3>
