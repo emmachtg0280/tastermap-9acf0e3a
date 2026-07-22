@@ -166,9 +166,10 @@
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 @keyframes mascot-mouth {
-  0%, 18%, 100% { transform: scaleY(0.18); }
-  32%, 62% { transform: scaleY(1); }
-  78% { transform: scaleY(0.45); }
+  0%, 100% { transform: scaleY(0.55) scaleX(0.95); }
+  25% { transform: scaleY(1) scaleX(1); }
+  50% { transform: scaleY(0.7) scaleX(1.02); }
+  75% { transform: scaleY(1) scaleX(0.98); }
 }
 
 .animate-pop-in { animation: pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
