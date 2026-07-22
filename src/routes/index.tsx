@@ -984,14 +984,23 @@ function Mascot({
               <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
                 {quickPicks.map((value) => {
                   const meta = CUISINE_META[value];
-                  const Icon = meta.Icon;
                   return (
                     <button
                       key={value}
                       onClick={() => { haptic(); onPickCuisine(value); setStep(1); }}
                       className="inline-flex items-center gap-1.5 text-xs font-bold pl-1.5 pr-3 py-1 rounded-full bg-white hover:bg-muted/60 border border-border/70 shadow-sm active:translate-y-[1px] tap-bounce"
                     >
-                      <Icon size={18} /> {meta.label}
+                      <img
+                        src={meta.image}
+                        alt=""
+                        width={22}
+                        height={22}
+                        loading="lazy"
+                        draggable={false}
+                        className="object-contain select-none pointer-events-none"
+                        style={{ width: 22, height: 22 }}
+                      />
+                      {meta.label}
                     </button>
                   );
                 })}
