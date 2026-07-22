@@ -1,75 +1,58 @@
-# Plan — charte graphique custom style Duolingo/UberEats
-
 ## Objectif
-Remplacer tous les emojis système Apple par des illustrations SVG dessinées à la main, style **sticker Duolingo** (volumes doux, contour blanc, ombre douce, 2-3 aplats de couleur). Rendu cohérent, léger, net à toute taille.
 
-## 1. Bibliothèque d'icônes SVG (`src/components/icons/`)
+Rendre les icônes de nourriture (bandeau haut + marqueurs de carte) plus grosses, mieux dessinées et appétissantes, dans un style illustré cohérent inspiré des images fournies (rendu 3D soft, ombre douce, couleurs riches, fond transparent). Agrandir aussi la mascotte à l'ouverture avec un rendu plus détaillé et des yeux pétillants.
 
-Nouveau dossier avec un composant SVG par icône, taille pilotée par prop `size`, palette figée.
+## Ce qui change
 
-### Cuisines (11 icônes — remplace 🍝 🥖 🥟 🍣 🍛 🌮 🌶️ 🥘 🫒 🍔 🥗)
-- `PastaIcon` (italien) — assiette de pâtes fumante
-- `BaguetteIcon` (français) — baguette + béret stylisés
-- `DumplingIcon` (chinois) — raviolis vapeur
-- `SushiIcon` (japonais) — nigiri saumon
-- `CurryIcon` (indien) — bol curry + naan
-- `TacoIcon` (mexicain) — taco garni
-- `ChiliIcon` (thaï) — piment souriant
-- `PaellaIcon` (espagnol) — poêle paella
-- `OliveIcon` (grec) — olive + feuille
-- `BurgerIcon` (américain) — burger étagé
-- `SaladIcon` (végé) — bol vert
+### 1. Icônes cuisines (PNG générés)
 
-### Discovery & états (remplace ✨ 🔥 ⭐ 📍 🍽️ ❤️ ✓)
-- `SparkleIcon` (Nouveautés)
-- `FlameIcon` (Hype)
-- `StarIcon` (note)
-- `PinIcon` (localisation)
-- `PlateIcon` (Restaurants FAB)
-- `HeartIcon` (Favoris FAB, plein/vide)
-- `CheckIcon` (Faits FAB + badge marqueur)
+Générer 12 PNG carrés 512×512, fond transparent, style sticker 3D soft cohérent (photo-illustration appétissante, ombre douce sous le plat, sans texte, sans assiette systématique — le plat lui-même) :
 
-### Style commun
-- viewBox 24x24, contour blanc de 1.5px, ombre `drop-shadow`, 2 aplats + highlight
-- Palette accordée aux couleurs Duo déjà en place (`--duo-green`, `--duo-yellow`, `--duo-coral`, `--duo-sky`)
+- Français → croissant beurré doré
+- Italien → assiette de pâtes fumantes (spaghetti tomate/basilic)
+- Chinois → raviolis vapeur (dim sum)
+- Japonais → duo de sushis (nigiri saumon + maki)
+- Indien → bol de curry orangé avec naan
+- Mexicain → taco garni (comme la référence)
+- Thaï → piment rouge brillant sur feuille
+- Espagnol → paella miniature dans poêle
+- Grec → olives + feta
+- Américain → burger juteux (comme la référence)
+- Végétarien → bol de salade colorée
+- Tous → assiette avec dôme (générique)
 
-## 2. Nouvelle mascotte : `ChefBuddy` (remplace `ChickSvg`)
+Fichiers stockés en assets CDN via `lovable-assets`, un `.asset.json` par cuisine dans `src/assets/cuisines/`.
 
-Petit **renard orange pétant** (ou choix équivalent) avec **toque de chef blanche**, style sticker Duo :
-- Corps orange vif (#FF7A1A), ventre crème, joues rosées
-- Toque blanche gonflée avec bande
-- Yeux ronds noirs + petit sourire
-- Réutilise les animations existantes (`mascot-hop`, `mascot-blink`, `mascot-wing` renommée en `mascot-tail`)
+### 2. Intégration
 
-Bulle de dialogue : fond **blanc semi-opaque** (`bg-white/85 backdrop-blur`), coin arrondi, petite queue vers la mascotte, texte foncé. Remplace l'actuelle bulle jaune.
+- `src/components/icons/CuisineIcons.tsx` : ajouter un mapping `CUISINE_IMAGE` (import des 12 `.asset.json`), et modifier `CuisineIcon` pour rendre un `<img>` PNG plutôt que le SVG. Les SVG existants sont conservés en fallback pour les marqueurs carte (car intégrés dans un `<svg>`).
+- Marqueurs de carte : passer d'un SVG inline à un marqueur HTML (`AdvancedMarkerElement` avec `<img>`) affichant le PNG dans la pastille blanche — pastille légèrement agrandie (36 → 44 px) pour laisser respirer l'image.
+- Bandeau haut : agrandir la zone icône (56 → 68 px de large, image 48 px au lieu de 28 px SVG), garder le libellé en dessous. Onglets Nouveautés/Hype restent en SVG (✨/🔥) mais aussi agrandis pour cohérence.
 
-## 3. Marqueurs de carte
+### 3. Mascotte
 
-Le SVG de marqueur (généré côté client pour Google Maps) intègre actuellement l'emoji système via `<text>`. Remplacement :
-- Génère le marqueur en SVG avec l'icône cuisine correspondante **inline** (dessin vectoriel, pas de `<text>` emoji)
-- Badge ✓ des restos faits → mini `CheckIcon` blanc sur pastille verte
-- Badge ✨ Nouveau → mini `SparkleIcon`
+- `src/components/mascot/ChefBuddy.tsx` : redessiner le renard en plus détaillé (SVG main) — taille passe de ~120 px à ~180 px, ajout de reflets « yeux pétillants » (2 highlights blancs par œil), joues plus rondes rosées, toque plus haute, ombre douce sous les pattes. Animations existantes (hop, blink, wing-wave) conservées.
 
-## 4. Points d'intégration (`src/routes/index.tsx`)
+## Détails techniques
 
-- Bandeau chips cuisines : `<Icon />` centré à la place de l'emoji, label inchangé
-- Onglets Nouveautés/Hype : `<SparkleIcon />` / `<FlameIcon />`
-- FABs (Filtres/Favoris/Faits/Restaurants) : icônes SVG
-- Fiche resto : icône cuisine dans la pastille ronde, `StarIcon` pour la note, `HeartIcon`/`CheckIcon` pour boutons état
-- Badges "Nouveau" et "Hype" : icône SVG au lieu d'emoji
-- Overlays (headers Filtres/Faits/Favoris/Restaurants) : icônes SVG
+```
+src/assets/cuisines/
+  ├─ french.png.asset.json
+  ├─ italian.png.asset.json
+  ├─ ... (12 fichiers)
+```
 
-## 5. Nettoyage
-- Suppression du composant `ChickSvg` inline
-- Suppression des emojis restants dans les strings JSX (garder uniquement dans les données Google si présents dans les noms)
-- Un mapping unique `CUISINE_ICON: Record<Cuisine, ComponentType>` remplace `CUISINE_EMOJI`
+Génération via skill AI Gateway (`google/gemini-3-pro-image`) : un prompt par cuisine, style unifié — « soft 3D sticker illustration, appetizing, warm lighting, transparent background, no text, centered, subtle drop shadow ». Chaque PNG est ensuite uploadé via `lovable-assets create`.
 
-## Fichiers touchés
-- **Nouveaux** : `src/components/icons/index.tsx` (barrel), un fichier par icône OU un seul fichier regroupé si concis
-- **Nouveau** : `src/components/mascot/ChefBuddy.tsx`
-- **Modifiés** : `src/routes/index.tsx` (imports, mapping, marqueurs, mascotte, bulle), `src/styles.css` (ajustements animations mascotte si besoin)
+`CuisineIcon` devient :
+```tsx
+<img src={CUISINE_IMAGE[pickCuisine(cuisines)].url} width={size} height={size} />
+```
+
+Pour les marqueurs carte : migration vers `AdvancedMarkerElement` avec contenu HTML custom (pastille + img). Impact perf neutre (déjà 1 marqueur par restau, ~60 max visibles).
 
 ## Hors périmètre
-- Pas de changement des données restaurants ni de la logique de filtres
-- Pas de refonte des couleurs globales de l'app (on garde la palette Duo actuelle)
-- Pas d'images PNG générées : 100% SVG inline
+
+- Pas de changement de logique de filtres, favoris, hype, etc.
+- Pas de changement de palette générale ni de typo.
+- Génération des PNG faite maintenant (une seule fois) — pas de génération à la volée côté app.

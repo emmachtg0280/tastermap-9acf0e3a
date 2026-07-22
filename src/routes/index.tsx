@@ -47,6 +47,7 @@ import {
   FlameIcon,
   cuisineInnerSvg,
   pickCuisine,
+  useCuisineDataUrls,
 } from "@/components/icons/CuisineIcons";
 import { ChefBuddy } from "@/components/mascot/ChefBuddy";
 
@@ -357,6 +358,7 @@ function Index() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
+  const cuisineDataUrls = useCuisineDataUrls();
 
   const currentCity = useMemo(
     () => CITIES.find((c) => c.key === city) ?? null,
@@ -446,11 +448,14 @@ function Index() {
       const favorite = !!visits[r.id]?.favorite;
       const isNew = isNewRestaurant(r);
       const borderColor = done ? "#58CC02" : favorite ? "#FFC800" : active ? "#1CB0F6" : "#2b2b2b";
-      const inner = cuisineInnerSvg(r.cuisines);
-      const size = active ? 46 : 38;
-      const iconSize = size * 0.72;
+      const size = active ? 54 : 46;
+      const cuisineKey = pickCuisine(r.cuisines);
+      const dataUrl = cuisineDataUrls?.[cuisineKey];
+      const iconSize = size * 0.78;
       const iconOffset = (size - iconSize) / 2;
-      const scale = iconSize / 24;
+      const imageTag = dataUrl
+        ? `<image href='${dataUrl}' x='${iconOffset}' y='${iconOffset}' width='${iconSize}' height='${iconSize}' preserveAspectRatio='xMidYMid meet'/>`
+        : `<g transform='translate(${iconOffset} ${iconOffset}) scale(${iconSize / 24})'>${cuisineInnerSvg(r.cuisines)}</g>`;
       const newBadge = isNew
         ? `<g><circle cx='8' cy='9' r='7' fill='#FFC94A' stroke='#2b2b2b' stroke-width='1.5'/><path d='M8 5.4 l0.9 1.9 l2.1 0.3 l-1.5 1.4 l0.4 2.1 l-1.9 -1 l-1.9 1 l0.4 -2.1 l-1.5 -1.4 l2.1 -0.3 z' fill='#ffffff' stroke='#2b2b2b' stroke-width='0.7' stroke-linejoin='round'/></g>`
         : "";
@@ -458,7 +463,7 @@ function Index() {
 <svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size + 6}' viewBox='0 0 ${size} ${size + 6}'>
   <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.18)'/>
   <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 3}' fill='#ffffff' stroke='${borderColor}' stroke-width='3'/>
-  <g transform='translate(${iconOffset} ${iconOffset}) scale(${scale})'>${inner}</g>
+  ${imageTag}
   ${newBadge}
   ${done ? `<circle cx='${size - 8}' cy='9' r='7' fill='#58CC02' stroke='#ffffff' stroke-width='2'/><path d='M${size - 11} 9 l2.5 2.5 L${size - 5} 6.5' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
 </svg>`.trim();
@@ -477,7 +482,7 @@ function Index() {
       marker.addListener("click", () => setSelected(r));
       markersRef.current.push(marker);
     });
-  }, [filtered, selected, visits]);
+  }, [filtered, selected, visits, cuisineDataUrls]);
 
   // Fetch whenever city or minRating change — only if a city is selected
   useEffect(() => {
@@ -538,22 +543,30 @@ function Index() {
             {/* Divider */}
             <div className="w-px bg-foreground/15 self-stretch my-1 shrink-0" />
 
-            {/* Cuisine chips — Uber Eats style: big icon, small label */}
+            {/* Cuisine chips — big appetizing PNG, small label */}
             {CUISINE_ORDER.map((value) => {
               const meta = CUISINE_META[value];
               const active = value === cuisine;
-              const Icon = meta.Icon;
               return (
                 <button
                   key={value}
                   onClick={() => { haptic(); setCuisine(active ? "any" : value); }}
-                  className={`shrink-0 inline-flex flex-col items-center justify-center gap-0.5 w-[58px] h-[58px] rounded-2xl backdrop-blur shadow-sm tap-bounce transition ${
+                  className={`shrink-0 inline-flex flex-col items-center justify-center gap-0.5 w-[70px] h-[74px] rounded-2xl backdrop-blur shadow-sm tap-bounce transition ${
                     active
                       ? "bg-white text-foreground font-semibold border-2 border-white ring-2 ring-white/80 shadow-md scale-105"
                       : "bg-white/40 border border-white/50 text-foreground/80 hover:bg-white/60"
                   }`}
                 >
-                  <Icon size={26} />
+                  <img
+                    src={meta.image}
+                    alt={meta.label}
+                    width={44}
+                    height={44}
+                    loading="lazy"
+                    draggable={false}
+                    className="object-contain select-none pointer-events-none"
+                    style={{ width: 44, height: 44, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.18))" }}
+                  />
                   <span className="text-[10px] leading-tight">{meta.label}</span>
                 </button>
               );
@@ -971,14 +984,23 @@ function Mascot({
               <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
                 {quickPicks.map((value) => {
                   const meta = CUISINE_META[value];
-                  const Icon = meta.Icon;
                   return (
                     <button
                       key={value}
                       onClick={() => { haptic(); onPickCuisine(value); setStep(1); }}
                       className="inline-flex items-center gap-1.5 text-xs font-bold pl-1.5 pr-3 py-1 rounded-full bg-white hover:bg-muted/60 border border-border/70 shadow-sm active:translate-y-[1px] tap-bounce"
                     >
-                      <Icon size={18} /> {meta.label}
+                      <img
+                        src={meta.image}
+                        alt=""
+                        width={22}
+                        height={22}
+                        loading="lazy"
+                        draggable={false}
+                        className="object-contain select-none pointer-events-none"
+                        style={{ width: 22, height: 22 }}
+                      />
+                      {meta.label}
                     </button>
                   );
                 })}
@@ -1049,7 +1071,7 @@ function DetailCard({
       <div className="p-4 overflow-y-auto">
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
-            <CuisineIcon cuisines={r.cuisines} size={22} />
+            <CuisineIcon cuisines={r.cuisines} size={40} />
           </span>
           <div className="min-w-0 flex-1">
             <h3 className="font-display font-bold text-base leading-tight">{r.name}</h3>
