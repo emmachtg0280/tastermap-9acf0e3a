@@ -72,8 +72,8 @@ export function ChefBuddy() {
   return (
     <svg
       ref={svgRef}
-      width="200"
-      height="210"
+      width="164"
+      height="180"
       viewBox="0 0 200 220"
       xmlns="http://www.w3.org/2000/svg"
       className="drop-shadow-[0_14px_18px_rgba(43,20,0,0.28)]"
