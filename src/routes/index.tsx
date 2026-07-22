@@ -933,7 +933,7 @@ function Index() {
 
       <Mascot
         onPickCuisine={(c) => setCuisine(c)}
-        onShowAll={() => setCuisine(null)}
+        onShowAll={() => setCuisine("any")}
       />
     </div>
   );
