@@ -1,9 +1,9 @@
 /**
  * ChefBuddy — Duolingo-inspired sticker mascot.
  * A warm, expressive orange fox chef with living eyes that track the
- * pointer, a soft hop, gentle blink, a wagging tail, and an always-visible
- * open-mouth smile with a subtly animated tongue (so the mouth never
- * disappears while she "talks").
+ * pointer, a soft hop, gentle blink, and an always-visible open-mouth
+ * smile with a subtly animated tongue (so the mouth never disappears while
+ * she "talks"). Fox ears, a less round body, and distinct paw pads.
  */
 
 import { useEffect, useRef, useState } from "react";
