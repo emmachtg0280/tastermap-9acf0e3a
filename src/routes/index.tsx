@@ -1152,7 +1152,7 @@ function DetailCard({
           )}
           {isNewRestaurant(r) && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-medium">
-              <Sparkles className="h-4 w-4" /> Nouveau
+              <SparkleIcon size={14} /> Nouveau
             </span>
           )}
           {r.openNow === true && (
