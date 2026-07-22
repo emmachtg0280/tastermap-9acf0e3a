@@ -10,7 +10,7 @@
  * drop-shadow applied at the <svg> wrapper level.
  */
 
-import type { CSSProperties, SVGProps } from "react";
+import type { CSSProperties, ReactElement, SVGProps } from "react";
 import type { Cuisine } from "@/lib/places.functions";
 
 type IconProps = SVGProps<SVGSVGElement> & { size?: number };
