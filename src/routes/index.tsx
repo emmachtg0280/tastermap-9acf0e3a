@@ -47,6 +47,7 @@ import {
   FlameIcon,
   cuisineInnerSvg,
   pickCuisine,
+  useCuisineDataUrls,
 } from "@/components/icons/CuisineIcons";
 import { ChefBuddy } from "@/components/mascot/ChefBuddy";
 
