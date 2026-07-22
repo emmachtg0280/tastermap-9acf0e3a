@@ -72,8 +72,8 @@ export function ChefBuddy() {
   return (
     <svg
       ref={svgRef}
-      width="200"
-      height="210"
+      width="164"
+      height="180"
       viewBox="0 0 200 220"
       xmlns="http://www.w3.org/2000/svg"
       className="drop-shadow-[0_14px_18px_rgba(43,20,0,0.28)]"
@@ -83,16 +83,16 @@ export function ChefBuddy() {
         <clipPath id="mouthClip">
           <path d="M84 116 q16 16 32 0 q-4 12 -16 12 q-12 0 -16 -12 z" />
         </clipPath>
-        {/* Warm gradient for the head to give volume */}
+        {/* Warm, healthy gradient for the head */}
         <radialGradient id="headGrad" cx="35%" cy="30%" r="80%">
-          <stop offset="0%" stopColor="#FFB067" />
-          <stop offset="55%" stopColor="#FF7A1A" />
-          <stop offset="100%" stopColor="#E8620A" />
+          <stop offset="0%" stopColor="#FFC48A" />
+          <stop offset="55%" stopColor="#FF8F33" />
+          <stop offset="100%" stopColor="#F06A0E" />
         </radialGradient>
         <radialGradient id="bodyGrad" cx="40%" cy="30%" r="85%">
-          <stop offset="0%" stopColor="#FFA254" />
-          <stop offset="70%" stopColor="#FF7A1A" />
-          <stop offset="100%" stopColor="#D45500" />
+          <stop offset="0%" stopColor="#FFB56A" />
+          <stop offset="70%" stopColor="#FF8F33" />
+          <stop offset="100%" stopColor="#E3650C" />
         </radialGradient>
       </defs>
 
@@ -103,19 +103,16 @@ export function ChefBuddy() {
       <ellipse cx="80" cy="198" rx="15" ry="7" fill="#B84200" />
       <ellipse cx="120" cy="198" rx="15" ry="7" fill="#B84200" />
 
-      {/* tail */}
-      <g
-        className="animate-mascot-wing"
-        style={{ transformOrigin: "168px 148px" }}
-      >
+      {/* tail — soft, rounded and tucked behind the body so it does not peek through */}
+      <g>
         <path
-          d="M162 132 q30 -4 26 28 q-2 20 -26 16 q-16 -4 -14 -22 z"
+          d="M164 150 q22 -2 18 20 q-2 14 -18 12 q-12 -2 -10 -16 z"
           fill="#FF7A1A"
         />
         <path
-          d="M178 152 q10 6 4 22"
+          d="M176 166 q7 4 3 16"
           stroke="#FFF1DC"
-          strokeWidth="7"
+          strokeWidth="6"
           fill="none"
           strokeLinecap="round"
         />
