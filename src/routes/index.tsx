@@ -461,7 +461,6 @@ function Index() {
       const favorite = !!visits[r.id]?.favorite;
       const isNew = isNewRestaurant(r);
       const highlight = done || favorite || active;
-      const bgOpacity = highlight ? 1 : 0.7;
       const size = active ? 54 : 46;
       const cuisineKey = pickCuisine(r.cuisines);
       const dataUrl = cuisineDataUrls?.[cuisineKey];
@@ -473,10 +472,13 @@ function Index() {
       const newBadge = isNew
         ? `<g><circle cx='8' cy='9' r='7' fill='#FFC94A'/><path d='M8 5.4 l0.9 1.9 l2.1 0.3 l-1.5 1.4 l0.4 2.1 l-1.9 -1 l-1.9 1 l0.4 -2.1 l-1.5 -1.4 l2.1 -0.3 z' fill='#ffffff' stroke-linejoin='round'/></g>`
         : "";
+      const scale = 2;
+      const w = size * scale;
+      const h = (size + 6) * scale;
       const svg = `
-<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size + 6}' viewBox='0 0 ${size} ${size + 6}'>
-  <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.15)' opacity='${bgOpacity}'/>
-  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 3}' fill='#ffffff' fill-opacity='${bgOpacity}'/>
+<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${size} ${size + 6}'>
+  <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.15)'/>
+  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 3}' fill='#ffffff'/>
   ${imageTag}
   ${newBadge}
   ${done ? `<circle cx='${size - 8}' cy='9' r='7' fill='#58CC02' stroke='#ffffff' stroke-width='2'/><path d='M${size - 11} 9 l2.5 2.5 L${size - 5} 6.5' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
@@ -491,7 +493,7 @@ function Index() {
           anchor: new window.google!.maps.Point(size / 2, size / 2),
         },
         zIndex: active ? 999 : done ? 5 : favorite ? 3 : 1,
-        optimized: true,
+        optimized: false,
       });
       marker.addListener("click", () => setSelected(r));
       markersRef.current.push(marker);
