@@ -436,6 +436,10 @@ function Index() {
       clickableIcons: false,
       backgroundColor: "#FFF9F0",
       gestureHandling: "greedy",
+      isFractionalZoomEnabled: true,
+      mapTypeId: "roadmap",
+      maxZoom: 18,
+      minZoom: 4,
       styles: minimalMapStyle,
     });
     mapInstance.current.addListener("click", () => setSelected(null));
@@ -460,28 +464,26 @@ function Index() {
       const done = !!visits[r.id]?.done;
       const favorite = !!visits[r.id]?.favorite;
       const isNew = isNewRestaurant(r);
-      const highlight = done || favorite || active;
-      const size = active ? 54 : 46;
+      const size = active ? 44 : 38;
       const cuisineKey = pickCuisine(r.cuisines);
       const dataUrl = cuisineDataUrls?.[cuisineKey];
-      const iconSize = size * 0.78;
+      const iconSize = size * 0.68;
       const iconOffset = (size - iconSize) / 2;
       const imageTag = dataUrl
         ? `<image href='${dataUrl}' x='${iconOffset}' y='${iconOffset}' width='${iconSize}' height='${iconSize}' preserveAspectRatio='xMidYMid meet'/>`
         : `<g transform='translate(${iconOffset} ${iconOffset}) scale(${iconSize / 24})'>${cuisineInnerSvg(r.cuisines)}</g>`;
       const newBadge = isNew
-        ? `<g><circle cx='8' cy='9' r='7' fill='#FFC94A'/><path d='M8 5.4 l0.9 1.9 l2.1 0.3 l-1.5 1.4 l0.4 2.1 l-1.9 -1 l-1.9 1 l0.4 -2.1 l-1.5 -1.4 l2.1 -0.3 z' fill='#ffffff' stroke-linejoin='round'/></g>`
+        ? `<g><circle cx='7' cy='8' r='6' fill='#FFC94A'/><path d='M7 5.3 l0.8 1.6 l1.8 0.25 l-1.3 1.2 l0.35 1.8 l-1.65 -0.85 l-1.65 0.85 l0.35 -1.8 l-1.3 -1.2 l1.8 -0.25 z' fill='#ffffff' stroke-linejoin='round'/></g>`
         : "";
       const scale = 2;
       const w = size * scale;
-      const h = (size + 6) * scale;
+      const h = (size + 4) * scale;
       const svg = `
-<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${size} ${size + 6}'>
-  <ellipse cx='${size / 2}' cy='${size + 2}' rx='${size / 3}' ry='2.5' fill='rgba(0,0,0,0.15)'/>
-  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 3}' fill='#ffffff'/>
+<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${size} ${size + 4}'>
+  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 2}' fill='#ffffff'/>
   ${imageTag}
   ${newBadge}
-  ${done ? `<circle cx='${size - 8}' cy='9' r='7' fill='#58CC02' stroke='#ffffff' stroke-width='2'/><path d='M${size - 11} 9 l2.5 2.5 L${size - 5} 6.5' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
+  ${done ? `<circle cx='${size - 7}' cy='8' r='6' fill='#58CC02' stroke='#ffffff' stroke-width='1.5'/><path d='M${size - 9.5} 8 l2 2 L${size - 5} 6' stroke='#ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
 </svg>`.trim();
       const marker = new window.google!.maps.Marker({
         position: { lat: r.lat, lng: r.lng },
@@ -489,7 +491,7 @@ function Index() {
         title: r.name,
         icon: {
           url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
-          scaledSize: new window.google!.maps.Size(size, size + 6),
+          scaledSize: new window.google!.maps.Size(size, size + 4),
           anchor: new window.google!.maps.Point(size / 2, size / 2),
         },
         zIndex: active ? 999 : done ? 5 : favorite ? 3 : 1,
@@ -576,12 +578,12 @@ function Index() {
                   <img
                     src={meta.image}
                     alt={meta.label}
-                    width={44}
-                    height={44}
+                    width={36}
+                    height={36}
                     loading="lazy"
                     draggable={false}
                     className="object-contain select-none pointer-events-none"
-                    style={{ width: 44, height: 44, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.18))" }}
+                    style={{ width: 36, height: 36 }}
                   />
                   <span className="text-[10px] leading-tight">{meta.label}</span>
                 </button>
@@ -609,14 +611,14 @@ function Index() {
         <button
           onClick={() => { haptic(20); setShowFilters(false); setListMode("favorites"); }}
           aria-label="Favoris"
-          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-rose-500 grid place-items-center hover:bg-muted tap-bounce transition"
+          className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-rose-500 grid place-items-center hover:bg-white/60 tap-bounce transition"
         >
           <Heart className="h-5 w-5" />
         </button>
         <button
           onClick={() => { haptic(20); setShowFilters(false); setListMode("done"); }}
           aria-label="Restaurants faits"
-          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-[color:var(--duo-green-dark)] grid place-items-center hover:bg-muted tap-bounce transition"
+          className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-[color:var(--duo-green-dark)] grid place-items-center hover:bg-white/60 tap-bounce transition"
         >
           <Check className="h-5 w-5" strokeWidth={3} />
         </button>
@@ -1088,8 +1090,8 @@ function DetailCard({
       )}
       <div className="p-4 overflow-y-auto">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
-            <CuisineIcon cuisines={r.cuisines} size={40} />
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/60 backdrop-blur border border-white/50">
+            <CuisineIcon cuisines={r.cuisines} size={32} />
           </span>
           <div className="min-w-0 flex-1">
             <h3 className="font-display font-bold text-base leading-tight">{r.name}</h3>
@@ -1100,10 +1102,10 @@ function DetailCard({
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
               onClick={() => { haptic(visit.done ? 12 : 20); onUpdate({ done: !visit.done }); }}
-              className={`inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-full text-sm font-extrabold btn-pop tap-bounce transition ${
+              className={`inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-full text-sm font-extrabold tap-bounce transition ${
                 visit.done
-                  ? "bg-[color:var(--duo-green)] text-white"
-                  : "bg-muted border border-border/60 text-foreground hover:bg-muted/80"
+                  ? "bg-white text-[color:var(--duo-green)] border border-[color:var(--duo-green)] shadow-sm"
+                  : "bg-white/40 backdrop-blur border border-white/50 text-foreground/80 hover:bg-white/60"
               }`}
               aria-label={visit.done ? "Marquer non fait" : "Marquer fait"}
             >
@@ -1112,10 +1114,10 @@ function DetailCard({
             </button>
             <button
               onClick={() => { haptic(visit.favorite ? 12 : 20); onUpdate({ favorite: !visit.favorite }); }}
-              className={`inline-flex items-center justify-center h-8 w-8 rounded-full btn-pop tap-bounce transition ${
+              className={`inline-flex items-center justify-center h-8 w-8 rounded-full tap-bounce transition ${
                 visit.favorite
-                  ? "bg-rose-50 border-rose-200 text-rose-500"
-                  : "bg-muted border border-border/60 text-muted-foreground hover:text-foreground"
+                  ? "bg-white text-rose-500 border border-rose-200 shadow-sm"
+                  : "bg-white/40 backdrop-blur border border-white/50 text-foreground/80 hover:text-foreground"
               }`}
               aria-label={visit.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
             >
@@ -1255,7 +1257,7 @@ function priceLabel(level: string) {
   return map[level] ?? "";
 }
 
-// Playful "board game" light map — cream land, pastel water & parks, soft roads.
+// Playful "board game" light map — cream land, pastel water & parks, minimal roads.
 const minimalMapStyle: google.maps.MapTypeStyle[] = [
   { elementType: "geometry", stylers: [{ color: "#FFF9F0" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
@@ -1272,6 +1274,7 @@ const minimalMapStyle: google.maps.MapTypeStyle[] = [
   { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
   { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e8dfcc" }] },
   { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "road.local", elementType: "geometry", stylers: [{ color: "#FFF9F0" }, { visibility: "simplified" }] },
   { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
   { featureType: "road.arterial", elementType: "labels", stylers: [{ visibility: "on" }] },
   { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#8a7a63" }] },
