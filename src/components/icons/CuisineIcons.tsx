@@ -204,10 +204,12 @@ export function CuisineIcon({
   cuisines,
   size = 32,
   className = "",
+  shadow = false,
 }: {
   cuisines: Cuisine[];
   size?: number;
   className?: string;
+  shadow?: boolean;
 }) {
   const c = pickCuisine(cuisines);
   return (
@@ -219,7 +221,11 @@ export function CuisineIcon({
       loading="lazy"
       draggable={false}
       className={`object-contain select-none pointer-events-none ${className}`}
-      style={{ width: size, height: size, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.18))" }}
+      style={{
+        width: size,
+        height: size,
+        ...(shadow ? { filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.18))" } : {}),
+      }}
     />
   );
 }
