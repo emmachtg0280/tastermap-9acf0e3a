@@ -886,7 +886,7 @@ function Index() {
       )}
 
       {/* List overlay */}
-      {listMode && (() => {
+      {listMode && listMode !== "profile" && (() => {
         const listItems =
           listMode === "done"
             ? filtered.filter((r) => visits[r.id]?.done)
