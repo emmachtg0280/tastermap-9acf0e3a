@@ -1049,12 +1049,34 @@ function Index() {
         );
       })()}
 
+      {/* Personal food map profile */}
+      {listMode === "profile" && (
+        <ProfilePanel
+          restaurants={results}
+          visits={visits}
+          cityLabel={currentCity?.label ?? ""}
+          onClose={() => setListMode(null)}
+          onSelect={(r) => {
+            setListMode(null);
+            setSelected(r);
+            mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
+            mapInstance.current?.setZoom(15);
+          }}
+        />
+      )}
+
       {/* Detail card */}
       {selected && (
         <DetailCard
           key={selected.id}
           restaurant={selected}
           visit={visits[selected.id] ?? { done: false, comment: "" }}
+          distanceKm={
+            userLocation || currentCity
+              ? haversineDistance(userLocation ?? { lat: currentCity!.lat, lng: currentCity!.lng }, selected)
+              : null
+          }
+          fromUser={!!userLocation}
           onUpdate={(patch) => update(selected.id, patch)}
           onClose={() => setSelected(null)}
         />
