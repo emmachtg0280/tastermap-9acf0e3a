@@ -87,6 +87,32 @@ function isNewRestaurant(r: Restaurant): boolean {
 const DEFAULT_CENTER = { lat: 43.6047, lng: 1.4442 }; // Toulouse
 const DEFAULT_ZOOM = 13;
 const CITY_ZOOM = 13;
+// Below this zoom level, restaurant markers are clustered to keep the map readable.
+const CLUSTER_ZOOM = 12.5;
+
+// Elegant, minimal personal location indicator with a very subtle pulse.
+const USER_DOT_SVG = `<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'>
+  <circle cx='24' cy='24' r='8' fill='none' stroke='#3B82F6' stroke-width='2' stroke-opacity='0.4'>
+    <animate attributeName='r' values='8;19' dur='3s' repeatCount='indefinite'/>
+    <animate attributeName='stroke-opacity' values='0.4;0' dur='3s' repeatCount='indefinite'/>
+  </circle>
+  <circle cx='24' cy='24' r='9' fill='#3B82F6' fill-opacity='0.16'/>
+  <circle cx='24' cy='24' r='6' fill='#3B82F6' stroke='#ffffff' stroke-width='2.5'/>
+</svg>`;
+
+/** Cluster bubble: ring fills green in proportion to discovered restaurants. */
+function clusterSvg(size: number, count: number, discoveredRatio: number) {
+  const r = size / 2 - 3;
+  const c = 2 * Math.PI * r;
+  const filled = Math.max(0, Math.min(1, discoveredRatio)) * c;
+  return `<svg xmlns='http://www.w3.org/2000/svg' width='${size * 2}' height='${size * 2}' viewBox='0 0 ${size} ${size}'>
+  <circle cx='${size / 2}' cy='${size / 2}' r='${r}' fill='#ffffff' fill-opacity='0.94'/>
+  <circle cx='${size / 2}' cy='${size / 2}' r='${r}' fill='none' stroke='#e3d8c4' stroke-width='2.5'/>
+  <circle cx='${size / 2}' cy='${size / 2}' r='${r}' fill='none' stroke='#58CC02' stroke-width='2.5' stroke-linecap='round'
+    stroke-dasharray='${filled} ${c}' transform='rotate(-90 ${size / 2} ${size / 2})'/>
+  <text x='${size / 2}' y='${size / 2 + 4}' text-anchor='middle' font-family='Nunito, system-ui, sans-serif' font-size='${size * 0.34}' font-weight='800' fill='#4a3f30'>${count}</text>
+</svg>`;
+}
 
 
 
@@ -362,7 +388,7 @@ function Index() {
   const [onlyOpenNow, setOnlyOpenNow] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("score");
   const [showFilters, setShowFilters] = useState(false);
-  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "hype">(null);
+  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "hype" | "profile">(null);
   const { user } = useAuthSession();
   const { visits, update } = useVisits(user?.id ?? null);
   const userLocation = useGeolocation();
@@ -371,6 +397,8 @@ function Index() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
+  const userMarkerRef = useRef<google.maps.Marker | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM);
   const cuisineDataUrls = useCuisineDataUrls();
 
   const currentCity = useMemo(
@@ -443,6 +471,10 @@ function Index() {
       styles: minimalMapStyle,
     });
     mapInstance.current.addListener("click", () => setSelected(null));
+    mapInstance.current.addListener("idle", () => {
+      const z = mapInstance.current?.getZoom();
+      if (typeof z === "number") setZoomLevel((prev) => (Math.round(z) === Math.round(prev) ? prev : z));
+    });
   }, [mapReady]);
 
 
@@ -453,54 +485,129 @@ function Index() {
     mapInstance.current.setZoom(CITY_ZOOM);
   }, [currentCity]);
 
+  // Subtle personal location indicator
+  useEffect(() => {
+    if (!mapInstance.current || !window.google || !userLocation) return;
+    if (!userMarkerRef.current) {
+      userMarkerRef.current = new window.google.maps.Marker({
+        map: mapInstance.current,
+        zIndex: 500,
+        clickable: false,
+        optimized: false,
+        icon: {
+          url: `data:image/svg+xml;utf8,${encodeURIComponent(USER_DOT_SVG)}`,
+          scaledSize: new window.google.maps.Size(48, 48),
+          anchor: new window.google.maps.Point(24, 24),
+        },
+      });
+    }
+    userMarkerRef.current.setPosition(userLocation);
+  }, [userLocation, mapReady]);
+
   useEffect(() => {
     if (!mapInstance.current || !window.google) return;
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
     if (filtered.length === 0) return;
 
+    const g = window.google!;
+
+    // --- Clustering when zoomed out: keeps the map readable ---
+    if (zoomLevel < CLUSTER_ZOOM) {
+      const cell = 360 / Math.pow(2, Math.max(4, Math.round(zoomLevel)) + 3);
+      const groups = new Map<string, Restaurant[]>();
+      filtered.forEach((r) => {
+        const key = `${Math.floor(r.lat / cell)}:${Math.floor(r.lng / cell)}`;
+        const arr = groups.get(key) ?? [];
+        arr.push(r);
+        groups.set(key, arr);
+      });
+      groups.forEach((group) => {
+        if (group.length === 1) {
+          markersRef.current.push(makeRestaurantMarker(group[0]));
+          return;
+        }
+        const lat = group.reduce((s, r) => s + r.lat, 0) / group.length;
+        const lng = group.reduce((s, r) => s + r.lng, 0) / group.length;
+        const discovered = group.filter((r) => visits[r.id]?.done).length;
+        const size = Math.min(56, 34 + Math.round(Math.log2(group.length + 1) * 7));
+        const marker = new g.maps.Marker({
+          position: { lat, lng },
+          map: mapInstance.current!,
+          icon: {
+            url: `data:image/svg+xml;utf8,${encodeURIComponent(clusterSvg(size, group.length, discovered / group.length))}`,
+            scaledSize: new g.maps.Size(size, size),
+            anchor: new g.maps.Point(size / 2, size / 2),
+          },
+          zIndex: 10,
+          optimized: false,
+        });
+        marker.addListener("click", () => {
+          mapInstance.current?.panTo({ lat, lng });
+          mapInstance.current?.setZoom(Math.min(17, Math.round(zoomLevel) + 2));
+        });
+        markersRef.current.push(marker);
+      });
+      return;
+    }
+
     filtered.forEach((r) => {
+      markersRef.current.push(makeRestaurantMarker(r));
+    });
+
+    function makeRestaurantMarker(r: Restaurant) {
       const active = selected?.id === r.id;
       const done = !!visits[r.id]?.done;
       const favorite = !!visits[r.id]?.favorite;
       const isNew = isNewRestaurant(r);
-      const size = active ? 44 : 38;
+      // Visual hierarchy: DISCOVERED > SAVED > UNDISCOVERED
+      const state: "done" | "saved" | "new" = done ? "done" : favorite ? "saved" : "new";
+      const base = state === "done" ? 40 : state === "saved" ? 37 : 31;
+      const size = active ? base + 6 : base;
+      const iconOpacity = state === "new" ? 0.62 : 1;
+      const bgOpacity = state === "new" ? 0.72 : 1;
+      const ring =
+        state === "done"
+          ? { color: "#58CC02", width: 2.4 }
+          : state === "saved"
+            ? { color: "#F2789F", width: 2 }
+            : { color: "#d9cdb6", width: 1 };
       const cuisineKey = pickCuisine(r.cuisines);
       const dataUrl = cuisineDataUrls?.[cuisineKey];
       const iconSize = size * 0.68;
       const iconOffset = (size - iconSize) / 2;
       const imageTag = dataUrl
-        ? `<image href='${dataUrl}' x='${iconOffset}' y='${iconOffset}' width='${iconSize}' height='${iconSize}' preserveAspectRatio='xMidYMid meet'/>`
-        : `<g transform='translate(${iconOffset} ${iconOffset}) scale(${iconSize / 24})'>${cuisineInnerSvg(r.cuisines)}</g>`;
-      const newBadge = isNew
+        ? `<image href='${dataUrl}' x='${iconOffset}' y='${iconOffset}' width='${iconSize}' height='${iconSize}' opacity='${iconOpacity}' preserveAspectRatio='xMidYMid meet'/>`
+        : `<g opacity='${iconOpacity}' transform='translate(${iconOffset} ${iconOffset}) scale(${iconSize / 24})'>${cuisineInnerSvg(r.cuisines)}</g>`;
+      const newBadge = isNew && state !== "new"
         ? `<g><circle cx='7' cy='8' r='6' fill='#FFC94A'/><path d='M7 5.3 l0.8 1.6 l1.8 0.25 l-1.3 1.2 l0.35 1.8 l-1.65 -0.85 l-1.65 0.85 l0.35 -1.8 l-1.3 -1.2 l1.8 -0.25 z' fill='#ffffff' stroke-linejoin='round'/></g>`
         : "";
       const scale = 2;
-      const w = size * scale;
-      const h = (size + 4) * scale;
       const svg = `
-<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${size} ${size + 4}'>
-  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 2}' fill='#ffffff'/>
+<svg xmlns='http://www.w3.org/2000/svg' width='${size * scale}' height='${(size + 4) * scale}' viewBox='0 0 ${size} ${size + 4}'>
+  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 2}' fill='#ffffff' fill-opacity='${bgOpacity}' stroke='${ring.color}' stroke-width='${ring.width}'/>
   ${imageTag}
   ${newBadge}
   ${done ? `<circle cx='${size - 7}' cy='8' r='6' fill='#58CC02' stroke='#ffffff' stroke-width='1.5'/><path d='M${size - 9.5} 8 l2 2 L${size - 5} 6' stroke='#ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
+  ${state === "saved" ? `<circle cx='${size - 7}' cy='8' r='6' fill='#ffffff' stroke='#F2789F' stroke-width='1.2'/><path d='M${size - 7} 10.4 c-2.4 -1.6 -3.2 -2.7 -3.2 -3.8 a1.7 1.7 0 0 1 3.2 -0.7 a1.7 1.7 0 0 1 3.2 0.7 c0 1.1 -0.8 2.2 -3.2 3.8 z' fill='#F2789F'/>` : ""}
 </svg>`.trim();
-      const marker = new window.google!.maps.Marker({
+      const marker = new g.maps.Marker({
         position: { lat: r.lat, lng: r.lng },
         map: mapInstance.current!,
         title: r.name,
         icon: {
           url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
-          scaledSize: new window.google!.maps.Size(size, size + 4),
-          anchor: new window.google!.maps.Point(size / 2, size / 2),
+          scaledSize: new g.maps.Size(size, size + 4),
+          anchor: new g.maps.Point(size / 2, size / 2),
         },
-        zIndex: active ? 999 : done ? 5 : favorite ? 3 : 1,
+        zIndex: active ? 999 : done ? 40 : favorite ? 20 : 1,
         optimized: false,
+        animation: null,
       });
       marker.addListener("click", () => setSelected(r));
-      markersRef.current.push(marker);
-    });
-  }, [filtered, selected, visits, cuisineDataUrls]);
+      return marker;
+    }
+  }, [filtered, selected, visits, cuisineDataUrls, zoomLevel]);
 
   // Fetch whenever city or minRating change — only if a city is selected
   useEffect(() => {
@@ -601,6 +708,26 @@ function Index() {
           selected ? "bottom-[calc(52vh+16px)] lg:bottom-3" : "bottom-3"
         }`}
       >
+        <button
+          onClick={() => { haptic(20); setShowFilters(false); setListMode("profile"); }}
+          aria-label="Mon profil food"
+          className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-foreground/80 grid place-items-center hover:bg-white/60 tap-bounce transition"
+        >
+          <User className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => {
+            haptic(20);
+            const target = userLocation ?? (currentCity ? { lat: currentCity.lat, lng: currentCity.lng } : null);
+            if (!target || !mapInstance.current) return;
+            mapInstance.current.panTo(target);
+            mapInstance.current.setZoom(userLocation ? 15 : CITY_ZOOM);
+          }}
+          aria-label="Ma position"
+          className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-[#3B82F6] grid place-items-center hover:bg-white/60 tap-bounce transition"
+        >
+          <Navigation className="h-5 w-5" />
+        </button>
         <button
           onClick={() => { haptic(20); setListMode(null); setShowFilters(true); }}
           aria-label="Filtres"
@@ -759,7 +886,7 @@ function Index() {
       )}
 
       {/* List overlay */}
-      {listMode && (() => {
+      {listMode && listMode !== "profile" && (() => {
         const listItems =
           listMode === "done"
             ? filtered.filter((r) => visits[r.id]?.done)
@@ -922,12 +1049,34 @@ function Index() {
         );
       })()}
 
+      {/* Personal food map profile */}
+      {listMode === "profile" && (
+        <ProfilePanel
+          restaurants={results}
+          visits={visits}
+          cityLabel={currentCity?.label ?? ""}
+          onClose={() => setListMode(null)}
+          onSelect={(r) => {
+            setListMode(null);
+            setSelected(r);
+            mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
+            mapInstance.current?.setZoom(15);
+          }}
+        />
+      )}
+
       {/* Detail card */}
       {selected && (
         <DetailCard
           key={selected.id}
           restaurant={selected}
           visit={visits[selected.id] ?? { done: false, comment: "" }}
+          distanceKm={
+            userLocation || currentCity
+              ? haversineDistance(userLocation ?? { lat: currentCity!.lat, lng: currentCity!.lng }, selected)
+              : null
+          }
+          fromUser={!!userLocation}
           onUpdate={(patch) => update(selected.id, patch)}
           onClose={() => setSelected(null)}
         />
@@ -1055,14 +1204,172 @@ function Mascot({
 
 
 
+function ProfilePanel({
+  restaurants,
+  visits,
+  cityLabel,
+  onClose,
+  onSelect,
+}: {
+  restaurants: Restaurant[];
+  visits: VisitMap;
+  cityLabel: string;
+  onClose: () => void;
+  onSelect: (r: Restaurant) => void;
+}) {
+  const done = restaurants.filter((r) => visits[r.id]?.done);
+  const saved = restaurants.filter((r) => visits[r.id]?.favorite && !visits[r.id]?.done);
+
+  // Neighbourhoods are approximated with a geographic grid (~1 km cells) so
+  // exploration is measured per area, not globally.
+  const CELL = 0.012;
+  const cellKey = (r: Restaurant) => `${Math.floor(r.lat / CELL)}:${Math.floor(r.lng / CELL)}`;
+  const areas = new Map<string, { total: number; done: number }>();
+  restaurants.forEach((r) => {
+    const k = cellKey(r);
+    const a = areas.get(k) ?? { total: 0, done: 0 };
+    a.total += 1;
+    if (visits[r.id]?.done) a.done += 1;
+    areas.set(k, a);
+  });
+  const exploredAreas = Array.from(areas.values()).filter((a) => a.done > 0).length;
+
+  const cuisineCount = new Map<Cuisine, number>();
+  done.forEach((r) => {
+    const c = pickCuisine(r.cuisines);
+    cuisineCount.set(c, (cuisineCount.get(c) ?? 0) + 1);
+  });
+  const topCuisines = Array.from(cuisineCount.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const cityProgress = restaurants.length ? Math.round((done.length / restaurants.length) * 100) : 0;
+
+  const Stat = ({ value, label }: { value: string; label: string }) => (
+    <div className="rounded-2xl bg-muted/50 px-3 py-3 text-center">
+      <div className="font-display font-extrabold text-xl leading-none">{value}</div>
+      <div className="mt-1 text-[11px] text-muted-foreground leading-tight">{label}</div>
+    </div>
+  );
+
+  return (
+    <>
+      <div className="absolute inset-0 z-30 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute z-40 left-2 right-2 bottom-2 top-20 sm:left-4 sm:right-auto sm:top-4 sm:bottom-4 sm:w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl overflow-hidden flex flex-col animate-pop-in">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
+          <h2 className="font-display font-bold text-sm">Ma carte food{cityLabel ? ` · ${cityLabel}` : ""}</h2>
+          <button
+            onClick={() => { haptic(); onClose(); }}
+            className="p-1 -m-1 text-muted-foreground hover:text-foreground tap-bounce"
+            aria-label="Fermer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4 space-y-5">
+          <div className="grid grid-cols-3 gap-2">
+            <Stat value={String(done.length)} label="Restaurants découverts" />
+            <Stat value={`${exploredAreas}/${areas.size || 0}`} label="Quartiers explorés" />
+            <Stat value={String(cuisineCount.size)} label="Cuisines goûtées" />
+          </div>
+
+          <div>
+            <div className="flex items-baseline justify-between mb-1.5">
+              <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                {cityLabel || "Ville"} explorée
+              </h3>
+              <span className="text-sm font-bold">{cityProgress}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[color:var(--duo-green)] transition-[width] duration-700 ease-out"
+                style={{ width: `${cityProgress}%` }}
+              />
+            </div>
+          </div>
+
+          {topCuisines.length > 0 && (
+            <div>
+              <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
+                Mes cuisines préférées
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {topCuisines.map(([c, n]) => (
+                  <span key={c} className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 pl-1 pr-3 py-1 text-sm">
+                    <CuisineIcon cuisines={[c]} size={26} />
+                    {CUISINE_META[c].label}
+                    <span className="text-muted-foreground">· {n}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <ProfileList title="Mes découvertes récentes" items={done.slice(0, 6)} empty="Marquez un restaurant « Fait » pour démarrer votre carte." onSelect={onSelect} />
+          <ProfileList title="À découvrir" items={saved.slice(0, 6)} empty="Aucun restaurant enregistré pour l'instant." onSelect={onSelect} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ProfileList({
+  title,
+  items,
+  empty,
+  onSelect,
+}: {
+  title: string;
+  items: Restaurant[];
+  empty: string;
+  onSelect: (r: Restaurant) => void;
+}) {
+  return (
+    <div>
+      <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">{title}</h3>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{empty}</p>
+      ) : (
+        <div className="space-y-1">
+          {items.map((r) => (
+            <button
+              key={r.id}
+              onClick={() => { haptic(); onSelect(r); }}
+              className="w-full flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-muted/60 transition text-left"
+            >
+              {r.photoUrls[0] ? (
+                <img src={r.photoUrls[0]} alt={r.name} loading="lazy" className="h-10 w-10 rounded-lg object-cover flex-shrink-0" />
+              ) : (
+                <div className="h-10 w-10 rounded-lg bg-muted grid place-items-center flex-shrink-0">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="text-sm font-medium truncate">{r.name}</div>
+                <div className="text-xs text-muted-foreground truncate">{r.primaryType ?? "Restaurant"}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatDistance(km: number) {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+}
+
 function DetailCard({
   restaurant: r,
   visit,
+  distanceKm,
+  fromUser,
   onUpdate,
   onClose,
 }: {
   restaurant: Restaurant;
   visit: VisitEntry;
+  distanceKm?: number | null;
+  fromUser?: boolean;
   onUpdate: (patch: Partial<VisitEntry>) => void;
   onClose: () => void;
 }) {
@@ -1150,6 +1457,23 @@ function DetailCard({
               {priceLabel(r.priceLevel)}
             </span>
           )}
+          {distanceKm != null && (
+            <span className="text-muted-foreground font-medium inline-flex items-center gap-1">
+              <Navigation className="h-3.5 w-3.5" />
+              {formatDistance(distanceKm)}{fromUser ? "" : " du centre"}
+            </span>
+          )}
+          <span
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-medium ${
+              visit.done
+                ? "bg-[color:var(--duo-green)]/10 text-[color:var(--duo-green-dark)]"
+                : visit.favorite
+                  ? "bg-rose-50 text-rose-600"
+                  : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {visit.done ? "Découvert" : visit.favorite ? "À découvrir" : "Pas encore exploré"}
+          </span>
           {isNewRestaurant(r) && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-medium">
               <NewStickerIcon size={16} /> Nouveau
