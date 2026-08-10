@@ -1204,14 +1204,172 @@ function Mascot({
 
 
 
+function ProfilePanel({
+  restaurants,
+  visits,
+  cityLabel,
+  onClose,
+  onSelect,
+}: {
+  restaurants: Restaurant[];
+  visits: VisitMap;
+  cityLabel: string;
+  onClose: () => void;
+  onSelect: (r: Restaurant) => void;
+}) {
+  const done = restaurants.filter((r) => visits[r.id]?.done);
+  const saved = restaurants.filter((r) => visits[r.id]?.favorite && !visits[r.id]?.done);
+
+  // Neighbourhoods are approximated with a geographic grid (~1 km cells) so
+  // exploration is measured per area, not globally.
+  const CELL = 0.012;
+  const cellKey = (r: Restaurant) => `${Math.floor(r.lat / CELL)}:${Math.floor(r.lng / CELL)}`;
+  const areas = new Map<string, { total: number; done: number }>();
+  restaurants.forEach((r) => {
+    const k = cellKey(r);
+    const a = areas.get(k) ?? { total: 0, done: 0 };
+    a.total += 1;
+    if (visits[r.id]?.done) a.done += 1;
+    areas.set(k, a);
+  });
+  const exploredAreas = Array.from(areas.values()).filter((a) => a.done > 0).length;
+
+  const cuisineCount = new Map<Cuisine, number>();
+  done.forEach((r) => {
+    const c = pickCuisine(r.cuisines);
+    cuisineCount.set(c, (cuisineCount.get(c) ?? 0) + 1);
+  });
+  const topCuisines = Array.from(cuisineCount.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const cityProgress = restaurants.length ? Math.round((done.length / restaurants.length) * 100) : 0;
+
+  const Stat = ({ value, label }: { value: string; label: string }) => (
+    <div className="rounded-2xl bg-muted/50 px-3 py-3 text-center">
+      <div className="font-display font-extrabold text-xl leading-none">{value}</div>
+      <div className="mt-1 text-[11px] text-muted-foreground leading-tight">{label}</div>
+    </div>
+  );
+
+  return (
+    <>
+      <div className="absolute inset-0 z-30 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute z-40 left-2 right-2 bottom-2 top-20 sm:left-4 sm:right-auto sm:top-4 sm:bottom-4 sm:w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl overflow-hidden flex flex-col animate-pop-in">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
+          <h2 className="font-display font-bold text-sm">Ma carte food{cityLabel ? ` · ${cityLabel}` : ""}</h2>
+          <button
+            onClick={() => { haptic(); onClose(); }}
+            className="p-1 -m-1 text-muted-foreground hover:text-foreground tap-bounce"
+            aria-label="Fermer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4 space-y-5">
+          <div className="grid grid-cols-3 gap-2">
+            <Stat value={String(done.length)} label="Restaurants découverts" />
+            <Stat value={`${exploredAreas}/${areas.size || 0}`} label="Quartiers explorés" />
+            <Stat value={String(cuisineCount.size)} label="Cuisines goûtées" />
+          </div>
+
+          <div>
+            <div className="flex items-baseline justify-between mb-1.5">
+              <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                {cityLabel || "Ville"} explorée
+              </h3>
+              <span className="text-sm font-bold">{cityProgress}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[color:var(--duo-green)] transition-[width] duration-700 ease-out"
+                style={{ width: `${cityProgress}%` }}
+              />
+            </div>
+          </div>
+
+          {topCuisines.length > 0 && (
+            <div>
+              <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
+                Mes cuisines préférées
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {topCuisines.map(([c, n]) => (
+                  <span key={c} className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 pl-1 pr-3 py-1 text-sm">
+                    <CuisineIcon cuisines={[c]} size={26} />
+                    {CUISINE_META[c].label}
+                    <span className="text-muted-foreground">· {n}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <ProfileList title="Mes découvertes récentes" items={done.slice(0, 6)} empty="Marquez un restaurant « Fait » pour démarrer votre carte." onSelect={onSelect} />
+          <ProfileList title="À découvrir" items={saved.slice(0, 6)} empty="Aucun restaurant enregistré pour l'instant." onSelect={onSelect} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ProfileList({
+  title,
+  items,
+  empty,
+  onSelect,
+}: {
+  title: string;
+  items: Restaurant[];
+  empty: string;
+  onSelect: (r: Restaurant) => void;
+}) {
+  return (
+    <div>
+      <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">{title}</h3>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{empty}</p>
+      ) : (
+        <div className="space-y-1">
+          {items.map((r) => (
+            <button
+              key={r.id}
+              onClick={() => { haptic(); onSelect(r); }}
+              className="w-full flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-muted/60 transition text-left"
+            >
+              {r.photoUrls[0] ? (
+                <img src={r.photoUrls[0]} alt={r.name} loading="lazy" className="h-10 w-10 rounded-lg object-cover flex-shrink-0" />
+              ) : (
+                <div className="h-10 w-10 rounded-lg bg-muted grid place-items-center flex-shrink-0">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="text-sm font-medium truncate">{r.name}</div>
+                <div className="text-xs text-muted-foreground truncate">{r.primaryType ?? "Restaurant"}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatDistance(km: number) {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+}
+
 function DetailCard({
   restaurant: r,
   visit,
+  distanceKm,
+  fromUser,
   onUpdate,
   onClose,
 }: {
   restaurant: Restaurant;
   visit: VisitEntry;
+  distanceKm?: number | null;
+  fromUser?: boolean;
   onUpdate: (patch: Partial<VisitEntry>) => void;
   onClose: () => void;
 }) {
