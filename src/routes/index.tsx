@@ -709,6 +709,26 @@ function Index() {
         }`}
       >
         <button
+          onClick={() => { haptic(20); setShowFilters(false); setListMode("profile"); }}
+          aria-label="Mon profil food"
+          className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-foreground/80 grid place-items-center hover:bg-white/60 tap-bounce transition"
+        >
+          <User className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => {
+            haptic(20);
+            const target = userLocation ?? (currentCity ? { lat: currentCity.lat, lng: currentCity.lng } : null);
+            if (!target || !mapInstance.current) return;
+            mapInstance.current.panTo(target);
+            mapInstance.current.setZoom(userLocation ? 15 : CITY_ZOOM);
+          }}
+          aria-label="Ma position"
+          className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-[#3B82F6] grid place-items-center hover:bg-white/60 tap-bounce transition"
+        >
+          <Navigation className="h-5 w-5" />
+        </button>
+        <button
           onClick={() => { haptic(20); setListMode(null); setShowFilters(true); }}
           aria-label="Filtres"
           className="h-12 w-12 rounded-full bg-[color:var(--duo-green)] text-white btn-pop grid place-items-center hover:brightness-105 tap-bounce transition"
