@@ -1457,6 +1457,23 @@ function DetailCard({
               {priceLabel(r.priceLevel)}
             </span>
           )}
+          {distanceKm != null && (
+            <span className="text-muted-foreground font-medium inline-flex items-center gap-1">
+              <Navigation className="h-3.5 w-3.5" />
+              {formatDistance(distanceKm)}{fromUser ? "" : " du centre"}
+            </span>
+          )}
+          <span
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-medium ${
+              visit.done
+                ? "bg-[color:var(--duo-green)]/10 text-[color:var(--duo-green-dark)]"
+                : visit.favorite
+                  ? "bg-rose-50 text-rose-600"
+                  : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {visit.done ? "Découvert" : visit.favorite ? "À découvrir" : "Pas encore exploré"}
+          </span>
           {isNewRestaurant(r) && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-medium">
               <NewStickerIcon size={16} /> Nouveau
