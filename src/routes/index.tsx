@@ -576,7 +576,7 @@ function Index() {
         },
         zIndex: active ? 999 : done ? 40 : favorite ? 20 : 1,
         optimized: false,
-        animation: active ? g.maps.Animation.DROP : null,
+        animation: null,
       });
       marker.addListener("click", () => setSelected(r));
       return marker;
