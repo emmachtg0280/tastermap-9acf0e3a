@@ -445,6 +445,10 @@ function Index() {
       styles: minimalMapStyle,
     });
     mapInstance.current.addListener("click", () => setSelected(null));
+    mapInstance.current.addListener("idle", () => {
+      const z = mapInstance.current?.getZoom();
+      if (typeof z === "number") setZoomLevel((prev) => (Math.round(z) === Math.round(prev) ? prev : z));
+    });
   }, [mapReady]);
 
 
@@ -455,54 +459,129 @@ function Index() {
     mapInstance.current.setZoom(CITY_ZOOM);
   }, [currentCity]);
 
+  // Subtle personal location indicator
+  useEffect(() => {
+    if (!mapInstance.current || !window.google || !userLocation) return;
+    if (!userMarkerRef.current) {
+      userMarkerRef.current = new window.google.maps.Marker({
+        map: mapInstance.current,
+        zIndex: 500,
+        clickable: false,
+        optimized: false,
+        icon: {
+          url: `data:image/svg+xml;utf8,${encodeURIComponent(USER_DOT_SVG)}`,
+          scaledSize: new window.google.maps.Size(48, 48),
+          anchor: new window.google.maps.Point(24, 24),
+        },
+      });
+    }
+    userMarkerRef.current.setPosition(userLocation);
+  }, [userLocation, mapReady]);
+
   useEffect(() => {
     if (!mapInstance.current || !window.google) return;
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
     if (filtered.length === 0) return;
 
+    const g = window.google!;
+
+    // --- Clustering when zoomed out: keeps the map readable ---
+    if (zoomLevel < CLUSTER_ZOOM) {
+      const cell = 360 / Math.pow(2, Math.max(4, Math.round(zoomLevel)) + 3);
+      const groups = new Map<string, Restaurant[]>();
+      filtered.forEach((r) => {
+        const key = `${Math.floor(r.lat / cell)}:${Math.floor(r.lng / cell)}`;
+        const arr = groups.get(key) ?? [];
+        arr.push(r);
+        groups.set(key, arr);
+      });
+      groups.forEach((group) => {
+        if (group.length === 1) {
+          markersRef.current.push(makeRestaurantMarker(group[0]));
+          return;
+        }
+        const lat = group.reduce((s, r) => s + r.lat, 0) / group.length;
+        const lng = group.reduce((s, r) => s + r.lng, 0) / group.length;
+        const discovered = group.filter((r) => visits[r.id]?.done).length;
+        const size = Math.min(56, 34 + Math.round(Math.log2(group.length + 1) * 7));
+        const marker = new g.maps.Marker({
+          position: { lat, lng },
+          map: mapInstance.current!,
+          icon: {
+            url: `data:image/svg+xml;utf8,${encodeURIComponent(clusterSvg(size, group.length, discovered / group.length))}`,
+            scaledSize: new g.maps.Size(size, size),
+            anchor: new g.maps.Point(size / 2, size / 2),
+          },
+          zIndex: 10,
+          optimized: false,
+        });
+        marker.addListener("click", () => {
+          mapInstance.current?.panTo({ lat, lng });
+          mapInstance.current?.setZoom(Math.min(17, Math.round(zoomLevel) + 2));
+        });
+        markersRef.current.push(marker);
+      });
+      return;
+    }
+
     filtered.forEach((r) => {
+      markersRef.current.push(makeRestaurantMarker(r));
+    });
+
+    function makeRestaurantMarker(r: Restaurant) {
       const active = selected?.id === r.id;
       const done = !!visits[r.id]?.done;
       const favorite = !!visits[r.id]?.favorite;
       const isNew = isNewRestaurant(r);
-      const size = active ? 44 : 38;
+      // Visual hierarchy: DISCOVERED > SAVED > UNDISCOVERED
+      const state: "done" | "saved" | "new" = done ? "done" : favorite ? "saved" : "new";
+      const base = state === "done" ? 40 : state === "saved" ? 37 : 31;
+      const size = active ? base + 6 : base;
+      const iconOpacity = state === "new" ? 0.62 : 1;
+      const bgOpacity = state === "new" ? 0.72 : 1;
+      const ring =
+        state === "done"
+          ? { color: "#58CC02", width: 2.4 }
+          : state === "saved"
+            ? { color: "#F2789F", width: 2 }
+            : { color: "#d9cdb6", width: 1 };
       const cuisineKey = pickCuisine(r.cuisines);
       const dataUrl = cuisineDataUrls?.[cuisineKey];
       const iconSize = size * 0.68;
       const iconOffset = (size - iconSize) / 2;
       const imageTag = dataUrl
-        ? `<image href='${dataUrl}' x='${iconOffset}' y='${iconOffset}' width='${iconSize}' height='${iconSize}' preserveAspectRatio='xMidYMid meet'/>`
-        : `<g transform='translate(${iconOffset} ${iconOffset}) scale(${iconSize / 24})'>${cuisineInnerSvg(r.cuisines)}</g>`;
-      const newBadge = isNew
+        ? `<image href='${dataUrl}' x='${iconOffset}' y='${iconOffset}' width='${iconSize}' height='${iconSize}' opacity='${iconOpacity}' preserveAspectRatio='xMidYMid meet'/>`
+        : `<g opacity='${iconOpacity}' transform='translate(${iconOffset} ${iconOffset}) scale(${iconSize / 24})'>${cuisineInnerSvg(r.cuisines)}</g>`;
+      const newBadge = isNew && state !== "new"
         ? `<g><circle cx='7' cy='8' r='6' fill='#FFC94A'/><path d='M7 5.3 l0.8 1.6 l1.8 0.25 l-1.3 1.2 l0.35 1.8 l-1.65 -0.85 l-1.65 0.85 l0.35 -1.8 l-1.3 -1.2 l1.8 -0.25 z' fill='#ffffff' stroke-linejoin='round'/></g>`
         : "";
       const scale = 2;
-      const w = size * scale;
-      const h = (size + 4) * scale;
       const svg = `
-<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${size} ${size + 4}'>
-  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 2}' fill='#ffffff'/>
+<svg xmlns='http://www.w3.org/2000/svg' width='${size * scale}' height='${(size + 4) * scale}' viewBox='0 0 ${size} ${size + 4}'>
+  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 2}' fill='#ffffff' fill-opacity='${bgOpacity}' stroke='${ring.color}' stroke-width='${ring.width}'/>
   ${imageTag}
   ${newBadge}
   ${done ? `<circle cx='${size - 7}' cy='8' r='6' fill='#58CC02' stroke='#ffffff' stroke-width='1.5'/><path d='M${size - 9.5} 8 l2 2 L${size - 5} 6' stroke='#ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
+  ${state === "saved" ? `<circle cx='${size - 7}' cy='8' r='6' fill='#ffffff' stroke='#F2789F' stroke-width='1.2'/><path d='M${size - 7} 10.4 c-2.4 -1.6 -3.2 -2.7 -3.2 -3.8 a1.7 1.7 0 0 1 3.2 -0.7 a1.7 1.7 0 0 1 3.2 0.7 c0 1.1 -0.8 2.2 -3.2 3.8 z' fill='#F2789F'/>` : ""}
 </svg>`.trim();
-      const marker = new window.google!.maps.Marker({
+      const marker = new g.maps.Marker({
         position: { lat: r.lat, lng: r.lng },
         map: mapInstance.current!,
         title: r.name,
         icon: {
           url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
-          scaledSize: new window.google!.maps.Size(size, size + 4),
-          anchor: new window.google!.maps.Point(size / 2, size / 2),
+          scaledSize: new g.maps.Size(size, size + 4),
+          anchor: new g.maps.Point(size / 2, size / 2),
         },
-        zIndex: active ? 999 : done ? 5 : favorite ? 3 : 1,
+        zIndex: active ? 999 : done ? 40 : favorite ? 20 : 1,
         optimized: false,
+        animation: active ? g.maps.Animation.DROP : null,
       });
       marker.addListener("click", () => setSelected(r));
-      markersRef.current.push(marker);
-    });
-  }, [filtered, selected, visits, cuisineDataUrls]);
+      return marker;
+    }
+  }, [filtered, selected, visits, cuisineDataUrls, zoomLevel]);
 
   // Fetch whenever city or minRating change — only if a city is selected
   useEffect(() => {
