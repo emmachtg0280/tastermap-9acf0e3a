@@ -362,7 +362,7 @@ function Index() {
   const [onlyOpenNow, setOnlyOpenNow] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("score");
   const [showFilters, setShowFilters] = useState(false);
-  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "hype">(null);
+  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "hype" | "profile">(null);
   const { user } = useAuthSession();
   const { visits, update } = useVisits(user?.id ?? null);
   const userLocation = useGeolocation();
@@ -371,6 +371,8 @@ function Index() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
+  const userMarkerRef = useRef<google.maps.Marker | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM);
   const cuisineDataUrls = useCuisineDataUrls();
 
   const currentCity = useMemo(
