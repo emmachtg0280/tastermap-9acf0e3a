@@ -1521,7 +1521,6 @@ function Index() {
                     key={r.id}
                     onClick={() => {
                       setSelected(r);
-            setDetailOpen(true);
                       setDetailOpen(true);
                       mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
                       mapInstance.current?.setZoom(15);
