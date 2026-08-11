@@ -463,7 +463,10 @@ function Index() {
   const [cuisine, setCuisine] = useState<Cuisine>(restored?.cuisine ?? "any");
   const [minRating, setMinRating] = useState(4);
   const [selected, setSelected] = useState<Restaurant | null>(null);
+  /** Tapping a marker shows a quick-action card; details are opt-in. */
+  const [detailOpen, setDetailOpen] = useState(false);
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>("half");
+  const [showLegend, setShowLegend] = useState(false);
 
   const [results, setResults] = useState<Restaurant[]>([]);
   const [searchText, setSearchText] = useState("");
@@ -494,6 +497,30 @@ function Index() {
   useEffect(() => {
     if (selected) setSheetSnap("half");
   }, [selected?.id]);
+
+  /* Compact legend: shown until the user has put anything on their own map. */
+  const personalCount = useMemo(
+    () => Object.values(visits).filter((v) => v.done || v.favorite).length,
+    [visits],
+  );
+  const hasPersonalPins = personalCount > 0;
+  useEffect(() => {
+    let dismissed = false;
+    try {
+      dismissed = localStorage.getItem("tastemap.legend.v1") === "1";
+    } catch {
+      /* ignore */
+    }
+    setShowLegend(!dismissed && !hasPersonalPins);
+  }, [hasPersonalPins]);
+  const dismissLegend = () => {
+    try {
+      localStorage.setItem("tastemap.legend.v1", "1");
+    } catch {
+      /* ignore */
+    }
+    setShowLegend(false);
+  };
 
   const currentCity = useMemo(
     () => CITIES.find((c) => c.key === city) ?? null,
@@ -615,7 +642,7 @@ function Index() {
       styles: minimalMapStyle,
     });
     mapInstance.current = map;
-    map.addListener("click", () => setSelected(null));
+    map.addListener("click", () => { setSelected(null); setDetailOpen(false); });
     map.addListener("idle", () => {
       // Redraw markers directly — no React state update, so panning the map
       // never re-renders the whole screen.
@@ -871,7 +898,11 @@ function Index() {
         });
         marker.addListener("click", () => {
           const target = restaurantsByIdRef.current.get(r.id);
-          if (target) setSelected(target);
+          if (!target) return;
+          haptic(12);
+          // Quick decision first: the full detail sheet stays one tap away.
+          setDetailOpen(false);
+          setSelected(target);
         });
         pool.set(r.id, { marker, key: markerIconKey(input) });
       });
@@ -899,6 +930,25 @@ function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id]);
 
+  /** Tiny, calm reward: the marker scales up once when its state flips. */
+  const bumpMarker = (id: string) => {
+    const g = window.google;
+    const entry = markersRef.current.get(id);
+    if (!g || !entry) return;
+    const icon = entry.marker.getIcon() as google.maps.Icon | null;
+    if (!icon?.scaledSize) return;
+    const w = icon.scaledSize.width;
+    const h = icon.scaledSize.height;
+    entry.marker.setIcon({
+      ...icon,
+      scaledSize: new g.maps.Size(w * 1.22, h * 1.22),
+      anchor: new g.maps.Point((w * 1.22) / 2, (w * 1.22) / 2),
+    });
+    window.setTimeout(() => {
+      if (markersRef.current.get(id) === entry) entry.marker.setIcon(icon);
+    }, 190);
+  };
+
   // Visit changes: repaint only the restaurants whose state actually changed.
   const prevVisitsRef = useRef<VisitMap>({});
   useEffect(() => {
@@ -907,7 +957,10 @@ function Index() {
     const sig = (v?: VisitEntry) => `${v?.done ? 1 : 0}${v?.favorite ? 1 : 0}`;
     const ids = new Set([...Object.keys(prev), ...Object.keys(visits)]);
     ids.forEach((id) => {
-      if (sig(prev[id]) !== sig(visits[id])) paintMarker(id);
+      if (sig(prev[id]) !== sig(visits[id])) {
+        paintMarker(id);
+        bumpMarker(id);
+      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visits]);
@@ -1036,13 +1089,28 @@ function Index() {
               <ChevronDown className={`h-4 w-4 transition-transform ${showCities ? "rotate-180" : ""}`} />
             </button>
 
+            {/* Primary: the user's own map. Discovery is the secondary action. */}
+            <button
+              onClick={() => { haptic(20); setShowFilters(false); setListMode("profile"); }}
+              className="inline-flex items-center gap-1.5 h-11 pl-3 pr-4 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
+            >
+              <MapPin className="h-4 w-4" />
+              Ma carte
+              {personalCount > 0 && (
+                <span className="ml-0.5 rounded-full bg-white/25 px-1.5 text-xs font-extrabold">
+                  {personalCount}
+                </span>
+              )}
+            </button>
+
             <button
               onClick={() => { haptic(20); setShowFilters(false); setListMode("new"); }}
-              className="inline-flex items-center gap-1.5 h-11 pl-2.5 pr-4 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
+              className="inline-flex items-center gap-1.5 h-11 pl-2 pr-3.5 rounded-full bg-white/85 backdrop-blur border border-white/70 shadow-sm text-sm font-extrabold text-foreground tap-bounce transition hover:bg-white"
             >
               <NewStickerIcon size={20} />
               Découvrir
             </button>
+
 
             {neighborhood && (
               <span className="hidden sm:inline-flex items-center h-9 px-3 rounded-full bg-white/60 backdrop-blur border border-white/60 text-xs font-bold text-foreground/70 truncate max-w-[160px]">
@@ -1159,19 +1227,46 @@ function Index() {
         </div>
       )}
 
-
-
-
+      {/* Compact map legend — disappears as soon as the map becomes personal */}
+      {mapReady && showLegend && !selected && (
+        <div className="absolute left-3 bottom-3 z-20 pb-[env(safe-area-inset-bottom)]">
+          <div className="rounded-2xl bg-white/85 backdrop-blur border border-white/70 shadow-sm px-3 py-2 flex items-center gap-3 animate-pop-in">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-foreground/60">
+              <span className="h-2.5 w-2.5 rounded-full bg-white border border-[#ded3bf]" />
+              À explorer
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-500">
+              <Heart className="h-3 w-3 fill-rose-500" />
+              Enregistré
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[color:var(--duo-green-dark)]">
+              <span className="h-3.5 w-3.5 rounded-full bg-[color:var(--duo-green)] grid place-items-center">
+                <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />
+              </span>
+              Découvert
+            </span>
+            <button
+              onClick={dismissLegend}
+              aria-label="Masquer la légende"
+              className="text-foreground/40 hover:text-foreground/70 -mr-1"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Floating action buttons — bottom right */}
       <div
         className={`absolute right-3 z-30 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] transition-[bottom] duration-300 ease-out ${
           selected
-            ? sheetSnap === "collapsed"
-              ? "bottom-[142px] lg:bottom-3"
-              : sheetSnap === "expanded"
-                ? "bottom-[calc(86vh+16px)] lg:bottom-3"
-                : "bottom-[calc(52vh+16px)] lg:bottom-3"
+            ? !detailOpen
+              ? "bottom-[184px] lg:bottom-3"
+              : sheetSnap === "collapsed"
+                ? "bottom-[142px] lg:bottom-3"
+                : sheetSnap === "expanded"
+                  ? "bottom-[calc(86vh+16px)] lg:bottom-3"
+                  : "bottom-[calc(52vh+16px)] lg:bottom-3"
             : "bottom-3"
         }`}
       >
@@ -1205,7 +1300,7 @@ function Index() {
         </button>
         <button
           onClick={() => { haptic(20); setShowFilters(false); setListMode("favorites"); }}
-          aria-label="Favoris"
+          aria-label="Enregistrés"
           className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-rose-500 grid place-items-center hover:bg-white/60 tap-bounce transition"
         >
           <Heart className="h-5 w-5" />
@@ -1370,7 +1465,7 @@ function Index() {
           listMode === "done"
             ? "Faits"
             : listMode === "favorites"
-              ? "Favoris"
+              ? "Enregistrés"
               : listMode === "new"
                 ? "Découvrir"
                 : "Restaurants";
@@ -1426,6 +1521,7 @@ function Index() {
                     key={r.id}
                     onClick={() => {
                       setSelected(r);
+                      setDetailOpen(true);
                       mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
                       mapInstance.current?.setZoom(15);
                       setListMode(null);
@@ -1519,18 +1615,31 @@ function Index() {
           onSelect={(r) => {
             setListMode(null);
             setSelected(r);
+            setDetailOpen(true);
             mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
             mapInstance.current?.setZoom(15);
           }}
         />
       )}
 
-      {/* Detail sheet */}
-      {selected && (
+      {/* Quick actions — the primary way to build the personal map */}
+      {selected && !detailOpen && (
+        <QuickCard
+          key={`quick-${selected.id}`}
+          restaurant={selected}
+          visit={visits[selected.id] ?? { done: false, comment: "", favorite: false }}
+          onUpdate={(patch) => update(selected.id, patch)}
+          onDetails={() => { haptic(); setDetailOpen(true); }}
+          onClose={() => { haptic(); setSelected(null); }}
+        />
+      )}
+
+      {/* Detail sheet — secondary, opt-in */}
+      {selected && detailOpen && (
         <DetailCard
           key={selected.id}
           restaurant={selected}
-          visit={visits[selected.id] ?? { done: false, comment: "" }}
+          visit={visits[selected.id] ?? { done: false, comment: "", favorite: false }}
           snap={sheetSnap}
           onSnapChange={setSheetSnap}
           distanceKm={
@@ -1540,13 +1649,92 @@ function Index() {
           }
           fromUser={!!userLocation}
           onUpdate={(patch) => update(selected.id, patch)}
-          onClose={() => setSelected(null)}
+          onClose={() => { setDetailOpen(false); setSelected(null); }}
         />
       )}
 
 
       <Mascot />
 
+    </div>
+  );
+}
+
+/**
+ * QuickCard — what a marker tap opens.
+ *
+ * One glance, one decision: add this place to my map (saved) or mark it as
+ * already discovered. Restaurant research lives one tap further, in the
+ * detail sheet.
+ */
+function QuickCard({
+  restaurant: r,
+  visit,
+  onUpdate,
+  onDetails,
+  onClose,
+}: {
+  restaurant: Restaurant;
+  visit: VisitEntry;
+  onUpdate: (patch: Partial<VisitEntry>) => void;
+  onDetails: () => void;
+  onClose: () => void;
+}) {
+  const saved = visit.favorite;
+  const done = visit.done;
+
+  return (
+    <div className="absolute left-3 right-3 bottom-3 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[360px] z-40 rounded-3xl bg-card/95 backdrop-blur border border-border/60 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.35)] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] animate-pop-in">
+      <div className="flex items-center gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/70 border border-white/60">
+          <CuisineIcon cuisines={r.cuisines} size={34} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display font-extrabold text-[15px] leading-tight truncate">{r.name}</h3>
+          <p className="text-[13px] text-muted-foreground truncate">
+            {done ? "Sur ta carte · Découvert" : saved ? "Sur ta carte · À tester" : (r.primaryType ?? "Restaurant")}
+          </p>
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="Fermer"
+          className="h-9 w-9 -mr-1 grid place-items-center rounded-full text-muted-foreground hover:text-foreground tap-bounce"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          onClick={() => { haptic(saved ? 12 : 24); onUpdate({ favorite: !saved }); }}
+          className={`flex-1 h-12 rounded-2xl inline-flex items-center justify-center gap-2 text-[15px] font-extrabold tap-bounce transition ${
+            saved
+              ? "bg-rose-50 text-rose-600 border-2 border-rose-300"
+              : "bg-white text-foreground border-2 border-border/70 hover:bg-muted/60"
+          }`}
+        >
+          <Heart className={`h-5 w-5 ${saved ? "fill-rose-500 text-rose-500" : ""}`} />
+          {saved ? "Enregistré" : "Enregistrer"}
+        </button>
+        <button
+          onClick={() => { haptic(done ? 12 : 24); onUpdate({ done: !done }); }}
+          className={`flex-1 h-12 rounded-2xl inline-flex items-center justify-center gap-2 text-[15px] font-extrabold tap-bounce transition ${
+            done
+              ? "bg-[color:var(--duo-green)] text-white btn-pop"
+              : "bg-white text-foreground border-2 border-border/70 hover:bg-muted/60"
+          }`}
+        >
+          <Check className="h-5 w-5" strokeWidth={3} />
+          {done ? "Découvert" : "J'y suis allé"}
+        </button>
+      </div>
+
+      <button
+        onClick={onDetails}
+        className="mt-2 w-full h-9 rounded-xl text-[13px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition"
+      >
+        Voir les détails
+      </button>
     </div>
   );
 }
@@ -1561,7 +1749,7 @@ function Mascot() {
   useEffect(() => {
     let seen = false;
     try {
-      seen = localStorage.getItem("tastemap.welcome.v2") === "1";
+      seen = localStorage.getItem("tastemap.welcome.v3") === "1";
     } catch {
       /* ignore */
     }
@@ -1573,7 +1761,7 @@ function Mascot() {
   const close = () => {
     haptic();
     try {
-      localStorage.setItem("tastemap.welcome.v2", "1");
+      localStorage.setItem("tastemap.welcome.v3", "1");
     } catch {
       /* ignore */
     }
@@ -1600,18 +1788,19 @@ function Mascot() {
             aria-hidden
             className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-white/95 border-l border-t border-white/70 rounded-sm"
           />
-          <p className="text-base font-extrabold text-foreground text-center leading-snug">
-            Explore ta ville, quartier par quartier.
+          <p className="text-lg font-extrabold text-foreground text-center leading-snug">
+            Ta ville. Ta carte food.
           </p>
           <p className="mt-1.5 text-sm text-muted-foreground text-center leading-snug">
-            Chaque resto testé colore ta carte. Enregistre ceux qui te tentent,
-            marque « Fait » ceux que tu as goûtés.
+            Touche un resto sur la carte : enregistre ceux qui te tentent,
+            marque « J'y suis allé » ceux que tu as goûtés. Ta carte se colore
+            au fil de tes découvertes.
           </p>
           <button
             onClick={close}
             className="mt-4 w-full h-12 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
           >
-            Explorer la carte
+            Commencer l’exploration
           </button>
         </div>
       </div>
@@ -1856,38 +2045,39 @@ function DetailCard({
               {r.primaryType ?? "Restaurant"}
             </p>
           </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button
-              onClick={() => { haptic(visit.done ? 12 : 20); onUpdate({ done: !visit.done }); }}
-              className={`inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-full text-sm font-extrabold tap-bounce transition ${
-                visit.done
-                  ? "bg-white text-[color:var(--duo-green)] border border-[color:var(--duo-green)] shadow-sm"
-                  : "bg-white/40 backdrop-blur border border-white/50 text-foreground/80 hover:bg-white/60"
-              }`}
-              aria-label={visit.done ? "Marquer non fait" : "Marquer fait"}
-            >
-              <Check className="h-4 w-4" strokeWidth={3} />
-              Fait
-            </button>
-            <button
-              onClick={() => { haptic(visit.favorite ? 12 : 20); onUpdate({ favorite: !visit.favorite }); }}
-              className={`inline-flex items-center justify-center h-8 w-8 rounded-full tap-bounce transition ${
-                visit.favorite
-                  ? "bg-white text-rose-500 border border-rose-200 shadow-sm"
-                  : "bg-white/40 backdrop-blur border border-white/50 text-foreground/80 hover:text-foreground"
-              }`}
-              aria-label={visit.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-            >
-              <Heart className={`h-4 w-4 ${visit.favorite ? "fill-rose-500 text-rose-500" : ""}`} />
-            </button>
-            <button
-              onClick={() => { haptic(); onClose(); }}
-              className="text-muted-foreground hover:text-foreground p-1 -m-1 tap-bounce"
-              aria-label="Fermer"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+          <button
+            onClick={() => { haptic(); onClose(); }}
+            className="text-muted-foreground hover:text-foreground p-1 -m-1 tap-bounce flex-shrink-0"
+            aria-label="Fermer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Personal actions stay the primary content of the sheet */}
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            onClick={() => { haptic(visit.favorite ? 12 : 24); onUpdate({ favorite: !visit.favorite }); }}
+            className={`flex-1 h-11 rounded-2xl inline-flex items-center justify-center gap-2 text-sm font-extrabold tap-bounce transition ${
+              visit.favorite
+                ? "bg-rose-50 text-rose-600 border-2 border-rose-300"
+                : "bg-white text-foreground border-2 border-border/70 hover:bg-muted/60"
+            }`}
+          >
+            <Heart className={`h-4.5 w-4.5 ${visit.favorite ? "fill-rose-500 text-rose-500" : ""}`} />
+            {visit.favorite ? "Enregistré" : "Enregistrer"}
+          </button>
+          <button
+            onClick={() => { haptic(visit.done ? 12 : 24); onUpdate({ done: !visit.done }); }}
+            className={`flex-1 h-11 rounded-2xl inline-flex items-center justify-center gap-2 text-sm font-extrabold tap-bounce transition ${
+              visit.done
+                ? "bg-[color:var(--duo-green)] text-white btn-pop"
+                : "bg-white text-foreground border-2 border-border/70 hover:bg-muted/60"
+            }`}
+          >
+            <Check className="h-4 w-4" strokeWidth={3} />
+            {visit.done ? "Découvert" : "J'y suis allé"}
+          </button>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
