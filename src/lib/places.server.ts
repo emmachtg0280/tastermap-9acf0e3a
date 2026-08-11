@@ -573,3 +573,68 @@ export async function loadCityRestaurants(
 
   return rank(restaurants);
 }
+
+/** ~1.1 km geo cells used by `places.geo_cell`. */
+const GEO_CELL_DEG = 0.01;
+const MAX_VIEWPORT_CELLS = 4000;
+
+export interface ViewportBounds {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+}
+
+/**
+ * Viewport read path: database only. Google is never called here — the city
+ * index (`loadCityRestaurants`) is the single place allowed to hit Google.
+ */
+export async function loadViewportRestaurants(
+  bounds: ViewportBounds,
+  minRating: number,
+): Promise<Restaurant[]> {
+  const db = await admin();
+
+  const latFrom = Math.floor(bounds.south / GEO_CELL_DEG);
+  const latTo = Math.floor(bounds.north / GEO_CELL_DEG);
+  const lngFrom = Math.floor(bounds.west / GEO_CELL_DEG);
+  const lngTo = Math.floor(bounds.east / GEO_CELL_DEG);
+  const cellCount = (latTo - latFrom + 1) * (lngTo - lngFrom + 1);
+  if (cellCount <= 0 || cellCount > MAX_VIEWPORT_CELLS) return [];
+
+  const cells: string[] = [];
+  for (let la = latFrom; la <= latTo; la++) {
+    for (let ln = lngFrom; ln <= lngTo; ln++) cells.push(`${la}:${ln}`);
+  }
+
+  const ids: string[] = [];
+  for (let i = 0; i < cells.length; i += 500) {
+    const { data, error } = await db
+      .from("places")
+      .select("place_id")
+      .eq("status", "active")
+      .in("geo_cell", cells.slice(i, i + 500));
+    if (error) throw new Error(error.message);
+    for (const row of data ?? []) ids.push(row.place_id);
+  }
+  if (!ids.length) return [];
+
+  const nowIso = new Date().toISOString();
+  const out: Restaurant[] = [];
+  for (let i = 0; i < ids.length; i += 500) {
+    const { data, error } = await db
+      .from("places_cache")
+      .select("place_id, payload")
+      .in("place_id", ids.slice(i, i + 500))
+      .gt("expires_at", nowIso);
+    if (error) throw new Error(error.message);
+    for (const row of data ?? []) {
+      const r = payloadToRestaurant(row.place_id, row.payload as unknown as CachePayload);
+      if (r.lat < bounds.south || r.lat > bounds.north) continue;
+      if (r.lng < bounds.west || r.lng > bounds.east) continue;
+      if (minRating > 0 && (r.rating ?? 0) < minRating) continue;
+      out.push(r);
+    }
+  }
+  return out.slice(0, 600);
+}
