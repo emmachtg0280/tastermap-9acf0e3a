@@ -17,7 +17,7 @@ export default defineTool({
 
     const supabase = supabaseForUser(ctx);
     const { error } = await supabase
-      .from("restaurant_visits")
+      .from("user_places")
       .delete()
       .eq("user_id", ctx.getUserId())
       .eq("place_id", place_id);
