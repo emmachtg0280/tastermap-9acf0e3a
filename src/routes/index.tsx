@@ -897,7 +897,11 @@ function Index() {
         });
         marker.addListener("click", () => {
           const target = restaurantsByIdRef.current.get(r.id);
-          if (target) setSelected(target);
+          if (!target) return;
+          haptic(12);
+          // Quick decision first: the full detail sheet stays one tap away.
+          setDetailOpen(false);
+          setSelected(target);
         });
         pool.set(r.id, { marker, key: markerIconKey(input) });
       });
