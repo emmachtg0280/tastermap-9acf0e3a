@@ -1112,11 +1112,11 @@ function Index() {
 
             {/* Primary: the user's own map. Discovery is the secondary action. */}
             <button
-              onClick={() => { haptic(20); setShowFilters(false); setListMode("profile"); }}
+              onClick={() => { haptic(20); setShowFilters(false); setListMode("mymap"); }}
               className="inline-flex items-center gap-1.5 h-11 pl-3 pr-4 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
             >
               <MapPin className="h-4 w-4" />
-              Ma carte
+              Ma carte food
               {personalCount > 0 && (
                 <span className="ml-0.5 rounded-full bg-white/25 px-1.5 text-xs font-extrabold">
                   {personalCount}
