@@ -1898,7 +1898,7 @@ function ProfilePanel({
       <div className="absolute inset-0 z-30 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="absolute z-40 left-2 right-2 bottom-2 top-20 sm:left-4 sm:right-auto sm:top-4 sm:bottom-4 sm:w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl overflow-hidden flex flex-col animate-pop-in">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
-          <h2 className="font-display font-bold text-sm">Ma carte food{cityLabel ? ` · ${cityLabel}` : ""}</h2>
+          <h2 className="font-display font-bold text-sm">Mon profil</h2>
           <button
             onClick={() => { haptic(); onClose(); }}
             className="p-1 -m-1 text-muted-foreground hover:text-foreground tap-bounce"
@@ -1909,9 +1909,23 @@ function ProfilePanel({
         </div>
 
         <div className="flex-1 overflow-auto p-4 space-y-5">
+          <div className="flex items-center gap-3">
+            <span className="h-12 w-12 rounded-full bg-[color:var(--duo-green)]/15 grid place-items-center">
+              <User className="h-6 w-6 text-[color:var(--duo-green-dark)]" />
+            </span>
+            <div className="min-w-0">
+              <div className="font-display font-extrabold text-[15px] leading-tight truncate">
+                {email ?? "Explorateur food"}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {cityLabel ? `Explore ${cityLabel}` : "Choisis une ville pour explorer"}
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-2">
             <Stat value={String(done.length)} label="Restaurants découverts" />
-            <Stat value={`${exploredAreas}/${areas.size || 0}`} label="Quartiers explorés" />
+            <Stat value={String(saved.length)} label="Enregistrés" />
             <Stat value={String(cuisineCount.size)} label="Cuisines goûtées" />
           </div>
 
