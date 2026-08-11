@@ -564,13 +564,9 @@ function Index() {
     });
   };
 
-  const serverHype = useServerFn(getHypeStats);
-  const hypeQuery = useQuery({
-    queryKey: ["hype-stats"],
-    queryFn: () => serverHype(),
-    staleTime: 60 * 1000,
-  });
-  const hypeStats: HypeStats = hypeQuery.data ?? {};
+  // Hype is intentionally not exposed in the UI for now (signals are too
+  // sparse to be useful). The backend logic in `hype.functions.ts` stays.
+
 
 
   const baseFiltered = useMemo(() => {
