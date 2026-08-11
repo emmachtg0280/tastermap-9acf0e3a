@@ -291,28 +291,47 @@ function useVisits(userId: string | null) {
     return map;
   }, [cloudQuery.data]);
 
-  const visits = userId ? cloudMap : localVisits;
+  // Optimistic overlay: the map reacts instantly, the server catches up after.
+  const [pending, setPending] = useState<VisitMap>({});
+
+  const visits = useMemo<VisitMap>(
+    () => ({ ...(userId ? cloudMap : localVisits), ...pending }),
+    [userId, cloudMap, localVisits, pending],
+  );
 
   const update = async (id: string, patch: Partial<VisitEntry>) => {
+    const current = visits[id] ?? { done: false, comment: "", favorite: false };
+    const next = { ...current, ...patch };
+
     if (userId) {
-      const current = visits[id] ?? { done: false, comment: "", favorite: false };
-      const next = { ...current, ...patch };
-      await serverUpsert({
-        data: {
-          place_id: id,
-          done: next.done,
-          favorite: next.favorite,
-          comment: next.comment.trim() || null,
-          personal_rating: next.personalRating ?? null,
-        },
-      });
-      queryClient.invalidateQueries({ queryKey: ["my-visits"] });
+      setPending((p) => ({ ...p, [id]: next })); // optimistic
+      try {
+        await serverUpsert({
+          data: {
+            place_id: id,
+            done: next.done,
+            favorite: next.favorite,
+            comment: next.comment.trim() || null,
+            personal_rating: next.personalRating ?? null,
+          },
+        });
+        await queryClient.invalidateQueries({ queryKey: ["my-visits"] });
+      } catch (e) {
+        console.error("[useVisits] update failed", e);
+        toast.error("Impossible d'enregistrer. Réessayez.");
+      } finally {
+        setPending((p) => {
+          const rest = { ...p };
+          delete rest[id];
+          return rest;
+        });
+      }
     } else {
       setLocalVisits((prev) => {
-        const current = prev[id] ?? { done: false, comment: "", favorite: false };
-        const next = { ...current, ...patch };
-        const merged = { ...prev, [id]: next };
-        if (!next.done && !next.favorite && !next.comment.trim() && !next.personalRating) {
+        const base = prev[id] ?? { done: false, comment: "", favorite: false };
+        const merged = { ...prev, [id]: { ...base, ...patch } };
+        const entry = merged[id];
+        if (!entry.done && !entry.favorite && !entry.comment.trim() && !entry.personalRating) {
           delete merged[id];
         }
         try {
@@ -324,6 +343,7 @@ function useVisits(userId: string | null) {
       });
     }
   };
+
 
   return { visits, update, isLoading: cloudQuery.isLoading };
 }
