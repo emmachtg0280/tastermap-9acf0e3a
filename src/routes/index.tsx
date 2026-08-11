@@ -2045,38 +2045,39 @@ function DetailCard({
               {r.primaryType ?? "Restaurant"}
             </p>
           </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button
-              onClick={() => { haptic(visit.done ? 12 : 20); onUpdate({ done: !visit.done }); }}
-              className={`inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-full text-sm font-extrabold tap-bounce transition ${
-                visit.done
-                  ? "bg-white text-[color:var(--duo-green)] border border-[color:var(--duo-green)] shadow-sm"
-                  : "bg-white/40 backdrop-blur border border-white/50 text-foreground/80 hover:bg-white/60"
-              }`}
-              aria-label={visit.done ? "Marquer non fait" : "Marquer fait"}
-            >
-              <Check className="h-4 w-4" strokeWidth={3} />
-              Fait
-            </button>
-            <button
-              onClick={() => { haptic(visit.favorite ? 12 : 20); onUpdate({ favorite: !visit.favorite }); }}
-              className={`inline-flex items-center justify-center h-8 w-8 rounded-full tap-bounce transition ${
-                visit.favorite
-                  ? "bg-white text-rose-500 border border-rose-200 shadow-sm"
-                  : "bg-white/40 backdrop-blur border border-white/50 text-foreground/80 hover:text-foreground"
-              }`}
-              aria-label={visit.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-            >
-              <Heart className={`h-4 w-4 ${visit.favorite ? "fill-rose-500 text-rose-500" : ""}`} />
-            </button>
-            <button
-              onClick={() => { haptic(); onClose(); }}
-              className="text-muted-foreground hover:text-foreground p-1 -m-1 tap-bounce"
-              aria-label="Fermer"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+          <button
+            onClick={() => { haptic(); onClose(); }}
+            className="text-muted-foreground hover:text-foreground p-1 -m-1 tap-bounce flex-shrink-0"
+            aria-label="Fermer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Personal actions stay the primary content of the sheet */}
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            onClick={() => { haptic(visit.favorite ? 12 : 24); onUpdate({ favorite: !visit.favorite }); }}
+            className={`flex-1 h-11 rounded-2xl inline-flex items-center justify-center gap-2 text-sm font-extrabold tap-bounce transition ${
+              visit.favorite
+                ? "bg-rose-50 text-rose-600 border-2 border-rose-300"
+                : "bg-white text-foreground border-2 border-border/70 hover:bg-muted/60"
+            }`}
+          >
+            <Heart className={`h-4.5 w-4.5 ${visit.favorite ? "fill-rose-500 text-rose-500" : ""}`} />
+            {visit.favorite ? "Enregistré" : "Enregistrer"}
+          </button>
+          <button
+            onClick={() => { haptic(visit.done ? 12 : 24); onUpdate({ done: !visit.done }); }}
+            className={`flex-1 h-11 rounded-2xl inline-flex items-center justify-center gap-2 text-sm font-extrabold tap-bounce transition ${
+              visit.done
+                ? "bg-[color:var(--duo-green)] text-white btn-pop"
+                : "bg-white text-foreground border-2 border-border/70 hover:bg-muted/60"
+            }`}
+          >
+            <Check className="h-4 w-4" strokeWidth={3} />
+            {visit.done ? "Découvert" : "J'y suis allé"}
+          </button>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
