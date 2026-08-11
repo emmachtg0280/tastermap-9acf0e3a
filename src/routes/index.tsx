@@ -23,13 +23,21 @@ import {
   User,
 } from "lucide-react";
 
-import { searchRestaurants } from "@/lib/places.functions";
+import { searchRestaurants, searchViewport } from "@/lib/places.functions";
 import {
   CITIES,
   type Cuisine,
   type Restaurant,
   type CityKey,
 } from "@/lib/places.shared";
+import {
+  USER_DOT_SVG,
+  clusterIcon,
+  markerIcon,
+  markerIconKey,
+  type MarkerState,
+} from "@/lib/map-markers";
+
 
 import {
   getMyVisits,
