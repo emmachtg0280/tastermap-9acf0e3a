@@ -641,7 +641,7 @@ function Index() {
       styles: minimalMapStyle,
     });
     mapInstance.current = map;
-    map.addListener("click", () => setSelected(null));
+    map.addListener("click", () => { setSelected(null); setDetailOpen(false); });
     map.addListener("idle", () => {
       // Redraw markers directly — no React state update, so panning the map
       // never re-renders the whole screen.
