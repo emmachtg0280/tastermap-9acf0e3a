@@ -1817,12 +1817,11 @@ function Mascot() {
             className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-white/95 border-l border-t border-white/70 rounded-sm"
           />
           <p className="text-lg font-extrabold text-foreground text-center leading-snug">
-            Ta ville. Ta carte food.
+            Ta carte food commence ici.
           </p>
           <p className="mt-1.5 text-sm text-muted-foreground text-center leading-snug">
-            Touche un resto sur la carte : enregistre ceux qui te tentent,
-            marque « J'y suis allé » ceux que tu as goûtés. Ta carte se colore
-            au fil de tes découvertes.
+            Enregistre les restos qui te tentent, marque ceux où tu es allé :
+            ta carte se colore au fil de tes découvertes.
           </p>
           <button
             onClick={close}
