@@ -100,9 +100,12 @@ const DEFAULT_ZOOM = 13;
 const CITY_ZOOM = 13;
 // Below this zoom level, restaurant markers are clustered to keep the map readable.
 const CLUSTER_ZOOM = 12.5;
+/** Hard cap on simultaneously drawn markers — mobile DOM cost control. */
+const MAX_MARKERS = 220;
 
 /** Cuisine shortcuts kept visible; the full list lives behind “Plus”. */
-const PRIMARY_CUISINES: Cuisine[] = ["french", "italian", "japanese", "mexican", "american"];
+const PRIMARY_CUISINES: Cuisine[] = ["italian", "japanese", "mexican"];
+
 
 type VisitEntry = { done: boolean; comment: string; favorite: boolean; personalRating?: number };
 type VisitMap = Record<string, VisitEntry>;
