@@ -951,69 +951,65 @@ function Index() {
         </div>
       </div>
 
-      {/* Top tabs: Ville · Nouveautés / Hype / Cuisines */}
+      {/* Top bar — city, neighbourhood context, Discover, cuisine shortcuts */}
       <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto max-w-3xl px-2 pt-0.5">
-          {/* City — a product-level choice, always visible */}
-          <div className="pb-1 pl-1">
+        <div className="mx-auto max-w-3xl px-2 pt-1">
+          <div className="flex items-center gap-2 pl-1 pr-14">
             <button
               onClick={() => { haptic(); setShowCities((v) => !v); }}
-              className="inline-flex items-center gap-1 h-9 pl-3 pr-2.5 rounded-full bg-white/70 backdrop-blur border border-white/60 shadow-sm text-sm font-extrabold text-foreground tap-bounce transition hover:bg-white/85"
+              className="inline-flex items-center gap-1 h-11 pl-3 pr-2.5 rounded-full bg-white/85 backdrop-blur border border-white/70 shadow-sm text-sm font-extrabold text-foreground tap-bounce transition hover:bg-white"
               aria-label="Changer de ville"
             >
               <MapPin className="h-4 w-4 text-[color:var(--duo-green-dark)]" />
               {currentCity?.label ?? "Choisir une ville"}
               <ChevronDown className={`h-4 w-4 transition-transform ${showCities ? "rotate-180" : ""}`} />
             </button>
-            {showCities && (
-              <div className="mt-1 inline-flex flex-wrap gap-1.5 max-w-full rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-lg p-2 animate-pop-in">
-                {CITIES.map((c) => (
-                  <button
-                    key={c.key}
-                    onClick={() => { haptic(20); setCity(c.key); setShowCities(false); }}
-                    className={`h-9 px-3 rounded-full text-sm font-bold transition ${
-                      c.key === city
-                        ? "bg-[color:var(--duo-green)] text-white"
-                        : "bg-muted/60 text-foreground/80 hover:bg-muted"
-                    }`}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
+
+            <button
+              onClick={() => { haptic(20); setShowFilters(false); setListMode("new"); }}
+              className="inline-flex items-center gap-1.5 h-11 pl-2.5 pr-4 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
+            >
+              <NewStickerIcon size={20} />
+              Découvrir
+            </button>
+
+            {neighborhood && (
+              <span className="hidden sm:inline-flex items-center h-9 px-3 rounded-full bg-white/60 backdrop-blur border border-white/60 text-xs font-bold text-foreground/70 truncate max-w-[160px]">
+                {neighborhood}
+              </span>
             )}
           </div>
 
-          <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 pb-1 -mx-1">
-            {/* Discovery tabs */}
-            <div className="flex gap-1.5 shrink-0">
-              <button
-                onClick={() => { haptic(); setShowFilters(false); setListMode("new"); }}
-                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 min-h-[44px] rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
-              >
-                <NewStickerIcon size={20} /> Nouveautés
-              </button>
-              <button
-                onClick={() => { haptic(); setShowFilters(false); setListMode("hype"); }}
-                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 min-h-[44px] rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
-              >
-                <HypeStickerIcon size={20} /> Hype
-              </button>
+          {showCities && (
+            <div className="mt-1 ml-1 inline-flex flex-wrap gap-1.5 max-w-full rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-lg p-2 animate-pop-in">
+              {CITIES.map((c) => (
+                <button
+                  key={c.key}
+                  onClick={() => { haptic(20); setCity(c.key); setShowCities(false); }}
+                  className={`h-11 px-4 rounded-full text-sm font-bold transition ${
+                    c.key === city
+                      ? "bg-[color:var(--duo-green)] text-white"
+                      : "bg-muted/60 text-foreground/80 hover:bg-muted"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
             </div>
+          )}
 
-            {/* Divider */}
-            <div className="w-px bg-foreground/15 self-stretch my-1 shrink-0" />
-
-            {/* Primary cuisine shortcuts — the full list lives behind “Plus” */}
-            {cuisine !== "any" && (
-              <button
-                onClick={() => { haptic(); setCuisine("any"); }}
-                className="shrink-0 inline-flex flex-col items-center justify-center w-[62px] h-[74px] rounded-2xl bg-white/70 backdrop-blur border border-white/60 text-[11px] font-bold text-foreground shadow-sm tap-bounce transition"
-              >
-                <X className="h-4 w-4 mb-1" />
-                Toutes
-              </button>
-            )}
+          {/* Cuisine shortcuts — compact, full list behind “+” */}
+          <div className="mt-1.5 flex gap-1.5 overflow-x-auto no-scrollbar px-1 pb-1 -mx-1">
+            <button
+              onClick={() => { haptic(); setCuisine("any"); }}
+              className={`shrink-0 inline-flex items-center h-10 px-4 rounded-full text-[13px] font-bold backdrop-blur shadow-sm tap-bounce transition ${
+                cuisine === "any"
+                  ? "bg-white text-foreground border-2 border-white ring-2 ring-white/80"
+                  : "bg-white/45 border border-white/50 text-foreground/75 hover:bg-white/65"
+              }`}
+            >
+              Tout
+            </button>
             {visibleCuisines.map((value) => {
               const meta = CUISINE_META[value];
               const active = value === cuisine;
@@ -1021,29 +1017,30 @@ function Index() {
                 <button
                   key={value}
                   onClick={() => { haptic(); setCuisine(active ? "any" : value); }}
-                  className={`shrink-0 inline-flex flex-col items-center justify-center gap-0.5 w-[70px] h-[74px] rounded-2xl backdrop-blur shadow-sm tap-bounce transition ${
+                  className={`shrink-0 inline-flex items-center gap-1.5 h-10 pl-1.5 pr-3.5 rounded-full text-[13px] font-bold backdrop-blur shadow-sm tap-bounce transition ${
                     active
-                      ? "bg-white text-foreground font-semibold border-2 border-white ring-2 ring-white/80 shadow-md scale-105"
-                      : "bg-white/40 border border-white/50 text-foreground/80 hover:bg-white/60"
+                      ? "bg-white text-foreground border-2 border-white ring-2 ring-white/80"
+                      : "bg-white/45 border border-white/50 text-foreground/75 hover:bg-white/65"
                   }`}
                 >
                   <img
                     src={meta.image}
-                    alt={meta.label}
-                    width={36}
-                    height={36}
+                    alt=""
+                    width={26}
+                    height={26}
                     loading="lazy"
                     draggable={false}
                     className="object-contain select-none pointer-events-none"
-                    style={{ width: 36, height: 36 }}
+                    style={{ width: 26, height: 26 }}
                   />
-                  <span className="text-[10px] leading-tight">{meta.label}</span>
+                  {meta.label}
                 </button>
               );
             })}
             <button
               onClick={() => { haptic(); setShowAllCuisines((v) => !v); }}
-              className="shrink-0 inline-flex flex-col items-center justify-center gap-1 w-[62px] h-[74px] rounded-2xl bg-white/40 backdrop-blur border border-white/50 text-[11px] font-semibold text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
+              aria-label="Toutes les cuisines"
+              className="shrink-0 inline-flex items-center gap-1 h-10 px-3.5 rounded-full bg-white/45 backdrop-blur border border-white/50 text-[13px] font-bold text-foreground/75 shadow-sm hover:bg-white/65 tap-bounce transition"
             >
               <ChevronDown className={`h-4 w-4 transition-transform ${showAllCuisines ? "rotate-180" : ""}`} />
               {showAllCuisines ? "Moins" : "Plus"}
@@ -1051,7 +1048,7 @@ function Index() {
           </div>
 
           {showAllCuisines && (
-            <div className="mx-1 rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-lg p-2 grid grid-cols-5 sm:grid-cols-6 gap-1.5 animate-pop-in">
+            <div className="mx-1 rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-lg p-2 grid grid-cols-4 sm:grid-cols-6 gap-1.5 animate-pop-in">
               {CUISINE_ORDER.map((value) => {
                 const meta = CUISINE_META[value];
                 const active = value === cuisine;
@@ -1059,7 +1056,7 @@ function Index() {
                   <button
                     key={value}
                     onClick={() => { haptic(); setCuisine(active ? "any" : value); setShowAllCuisines(false); }}
-                    className={`inline-flex flex-col items-center justify-center gap-0.5 h-[66px] rounded-xl transition ${
+                    className={`inline-flex flex-col items-center justify-center gap-0.5 h-[70px] rounded-xl transition ${
                       active ? "bg-[color:var(--duo-green)]/15 ring-1 ring-[color:var(--duo-green)]" : "hover:bg-muted/60"
                     }`}
                   >
@@ -1073,7 +1070,7 @@ function Index() {
                       className="object-contain select-none pointer-events-none"
                       style={{ width: 30, height: 30 }}
                     />
-                    <span className="text-[10px] leading-tight">{meta.label}</span>
+                    <span className="text-[11px] leading-tight">{meta.label}</span>
                   </button>
                 );
               })}
@@ -1081,6 +1078,16 @@ function Index() {
           )}
         </div>
       </div>
+
+      {/* Lightweight geographic cue on mobile */}
+      {neighborhood && !selected && (
+        <div className="sm:hidden absolute inset-x-0 bottom-4 z-20 flex justify-center pointer-events-none">
+          <span className="rounded-full bg-white/80 backdrop-blur border border-white/60 shadow-sm px-3.5 py-1.5 text-xs font-bold text-foreground/70">
+            {neighborhood}
+          </span>
+        </div>
+      )}
+
 
 
 
