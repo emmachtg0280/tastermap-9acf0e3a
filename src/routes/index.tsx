@@ -196,6 +196,8 @@ function useVisits(userId: string | null) {
   const queryClient = useQueryClient();
   const serverGetVisits = useServerFn(getMyVisits);
   const serverUpsert = useServerFn(upsertVisit);
+  const serverMerge = useServerFn(mergeLocalVisits);
+  const mergedRef = useRef(false);
 
   // Load localStorage on mount
   useEffect(() => {
@@ -206,6 +208,52 @@ function useVisits(userId: string | null) {
       /* ignore */
     }
   }, []);
+
+  // Anonymous -> account: push localStorage states into the user's records,
+  // then (and only then) clear the local copy.
+  useEffect(() => {
+    if (!userId || mergedRef.current) return;
+    let raw: string | null = null;
+    try {
+      raw = localStorage.getItem(VISITS_KEY);
+    } catch {
+      return;
+    }
+    if (!raw) return;
+    let parsed: VisitMap;
+    try {
+      parsed = JSON.parse(raw) as VisitMap;
+    } catch {
+      return;
+    }
+    const entries = Object.entries(parsed ?? {}).map(([place_id, v]) => ({
+      place_id,
+      done: !!v.done,
+      favorite: !!v.favorite,
+      saved: !!v.favorite && !v.done,
+      personal_rating: v.personalRating ?? null,
+      comment: v.comment?.trim() ? v.comment : null,
+    }));
+    if (!entries.length) return;
+
+    mergedRef.current = true;
+    serverMerge({ data: { entries } })
+      .then(() => {
+        try {
+          localStorage.removeItem(VISITS_KEY);
+        } catch {
+          /* ignore */
+        }
+        setLocalVisits({});
+        queryClient.invalidateQueries({ queryKey: ["my-visits"] });
+      })
+      .catch((e) => {
+        // Keep localStorage intact so nothing is lost; retry on next sign-in.
+        mergedRef.current = false;
+        console.error("[useVisits] merge failed", e);
+      });
+  }, [userId, serverMerge, queryClient]);
+
 
   // Cloud visits
   const cloudQuery = useQuery({
