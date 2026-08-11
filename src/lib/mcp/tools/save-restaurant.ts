@@ -30,7 +30,7 @@ export default defineTool({
         {
           user_id: ctx.getUserId(),
           place_id: input.place_id,
-          done: input.done ?? false,
+          visited: input.done ?? false,
           favorite: input.favorite ?? false,
           personal_rating: input.personal_rating ?? null,
           comment: input.comment ?? null,

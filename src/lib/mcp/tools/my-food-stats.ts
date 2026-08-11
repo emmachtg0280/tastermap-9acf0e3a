@@ -18,13 +18,13 @@ export default defineTool({
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase
       .from("user_places")
-      .select("done, favorite, personal_rating");
+      .select("visited, favorite, personal_rating");
 
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
 
     const rows = data ?? [];
-    const done = rows.filter((r) => r.done).length;
+    const done = rows.filter((r) => r.visited).length;
     const favorite = rows.filter((r) => r.favorite).length;
     const ratings = rows
       .map((r) => r.personal_rating)

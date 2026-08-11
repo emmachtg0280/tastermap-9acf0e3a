@@ -21,10 +21,10 @@ export default defineTool({
     const supabase = supabaseForUser(ctx);
     let query = supabase
       .from("user_places")
-      .select("place_id, done, favorite, personal_rating, comment, updated_at")
+      .select("place_id, visited, favorite, personal_rating, comment, updated_at")
       .order("updated_at", { ascending: false });
 
-    if (filter === "done") query = query.eq("done", true);
+    if (filter === "done") query = query.eq("visited", true);
     if (filter === "favorite") query = query.eq("favorite", true);
 
     const { data, error } = await query;
