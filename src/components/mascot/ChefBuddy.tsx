@@ -8,10 +8,11 @@
 import { useEffect, useRef, useState } from "react";
 import foxUrl from "@/assets/mascot-fox.png";
 
-// Coordinates are in the original 1024×1024 PNG space.
-const EYE_L = { cx: 383, cy: 484, rx: 60, ry: 58 };
-const EYE_R = { cx: 620, cy: 484, rx: 60, ry: 58 };
-const MOUTH = { cx: 502, cy: 572 };
+// Coordinates are in the original 1024×1024 PNG space, measured on the master
+// asset so the pupils and mouth stay perfectly aligned with the illustration.
+const EYE_L = { cx: 373, cy: 473, rx: 58, ry: 60 };
+const EYE_R = { cx: 633, cy: 473, rx: 58, ry: 60 };
+const MOUTH = { cx: 502, cy: 578 };
 const PUPIL_TRAVEL = 14; // px in image space
 
 export function ChefBuddy() {
