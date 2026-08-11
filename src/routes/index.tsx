@@ -92,36 +92,42 @@ const CITY_ZOOM = 13;
 // Below this zoom level, restaurant markers are clustered to keep the map readable.
 const CLUSTER_ZOOM = 12.5;
 
-// Elegant, minimal personal location indicator with a very subtle pulse.
-const USER_DOT_SVG = `<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'>
-  <circle cx='24' cy='24' r='8' fill='none' stroke='#3B82F6' stroke-width='2' stroke-opacity='0.4'>
-    <animate attributeName='r' values='8;19' dur='3s' repeatCount='indefinite'/>
-    <animate attributeName='stroke-opacity' values='0.4;0' dur='3s' repeatCount='indefinite'/>
-  </circle>
-  <circle cx='24' cy='24' r='9' fill='#3B82F6' fill-opacity='0.16'/>
-  <circle cx='24' cy='24' r='6' fill='#3B82F6' stroke='#ffffff' stroke-width='2.5'/>
-</svg>`;
-
-/** Cluster bubble: ring fills green in proportion to discovered restaurants. */
-function clusterSvg(size: number, count: number, discoveredRatio: number) {
-  const r = size / 2 - 3;
-  const c = 2 * Math.PI * r;
-  const filled = Math.max(0, Math.min(1, discoveredRatio)) * c;
-  return `<svg xmlns='http://www.w3.org/2000/svg' width='${size * 2}' height='${size * 2}' viewBox='0 0 ${size} ${size}'>
-  <circle cx='${size / 2}' cy='${size / 2}' r='${r}' fill='#ffffff' fill-opacity='0.94'/>
-  <circle cx='${size / 2}' cy='${size / 2}' r='${r}' fill='none' stroke='#e3d8c4' stroke-width='2.5'/>
-  <circle cx='${size / 2}' cy='${size / 2}' r='${r}' fill='none' stroke='#58CC02' stroke-width='2.5' stroke-linecap='round'
-    stroke-dasharray='${filled} ${c}' transform='rotate(-90 ${size / 2} ${size / 2})'/>
-  <text x='${size / 2}' y='${size / 2 + 4}' text-anchor='middle' font-family='Nunito, system-ui, sans-serif' font-size='${size * 0.34}' font-weight='800' fill='#4a3f30'>${count}</text>
-</svg>`;
-}
-
-
-
+/** Cuisine shortcuts kept visible; the full list lives behind “Plus”. */
+const PRIMARY_CUISINES: Cuisine[] = ["french", "italian", "japanese", "mexican", "american"];
 
 type VisitEntry = { done: boolean; comment: string; favorite: boolean; personalRating?: number };
 type VisitMap = Record<string, VisitEntry>;
 const VISITS_KEY = "tastemap.visits.v2";
+
+/* ── Map state persistence: city, cuisine, center & zoom survive reloads ── */
+const MAP_STATE_KEY = "tastemap.map.v1";
+type MapState = {
+  city?: CityKey | null;
+  cuisine?: Cuisine;
+  center?: { lat: number; lng: number };
+  zoom?: number;
+};
+
+function readMapState(): MapState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(MAP_STATE_KEY);
+    return raw ? (JSON.parse(raw) as MapState) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeMapState(patch: MapState) {
+  if (typeof window === "undefined") return;
+  try {
+    const current = readMapState() ?? {};
+    localStorage.setItem(MAP_STATE_KEY, JSON.stringify({ ...current, ...patch }));
+  } catch {
+    /* ignore */
+  }
+}
+
 
 declare global {
   interface Window {
