@@ -583,10 +583,6 @@ function Index() {
     return list;
   }, [results, cuisine, searchText, onlyOpenNow]);
 
-  const doneInScope = useMemo(
-    () => baseFiltered.filter((r) => visits[r.id]?.done).length,
-    [baseFiltered, visits],
-  );
 
   const filtered = useMemo(() => {
     return [...baseFiltered].sort((a, b) => sortRestaurants(a, b, sortBy, userLocation, currentCity));
