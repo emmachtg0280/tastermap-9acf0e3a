@@ -1605,7 +1605,7 @@ function Index() {
                         onClick={(e) => {
                           e.stopPropagation();
                           haptic(favorite ? 12 : 20);
-                          update(r.id, { favorite: !favorite });
+                          applyVisit(r.id, { favorite: !favorite });
                         }}
                         className="p-1.5 rounded-full hover:bg-muted tap-bounce transition flex-shrink-0"
                         aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
@@ -1649,7 +1649,7 @@ function Index() {
           key={`quick-${selected.id}`}
           restaurant={selected}
           visit={visits[selected.id] ?? { done: false, comment: "", favorite: false }}
-          onUpdate={(patch) => update(selected.id, patch)}
+          onUpdate={(patch) => applyVisit(selected.id, patch)}
           onDetails={() => { haptic(); setDetailOpen(true); }}
           onClose={() => { haptic(); setSelected(null); }}
         />
@@ -1669,7 +1669,7 @@ function Index() {
               : null
           }
           fromUser={!!userLocation}
-          onUpdate={(patch) => update(selected.id, patch)}
+          onUpdate={(patch) => applyVisit(selected.id, patch)}
           onClose={() => { setDetailOpen(false); setSelected(null); }}
         />
       )}
