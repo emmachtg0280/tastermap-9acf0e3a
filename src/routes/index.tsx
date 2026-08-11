@@ -929,6 +929,25 @@ function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id]);
 
+  /** Tiny, calm reward: the marker scales up once when its state flips. */
+  const bumpMarker = (id: string) => {
+    const g = window.google;
+    const entry = markersRef.current.get(id);
+    if (!g || !entry) return;
+    const icon = entry.marker.getIcon() as google.maps.Icon | null;
+    if (!icon?.scaledSize) return;
+    const w = icon.scaledSize.width;
+    const h = icon.scaledSize.height;
+    entry.marker.setIcon({
+      ...icon,
+      scaledSize: new g.maps.Size(w * 1.22, h * 1.22),
+      anchor: new g.maps.Point((w * 1.22) / 2, (w * 1.22) / 2),
+    });
+    window.setTimeout(() => {
+      if (markersRef.current.get(id) === entry) entry.marker.setIcon(icon);
+    }, 190);
+  };
+
   // Visit changes: repaint only the restaurants whose state actually changed.
   const prevVisitsRef = useRef<VisitMap>({});
   useEffect(() => {
@@ -937,7 +956,10 @@ function Index() {
     const sig = (v?: VisitEntry) => `${v?.done ? 1 : 0}${v?.favorite ? 1 : 0}`;
     const ids = new Set([...Object.keys(prev), ...Object.keys(visits)]);
     ids.forEach((id) => {
-      if (sig(prev[id]) !== sig(visits[id])) paintMarker(id);
+      if (sig(prev[id]) !== sig(visits[id])) {
+        paintMarker(id);
+        bumpMarker(id);
+      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visits]);
