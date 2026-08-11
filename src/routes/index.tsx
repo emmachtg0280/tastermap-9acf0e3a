@@ -1088,13 +1088,28 @@ function Index() {
               <ChevronDown className={`h-4 w-4 transition-transform ${showCities ? "rotate-180" : ""}`} />
             </button>
 
+            {/* Primary: the user's own map. Discovery is the secondary action. */}
+            <button
+              onClick={() => { haptic(20); setShowFilters(false); setListMode("profile"); }}
+              className="inline-flex items-center gap-1.5 h-11 pl-3 pr-4 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
+            >
+              <MapPin className="h-4 w-4" />
+              Ma carte
+              {personalCount > 0 && (
+                <span className="ml-0.5 rounded-full bg-white/25 px-1.5 text-xs font-extrabold">
+                  {personalCount}
+                </span>
+              )}
+            </button>
+
             <button
               onClick={() => { haptic(20); setShowFilters(false); setListMode("new"); }}
-              className="inline-flex items-center gap-1.5 h-11 pl-2.5 pr-4 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
+              className="inline-flex items-center gap-1.5 h-11 pl-2 pr-3.5 rounded-full bg-white/85 backdrop-blur border border-white/70 shadow-sm text-sm font-extrabold text-foreground tap-bounce transition hover:bg-white"
             >
               <NewStickerIcon size={20} />
               Découvrir
             </button>
+
 
             {neighborhood && (
               <span className="hidden sm:inline-flex items-center h-9 px-3 rounded-full bg-white/60 backdrop-blur border border-white/60 text-xs font-bold text-foreground/70 truncate max-w-[160px]">
