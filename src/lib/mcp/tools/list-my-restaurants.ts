@@ -20,7 +20,7 @@ export default defineTool({
 
     const supabase = supabaseForUser(ctx);
     let query = supabase
-      .from("restaurant_visits")
+      .from("user_places")
       .select("place_id, done, favorite, personal_rating, comment, updated_at")
       .order("updated_at", { ascending: false });
 

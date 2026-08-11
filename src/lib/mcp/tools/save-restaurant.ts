@@ -25,7 +25,7 @@ export default defineTool({
 
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase
-      .from("restaurant_visits")
+      .from("user_places")
       .upsert(
         {
           user_id: ctx.getUserId(),
