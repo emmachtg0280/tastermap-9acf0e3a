@@ -1864,20 +1864,6 @@ function ProfilePanel({
   const done = restaurants.filter((r) => visits[r.id]?.done);
   const saved = restaurants.filter((r) => visits[r.id]?.favorite && !visits[r.id]?.done);
 
-  // Neighbourhoods are approximated with a geographic grid (~1 km cells) so
-  // exploration is measured per area, not globally.
-  const CELL = 0.012;
-  const cellKey = (r: Restaurant) => `${Math.floor(r.lat / CELL)}:${Math.floor(r.lng / CELL)}`;
-  const areas = new Map<string, { total: number; done: number }>();
-  restaurants.forEach((r) => {
-    const k = cellKey(r);
-    const a = areas.get(k) ?? { total: 0, done: 0 };
-    a.total += 1;
-    if (visits[r.id]?.done) a.done += 1;
-    areas.set(k, a);
-  });
-  const exploredAreas = Array.from(areas.values()).filter((a) => a.done > 0).length;
-
   const cuisineCount = new Map<Cuisine, number>();
   done.forEach((r) => {
     const c = pickCuisine(r.cuisines);
@@ -1970,49 +1956,6 @@ function ProfilePanel({
         </div>
       </div>
     </>
-  );
-}
-
-function ProfileList({
-  title,
-  items,
-  empty,
-  onSelect,
-}: {
-  title: string;
-  items: Restaurant[];
-  empty: string;
-  onSelect: (r: Restaurant) => void;
-}) {
-  return (
-    <div>
-      <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">{title}</h3>
-      {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{empty}</p>
-      ) : (
-        <div className="space-y-1">
-          {items.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => { haptic(); onSelect(r); }}
-              className="w-full flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-muted/60 transition text-left"
-            >
-              {r.photoUrls[0] ? (
-                <img src={r.photoUrls[0]} alt={r.name} loading="lazy" className="h-10 w-10 rounded-lg object-cover flex-shrink-0" />
-              ) : (
-                <div className="h-10 w-10 rounded-lg bg-muted grid place-items-center flex-shrink-0">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="text-sm font-medium truncate">{r.name}</div>
-                <div className="text-xs text-muted-foreground truncate">{r.primaryType ?? "Restaurant"}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }
 
