@@ -1961,8 +1961,12 @@ function ProfilePanel({
             </div>
           )}
 
-          <ProfileList title="Mes découvertes récentes" items={done.slice(0, 6)} empty="Marquez un restaurant « Fait » pour démarrer votre carte." onSelect={onSelect} />
-          <ProfileList title="À découvrir" items={saved.slice(0, 6)} empty="Aucun restaurant enregistré pour l'instant." onSelect={onSelect} />
+          <button
+            onClick={() => { haptic(20); onOpenMap(); }}
+            className="w-full h-11 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
+          >
+            Voir ma carte food
+          </button>
         </div>
       </div>
     </>
