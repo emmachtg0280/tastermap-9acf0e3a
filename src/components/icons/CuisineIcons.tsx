@@ -11,7 +11,7 @@
  */
 
 import type { CSSProperties, ReactElement, SVGProps } from "react";
-import type { Cuisine } from "@/lib/places.functions";
+import type { Cuisine } from "@/lib/places.shared";
 
 type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 
