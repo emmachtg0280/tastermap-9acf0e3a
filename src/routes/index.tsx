@@ -498,6 +498,29 @@ function Index() {
     if (selected) setSheetSnap("half");
   }, [selected?.id]);
 
+  /* Compact legend: shown until the user has put anything on their own map. */
+  const hasPersonalPins = useMemo(
+    () => Object.values(visits).some((v) => v.done || v.favorite),
+    [visits],
+  );
+  useEffect(() => {
+    let dismissed = false;
+    try {
+      dismissed = localStorage.getItem("tastemap.legend.v1") === "1";
+    } catch {
+      /* ignore */
+    }
+    setShowLegend(!dismissed && !hasPersonalPins);
+  }, [hasPersonalPins]);
+  const dismissLegend = () => {
+    try {
+      localStorage.setItem("tastemap.legend.v1", "1");
+    } catch {
+      /* ignore */
+    }
+    setShowLegend(false);
+  };
+
   const currentCity = useMemo(
     () => CITIES.find((c) => c.key === city) ?? null,
     [city],
