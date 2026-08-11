@@ -499,10 +499,11 @@ function Index() {
   }, [selected?.id]);
 
   /* Compact legend: shown until the user has put anything on their own map. */
-  const hasPersonalPins = useMemo(
-    () => Object.values(visits).some((v) => v.done || v.favorite),
+  const personalCount = useMemo(
+    () => Object.values(visits).filter((v) => v.done || v.favorite).length,
     [visits],
   );
+  const hasPersonalPins = personalCount > 0;
   useEffect(() => {
     let dismissed = false;
     try {
