@@ -23,16 +23,18 @@ import {
   User,
 } from "lucide-react";
 
+import { searchRestaurants } from "@/lib/places.functions";
 import {
-  searchRestaurants,
   CITIES,
   type Cuisine,
   type Restaurant,
   type CityKey,
-} from "@/lib/places.functions";
+} from "@/lib/places.shared";
+
 import {
   getMyVisits,
   upsertVisit,
+  mergeLocalVisits,
   type Visit,
 } from "@/lib/visits.functions";
 import { getHypeStats, type HypeStats } from "@/lib/hype.functions";
@@ -195,6 +197,8 @@ function useVisits(userId: string | null) {
   const queryClient = useQueryClient();
   const serverGetVisits = useServerFn(getMyVisits);
   const serverUpsert = useServerFn(upsertVisit);
+  const serverMerge = useServerFn(mergeLocalVisits);
+  const mergedRef = useRef(false);
 
   // Load localStorage on mount
   useEffect(() => {
@@ -205,6 +209,52 @@ function useVisits(userId: string | null) {
       /* ignore */
     }
   }, []);
+
+  // Anonymous -> account: push localStorage states into the user's records,
+  // then (and only then) clear the local copy.
+  useEffect(() => {
+    if (!userId || mergedRef.current) return;
+    let raw: string | null = null;
+    try {
+      raw = localStorage.getItem(VISITS_KEY);
+    } catch {
+      return;
+    }
+    if (!raw) return;
+    let parsed: VisitMap;
+    try {
+      parsed = JSON.parse(raw) as VisitMap;
+    } catch {
+      return;
+    }
+    const entries = Object.entries(parsed ?? {}).map(([place_id, v]) => ({
+      place_id,
+      done: !!v.done,
+      favorite: !!v.favorite,
+      saved: !!v.favorite && !v.done,
+      personal_rating: v.personalRating ?? null,
+      comment: v.comment?.trim() ? v.comment : null,
+    }));
+    if (!entries.length) return;
+
+    mergedRef.current = true;
+    serverMerge({ data: { entries } })
+      .then(() => {
+        try {
+          localStorage.removeItem(VISITS_KEY);
+        } catch {
+          /* ignore */
+        }
+        setLocalVisits({});
+        queryClient.invalidateQueries({ queryKey: ["my-visits"] });
+      })
+      .catch((e: unknown) => {
+        // Keep localStorage intact so nothing is lost; retry on next sign-in.
+        mergedRef.current = false;
+        console.error("[useVisits] merge failed", e);
+      });
+  }, [userId, serverMerge, queryClient]);
+
 
   // Cloud visits
   const cloudQuery = useQuery({
@@ -637,6 +687,24 @@ function Index() {
           </div>
         </div>
       )}
+
+      {/* Data failure: never leave the map silently empty */}
+      {mapReady && mutation.isError && results.length === 0 && (
+        <div className="absolute inset-x-0 bottom-24 z-30 flex justify-center px-4 pointer-events-none">
+          <div className="pointer-events-auto rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-md px-4 py-3 text-sm text-foreground flex items-center gap-3 max-w-[340px]">
+            <span>Impossible de charger les restaurants pour le moment.</span>
+            <button
+              type="button"
+              className="rounded-full bg-[color:var(--duo-green)] text-white font-extrabold text-xs px-3 py-1.5 shadow-sm active:translate-y-[1px]"
+              onClick={() => city && mutation.mutate({ city, minRating, force: true })}
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      )}
+
+
 
       {/* Floating top bar — auth only, top right */}
       <div className="absolute top-0 right-0 z-30 pt-[env(safe-area-inset-top)] px-3">
