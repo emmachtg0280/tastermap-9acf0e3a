@@ -57,7 +57,8 @@ import {
   pickCuisine,
   useCuisineDataUrls,
 } from "@/components/icons/CuisineIcons";
-import { ChefBuddy } from "@/components/mascot/ChefBuddy";
+import { matchesCuisine } from "@/lib/cuisine";
+import { Onboarding, hasSeenOnboarding } from "@/components/onboarding/Onboarding";
 
 
 import { Badge } from "@/components/ui/badge";
@@ -614,7 +615,7 @@ function Index() {
   const baseFiltered = useMemo(() => {
     let list = results;
     if (cuisine !== "any") {
-      list = list.filter((r) => r.cuisines.includes(cuisine));
+      list = list.filter((r) => matchesCuisine(r.cuisines, cuisine));
     }
     const q = searchText.trim().toLowerCase();
     if (q) {
@@ -642,6 +643,8 @@ function Index() {
   visitsRef.current = visits;
   const selectedIdRef = useRef<string | null>(null);
   selectedIdRef.current = selected?.id ?? null;
+  const cuisineRef = useRef<Cuisine>(cuisine);
+  cuisineRef.current = cuisine;
   const cuisineUrlsRef = useRef(cuisineDataUrls);
   cuisineUrlsRef.current = cuisineDataUrls;
   const rebuildRef = useRef<() => void>(() => {});
@@ -771,14 +774,16 @@ function Index() {
   const iconFor = (r: Restaurant, active: boolean) => {
     const v = visitsRef.current[r.id];
     const state: MarkerState = v?.done ? "done" : v?.favorite ? "saved" : "new";
-    const cuisineKey = pickCuisine(r.cuisines);
+    // Icon derives from the SAME classification the filter uses; when a
+    // cuisine is active and this place matches it, the icon is that cuisine.
+    const cuisineKey = pickCuisine(r.cuisines, cuisineRef.current);
     return {
       cuisine: cuisineKey,
       state,
       active,
       isNew: isNewRestaurant(r),
       dataUrl: cuisineUrlsRef.current?.[cuisineKey],
-      inner: cuisineInnerSvg(r.cuisines),
+      inner: cuisineInnerSvg(r.cuisines, cuisineRef.current),
     };
   };
 
@@ -1653,6 +1658,7 @@ function Index() {
       {/* Quick actions — the primary way to build the personal map */}
       {selected && !detailOpen && (
         <QuickCard
+          preferredCuisine={cuisine}
           key={`quick-${selected.id}`}
           restaurant={selected}
           visit={visits[selected.id] ?? { done: false, comment: "", favorite: false }}
@@ -1665,6 +1671,7 @@ function Index() {
       {/* Detail sheet — secondary, opt-in */}
       {selected && detailOpen && (
         <DetailCard
+          preferredCuisine={cuisine}
           key={selected.id}
           restaurant={selected}
           visit={visits[selected.id] ?? { done: false, comment: "", favorite: false }}
@@ -1682,7 +1689,7 @@ function Index() {
       )}
 
 
-      <Mascot />
+      <WelcomeGate />
 
     </div>
   );
@@ -1697,12 +1704,14 @@ function Index() {
  */
 function QuickCard({
   restaurant: r,
+  preferredCuisine,
   visit,
   onUpdate,
   onDetails,
   onClose,
 }: {
   restaurant: Restaurant;
+  preferredCuisine?: Cuisine;
   visit: VisitEntry;
   onUpdate: (patch: Partial<VisitEntry>) => void;
   onDetails: () => void;
@@ -1715,7 +1724,7 @@ function QuickCard({
     <div className="absolute left-3 right-3 bottom-3 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[360px] z-40 rounded-3xl bg-card/95 backdrop-blur border border-border/60 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.35)] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] animate-pop-in">
       <div className="flex items-center gap-3">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/70 border border-white/60">
-          <CuisineIcon cuisines={r.cuisines} size={34} />
+          <CuisineIcon cuisines={r.cuisines} preferred={preferredCuisine} size={34} />
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="font-display font-extrabold text-[15px] leading-tight truncate">{r.name}</h3>
@@ -1768,72 +1777,22 @@ function QuickCard({
 }
 
 /**
- * Welcome mascot. Its only job is to explain the concept — it never picks a
- * cuisine for the user and never blocks the map for more than one tap.
+ * First-run gate: a 3-screen concept intro, skippable, shown once. It never
+ * picks a cuisine and never gates the map beyond the intro.
  */
-function Mascot() {
-  const [visible, setVisible] = useState(false);
+function WelcomeGate() {
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
-    let seen = false;
-    try {
-      seen = localStorage.getItem("tastemap.welcome.v3") === "1";
-    } catch {
-      /* ignore */
-    }
-    if (seen) return;
-    const t = setTimeout(() => setVisible(true), 800);
+    if (hasSeenOnboarding()) return;
+    const t = setTimeout(() => setShow(true), 500);
     return () => clearTimeout(t);
   }, []);
 
-  const close = () => {
-    haptic();
-    try {
-      localStorage.setItem("tastemap.welcome.v3", "1");
-    } catch {
-      /* ignore */
-    }
-    setVisible(false);
-  };
-
-  if (!visible) return null;
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
-      <button
-        aria-label="Fermer"
-        onClick={close}
-        className="absolute inset-0 bg-black/40 backdrop-blur-[2px] animate-mascot-backdrop"
-      />
-      <div className="relative pointer-events-auto flex flex-col items-center gap-3 w-full max-w-[340px]">
-        <div className="animate-mascot-enter">
-          <div className="animate-mascot-hop">
-            <ChefBuddy />
-          </div>
-        </div>
-        <div className="relative w-full rounded-3xl bg-white/95 backdrop-blur border border-white/70 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.35)] px-5 py-4 animate-mascot-bubble">
-          <span
-            aria-hidden
-            className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-white/95 border-l border-t border-white/70 rounded-sm"
-          />
-          <p className="text-lg font-extrabold text-foreground text-center leading-snug">
-            Ta carte food commence ici.
-          </p>
-          <p className="mt-1.5 text-sm text-muted-foreground text-center leading-snug">
-            Enregistre les restos qui te tentent, marque ceux où tu es allé :
-            ta carte se colore au fil de tes découvertes.
-          </p>
-          <button
-            onClick={close}
-            className="mt-4 w-full h-12 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
-          >
-            Commencer l’exploration
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  if (!show) return null;
+  return <Onboarding onDone={() => setShow(false)} />;
 }
+
 
 
 
@@ -1966,6 +1925,7 @@ export type SheetSnap = "collapsed" | "half" | "expanded";
 
 function DetailCard({
   restaurant: r,
+  preferredCuisine,
   visit,
   distanceKm,
   fromUser,
@@ -1975,6 +1935,7 @@ function DetailCard({
   onClose,
 }: {
   restaurant: Restaurant;
+  preferredCuisine?: Cuisine;
   visit: VisitEntry;
   distanceKm?: number | null;
   fromUser?: boolean;
@@ -2031,7 +1992,7 @@ function DetailCard({
 
         <div className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/60 backdrop-blur border border-white/50">
-            <CuisineIcon cuisines={r.cuisines} size={32} />
+            <CuisineIcon cuisines={r.cuisines} preferred={preferredCuisine} size={32} />
           </span>
           <div className="min-w-0 flex-1">
             <h3 className="font-display font-bold text-base leading-tight">{r.name}</h3>
