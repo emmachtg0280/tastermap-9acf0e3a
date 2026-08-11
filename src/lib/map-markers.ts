@@ -47,18 +47,21 @@ export function markerIcon(input: MarkerIconInput): MarkerVisual {
   if (cached) return cached;
 
   const { state, active, isNew, dataUrl, inner } = input;
-  const base = state === "done" ? 40 : state === "saved" ? 37 : 31;
+  // Discovered reads loudest, saved is clearly flagged, undiscovered stays quiet.
+  const base = state === "done" ? 42 : state === "saved" ? 38 : 28;
   const size = active ? base + 6 : base;
-  const iconOpacity = state === "new" ? 0.62 : 1;
-  const bgOpacity = state === "new" ? 0.72 : 1;
+  const iconOpacity = state === "new" ? 0.85 : 1;
+  const bg =
+    state === "done" ? "#E9FBD4" : state === "saved" ? "#FFF0F5" : "#ffffff";
+  const bgOpacity = state === "new" ? 0.78 : 1;
   const ring =
     state === "done"
-      ? { color: "#58CC02", width: 2.4 }
+      ? { color: "#4CB800", width: 3 }
       : state === "saved"
-        ? { color: "#F2789F", width: 2 }
-        : { color: "#d9cdb6", width: 1 };
+        ? { color: "#F2789F", width: 2.6 }
+        : { color: "#ded3bf", width: 1 };
 
-  const iconSize = size * 0.68;
+  const iconSize = size * (state === "new" ? 0.62 : 0.7);
   const iconOffset = (size - iconSize) / 2;
   const imageTag = dataUrl
     ? `<image href='${dataUrl}' x='${iconOffset}' y='${iconOffset}' width='${iconSize}' height='${iconSize}' opacity='${iconOpacity}' preserveAspectRatio='xMidYMid meet'/>`
@@ -71,22 +74,23 @@ export function markerIcon(input: MarkerIconInput): MarkerVisual {
 
   const doneBadge =
     state === "done"
-      ? `<circle cx='${size - 7}' cy='8' r='6' fill='#58CC02' stroke='#ffffff' stroke-width='1.5'/><path d='M${size - 9.5} 8 l2 2 L${size - 5} 6' stroke='#ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/>`
+      ? `<circle cx='${size - 7}' cy='8' r='6.5' fill='#4CB800' stroke='#ffffff' stroke-width='1.8'/><path d='M${size - 9.8} 8 l2 2.2 L${size - 4.6} 5.8' stroke='#ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/>`
       : "";
   const savedBadge =
     state === "saved"
-      ? `<circle cx='${size - 7}' cy='8' r='6' fill='#ffffff' stroke='#F2789F' stroke-width='1.2'/><path d='M${size - 7} 10.4 c-2.4 -1.6 -3.2 -2.7 -3.2 -3.8 a1.7 1.7 0 0 1 3.2 -0.7 a1.7 1.7 0 0 1 3.2 0.7 c0 1.1 -0.8 2.2 -3.2 3.8 z' fill='#F2789F'/>`
+      ? `<circle cx='${size - 7}' cy='8' r='6.5' fill='#F2789F' stroke='#ffffff' stroke-width='1.8'/><path d='M${size - 7} 10.6 c-2.4 -1.6 -3.2 -2.7 -3.2 -3.8 a1.7 1.7 0 0 1 3.2 -0.7 a1.7 1.7 0 0 1 3.2 0.7 c0 1.1 -0.8 2.2 -3.2 3.8 z' fill='#ffffff'/>`
       : "";
 
   const scale = 2;
   const svg = `
 <svg xmlns='http://www.w3.org/2000/svg' width='${size * scale}' height='${(size + 4) * scale}' viewBox='0 0 ${size} ${size + 4}'>
-  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 2}' fill='#ffffff' fill-opacity='${bgOpacity}' stroke='${ring.color}' stroke-width='${ring.width}'/>
+  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 2}' fill='${bg}' fill-opacity='${bgOpacity}' stroke='${ring.color}' stroke-width='${ring.width}'/>
   ${imageTag}
   ${newBadge}
   ${doneBadge}
   ${savedBadge}
 </svg>`.trim();
+
 
   const visual: MarkerVisual = {
     url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
