@@ -23,13 +23,14 @@ import {
   User,
 } from "lucide-react";
 
+import { searchRestaurants } from "@/lib/places.functions";
 import {
-  searchRestaurants,
   CITIES,
   type Cuisine,
   type Restaurant,
   type CityKey,
-} from "@/lib/places.functions";
+} from "@/lib/places.shared";
+
 import {
   getMyVisits,
   upsertVisit,
