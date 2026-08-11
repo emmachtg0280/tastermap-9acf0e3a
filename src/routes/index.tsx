@@ -1475,10 +1475,8 @@ function Index() {
       )}
 
 
-      <Mascot
-        onPickCuisine={(c) => setCuisine(c)}
-        onShowAll={() => setCuisine("any")}
-      />
+      <Mascot />
+
     </div>
   );
 }
