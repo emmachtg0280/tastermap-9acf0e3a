@@ -34,6 +34,7 @@ import {
 import {
   getMyVisits,
   upsertVisit,
+  mergeLocalVisits,
   type Visit,
 } from "@/lib/visits.functions";
 import { getHypeStats, type HypeStats } from "@/lib/hype.functions";
@@ -247,7 +248,7 @@ function useVisits(userId: string | null) {
         setLocalVisits({});
         queryClient.invalidateQueries({ queryKey: ["my-visits"] });
       })
-      .catch((e) => {
+      .catch((e: unknown) => {
         // Keep localStorage intact so nothing is lost; retry on next sign-in.
         mergedRef.current = false;
         console.error("[useVisits] merge failed", e);
