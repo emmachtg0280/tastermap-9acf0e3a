@@ -554,19 +554,44 @@ function Index() {
     userMarkerRef.current.setPosition(userLocation);
   }, [userLocation, mapReady]);
 
+  // ── Incremental marker layer ────────────────────────────────────────────
+  // Markers are created once and afterwards only patched (setIcon / setZIndex).
+  // Flipping one restaurant's state never recreates the whole layer, and every
+  // icon data-URI is memoized in `map-markers.ts`.
+  const clustered = zoomLevel < CLUSTER_ZOOM;
+
   useEffect(() => {
-    if (!mapInstance.current || !window.google) return;
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
-    if (filtered.length === 0) return;
+    const map = mapInstance.current;
+    if (!map || !window.google) return;
+    const g = window.google;
 
-    const g = window.google!;
+    restaurantsByIdRef.current = new Map(filtered.map((r) => [r.id, r]));
 
-    // --- Clustering when zoomed out: keeps the map readable ---
-    if (zoomLevel < CLUSTER_ZOOM) {
+    // Only draw what is (roughly) on screen: keeps 1000+ restaurants usable.
+    const b = map.getBounds();
+    let inView = (r: Restaurant) => true as boolean;
+    if (b) {
+      const ne = b.getNorthEast();
+      const sw = b.getSouthWest();
+      const padLat = (ne.lat() - sw.lat()) * 0.25;
+      const padLng = (ne.lng() - sw.lng()) * 0.25;
+      const south = sw.lat() - padLat;
+      const north = ne.lat() + padLat;
+      const west = sw.lng() - padLng;
+      const east = ne.lng() + padLng;
+      inView = (r) => r.lat >= south && r.lat <= north && r.lng >= west && r.lng <= east;
+    }
+    const visible = filtered.filter(inView);
+
+    // ── Clusters (low zoom) ──
+    const clusterPool = clusterMarkersRef.current;
+    const singles: Restaurant[] = [];
+    let usedClusters = 0;
+
+    if (clustered && visible.length > 0) {
       const cell = 360 / Math.pow(2, Math.max(4, Math.round(zoomLevel)) + 3);
       const groups = new Map<string, Restaurant[]>();
-      filtered.forEach((r) => {
+      visible.forEach((r) => {
         const key = `${Math.floor(r.lat / cell)}:${Math.floor(r.lng / cell)}`;
         const arr = groups.get(key) ?? [];
         arr.push(r);
@@ -574,92 +599,115 @@ function Index() {
       });
       groups.forEach((group) => {
         if (group.length === 1) {
-          markersRef.current.push(makeRestaurantMarker(group[0]));
+          singles.push(group[0]);
           return;
         }
         const lat = group.reduce((s, r) => s + r.lat, 0) / group.length;
         const lng = group.reduce((s, r) => s + r.lng, 0) / group.length;
         const discovered = group.filter((r) => visits[r.id]?.done).length;
-        const size = Math.min(56, 34 + Math.round(Math.log2(group.length + 1) * 7));
+        const visual = clusterIcon(group.length, discovered / group.length);
+        let m = clusterPool[usedClusters];
+        if (!m) {
+          m = new g.maps.Marker({ map, zIndex: 10, optimized: false });
+          clusterPool[usedClusters] = m;
+        }
+        m.setPosition({ lat, lng });
+        m.setIcon({
+          url: visual.url,
+          scaledSize: new g.maps.Size(visual.size, visual.size),
+          anchor: new g.maps.Point(visual.size / 2, visual.size / 2),
+        });
+        m.setMap(map);
+        g.maps.event.clearListeners(m, "click");
+        m.addListener("click", () => {
+          map.panTo({ lat, lng });
+          map.setZoom(Math.min(17, Math.round(zoomLevel) + 2));
+        });
+        usedClusters += 1;
+      });
+    } else {
+      singles.push(...visible);
+    }
+    for (let i = usedClusters; i < clusterPool.length; i++) clusterPool[i].setMap(null);
+
+    // ── Individual restaurant markers ──
+    const pool = markersRef.current;
+    const wanted = new Set<string>();
+
+    singles.forEach((r) => {
+      wanted.add(r.id);
+      const v = visits[r.id];
+      const state: MarkerState = v?.done ? "done" : v?.favorite ? "saved" : "new";
+      const active = selected?.id === r.id;
+      const cuisineKey = pickCuisine(r.cuisines);
+      const dataUrl = cuisineDataUrls?.[cuisineKey];
+      const iconInput = {
+        cuisine: cuisineKey,
+        state,
+        active,
+        isNew: isNewRestaurant(r),
+        dataUrl,
+        inner: cuisineInnerSvg(r.cuisines),
+      };
+      const key = markerIconKey(iconInput);
+      const zIndex = active ? 999 : state === "done" ? 40 : state === "saved" ? 20 : 1;
+
+      const entry = pool.get(r.id);
+      if (!entry) {
+        const visual = markerIcon(iconInput);
         const marker = new g.maps.Marker({
-          position: { lat, lng },
-          map: mapInstance.current!,
+          position: { lat: r.lat, lng: r.lng },
+          map,
+          title: r.name,
           icon: {
-            url: `data:image/svg+xml;utf8,${encodeURIComponent(clusterSvg(size, group.length, discovered / group.length))}`,
-            scaledSize: new g.maps.Size(size, size),
-            anchor: new g.maps.Point(size / 2, size / 2),
+            url: visual.url,
+            scaledSize: new g.maps.Size(visual.size, visual.height),
+            anchor: new g.maps.Point(visual.size / 2, visual.size / 2),
           },
-          zIndex: 10,
+          zIndex,
           optimized: false,
         });
         marker.addListener("click", () => {
-          mapInstance.current?.panTo({ lat, lng });
-          mapInstance.current?.setZoom(Math.min(17, Math.round(zoomLevel) + 2));
+          const target = restaurantsByIdRef.current.get(r.id);
+          if (target) setSelected(target);
         });
-        markersRef.current.push(marker);
-      });
-      return;
-    }
+        pool.set(r.id, { marker, key });
+        return;
+      }
 
-    filtered.forEach((r) => {
-      markersRef.current.push(makeRestaurantMarker(r));
+      entry.marker.setMap(map);
+      if (entry.key !== key) {
+        const visual = markerIcon(iconInput);
+        // Subtle, premium state transition: a short over-scale, then settle.
+        const bump = Math.round(visual.size * 1.14);
+        entry.marker.setIcon({
+          url: visual.url,
+          scaledSize: new g.maps.Size(bump, Math.round(visual.height * 1.14)),
+          anchor: new g.maps.Point(bump / 2, bump / 2),
+        });
+        const m = entry.marker;
+        window.setTimeout(() => {
+          m.setIcon({
+            url: visual.url,
+            scaledSize: new g.maps.Size(visual.size, visual.height),
+            anchor: new g.maps.Point(visual.size / 2, visual.size / 2),
+          });
+        }, 160);
+        entry.marker.setZIndex(zIndex);
+        entry.key = key;
+      }
     });
 
-    function makeRestaurantMarker(r: Restaurant) {
-      const active = selected?.id === r.id;
-      const done = !!visits[r.id]?.done;
-      const favorite = !!visits[r.id]?.favorite;
-      const isNew = isNewRestaurant(r);
-      // Visual hierarchy: DISCOVERED > SAVED > UNDISCOVERED
-      const state: "done" | "saved" | "new" = done ? "done" : favorite ? "saved" : "new";
-      const base = state === "done" ? 40 : state === "saved" ? 37 : 31;
-      const size = active ? base + 6 : base;
-      const iconOpacity = state === "new" ? 0.62 : 1;
-      const bgOpacity = state === "new" ? 0.72 : 1;
-      const ring =
-        state === "done"
-          ? { color: "#58CC02", width: 2.4 }
-          : state === "saved"
-            ? { color: "#F2789F", width: 2 }
-            : { color: "#d9cdb6", width: 1 };
-      const cuisineKey = pickCuisine(r.cuisines);
-      const dataUrl = cuisineDataUrls?.[cuisineKey];
-      const iconSize = size * 0.68;
-      const iconOffset = (size - iconSize) / 2;
-      const imageTag = dataUrl
-        ? `<image href='${dataUrl}' x='${iconOffset}' y='${iconOffset}' width='${iconSize}' height='${iconSize}' opacity='${iconOpacity}' preserveAspectRatio='xMidYMid meet'/>`
-        : `<g opacity='${iconOpacity}' transform='translate(${iconOffset} ${iconOffset}) scale(${iconSize / 24})'>${cuisineInnerSvg(r.cuisines)}</g>`;
-      const newBadge = isNew && state !== "new"
-        ? `<g><circle cx='7' cy='8' r='6' fill='#FFC94A'/><path d='M7 5.3 l0.8 1.6 l1.8 0.25 l-1.3 1.2 l0.35 1.8 l-1.65 -0.85 l-1.65 0.85 l0.35 -1.8 l-1.3 -1.2 l1.8 -0.25 z' fill='#ffffff' stroke-linejoin='round'/></g>`
-        : "";
-      const scale = 2;
-      const svg = `
-<svg xmlns='http://www.w3.org/2000/svg' width='${size * scale}' height='${(size + 4) * scale}' viewBox='0 0 ${size} ${size + 4}'>
-  <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 2}' fill='#ffffff' fill-opacity='${bgOpacity}' stroke='${ring.color}' stroke-width='${ring.width}'/>
-  ${imageTag}
-  ${newBadge}
-  ${done ? `<circle cx='${size - 7}' cy='8' r='6' fill='#58CC02' stroke='#ffffff' stroke-width='1.5'/><path d='M${size - 9.5} 8 l2 2 L${size - 5} 6' stroke='#ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/>` : ""}
-  ${state === "saved" ? `<circle cx='${size - 7}' cy='8' r='6' fill='#ffffff' stroke='#F2789F' stroke-width='1.2'/><path d='M${size - 7} 10.4 c-2.4 -1.6 -3.2 -2.7 -3.2 -3.8 a1.7 1.7 0 0 1 3.2 -0.7 a1.7 1.7 0 0 1 3.2 0.7 c0 1.1 -0.8 2.2 -3.2 3.8 z' fill='#F2789F'/>` : ""}
-</svg>`.trim();
-      const marker = new g.maps.Marker({
-        position: { lat: r.lat, lng: r.lng },
-        map: mapInstance.current!,
-        title: r.name,
-        icon: {
-          url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
-          scaledSize: new g.maps.Size(size, size + 4),
-          anchor: new g.maps.Point(size / 2, size / 2),
-        },
-        zIndex: active ? 999 : done ? 40 : favorite ? 20 : 1,
-        optimized: false,
-        animation: null,
-      });
-      marker.addListener("click", () => setSelected(r));
-      return marker;
-    }
-  }, [filtered, selected, visits, cuisineDataUrls, zoomLevel]);
+    pool.forEach((entry, id) => {
+      if (!wanted.has(id)) {
+        entry.marker.setMap(null);
+        entry.marker.setMap(null);
+        pool.delete(id);
+      }
+    });
+  }, [filtered, selected, visits, cuisineDataUrls, zoomLevel, clustered, mapEpoch]);
 
-  // Fetch whenever city or minRating change — only if a city is selected
+  // City load — the only path allowed to reach Google
   useEffect(() => {
     if (!city) {
       setResults([]);
@@ -669,6 +717,7 @@ function Index() {
     mutation.mutate({ city, minRating });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, minRating]);
+
 
 
   return (
@@ -688,14 +737,38 @@ function Index() {
         </div>
       )}
 
-      {/* Data failure: never leave the map silently empty */}
-      {mapReady && mutation.isError && results.length === 0 && (
+      {/* Map-level loading indicator */}
+      {mapReady && isLoadingRestaurants && (
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 z-20 flex justify-center pointer-events-none">
+          <div className="rounded-full bg-card/90 backdrop-blur border border-border/60 shadow-sm px-3.5 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Chargement des restaurants…
+          </div>
+        </div>
+      )}
+
+      {/* “Search this area” — only after a significant move */}
+      {mapReady && showSearchArea && !isLoadingRestaurants && (
+        <div className="absolute inset-x-0 top-[190px] z-20 flex justify-center px-4 pointer-events-none">
+          <button
+            type="button"
+            onClick={() => { haptic(20); searchThisArea(); }}
+            className="pointer-events-auto rounded-full bg-card/95 backdrop-blur border border-border/60 shadow-md px-4 h-11 text-sm font-bold text-foreground inline-flex items-center gap-2 tap-bounce transition animate-pop-in"
+          >
+            <Search className="h-4 w-4" />
+            Rechercher dans cette zone
+          </button>
+        </div>
+      )}
+
+      {/* Server / API error: never leave the map silently empty */}
+      {mapReady && loadError && results.length === 0 && (
         <div className="absolute inset-x-0 bottom-24 z-30 flex justify-center px-4 pointer-events-none">
           <div className="pointer-events-auto rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-md px-4 py-3 text-sm text-foreground flex items-center gap-3 max-w-[340px]">
             <span>Impossible de charger les restaurants pour le moment.</span>
             <button
               type="button"
-              className="rounded-full bg-[color:var(--duo-green)] text-white font-extrabold text-xs px-3 py-1.5 shadow-sm active:translate-y-[1px]"
+              className="rounded-full bg-[color:var(--duo-green)] text-white font-extrabold text-xs px-3 py-2 shadow-sm active:translate-y-[1px]"
               onClick={() => city && mutation.mutate({ city, minRating, force: true })}
             >
               Réessayer
@@ -703,6 +776,16 @@ function Index() {
           </div>
         </div>
       )}
+
+      {/* Genuinely empty result set — distinct from an error */}
+      {mapReady && !loadError && !isLoadingRestaurants && city && results.length > 0 && filtered.length === 0 && (
+        <div className="absolute inset-x-0 bottom-24 z-30 flex justify-center px-4 pointer-events-none">
+          <div className="pointer-events-auto rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-md px-4 py-3 text-sm text-muted-foreground max-w-[320px] text-center">
+            Aucun restaurant ici. Déplacez la carte ou changez vos filtres.
+          </div>
+        </div>
+      )}
+
 
 
 
@@ -713,21 +796,51 @@ function Index() {
         </div>
       </div>
 
-      {/* Top tabs: Nouveautés / Hype / Cuisines — pushed to very top */}
+      {/* Top tabs: Ville · Nouveautés / Hype / Cuisines */}
       <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)]">
         <div className="mx-auto max-w-3xl px-2 pt-0.5">
+          {/* City — a product-level choice, always visible */}
+          <div className="pb-1 pl-1">
+            <button
+              onClick={() => { haptic(); setShowCities((v) => !v); }}
+              className="inline-flex items-center gap-1 h-9 pl-3 pr-2.5 rounded-full bg-white/70 backdrop-blur border border-white/60 shadow-sm text-sm font-extrabold text-foreground tap-bounce transition hover:bg-white/85"
+              aria-label="Changer de ville"
+            >
+              <MapPin className="h-4 w-4 text-[color:var(--duo-green-dark)]" />
+              {currentCity?.label ?? "Choisir une ville"}
+              <ChevronDown className={`h-4 w-4 transition-transform ${showCities ? "rotate-180" : ""}`} />
+            </button>
+            {showCities && (
+              <div className="mt-1 inline-flex flex-wrap gap-1.5 max-w-full rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-lg p-2 animate-pop-in">
+                {CITIES.map((c) => (
+                  <button
+                    key={c.key}
+                    onClick={() => { haptic(20); setCity(c.key); setShowCities(false); }}
+                    className={`h-9 px-3 rounded-full text-sm font-bold transition ${
+                      c.key === city
+                        ? "bg-[color:var(--duo-green)] text-white"
+                        : "bg-muted/60 text-foreground/80 hover:bg-muted"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 pb-1 -mx-1">
             {/* Discovery tabs */}
             <div className="flex gap-1.5 shrink-0">
               <button
                 onClick={() => { haptic(); setShowFilters(false); setListMode("new"); }}
-                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
+                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 min-h-[44px] rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
                 <NewStickerIcon size={20} /> Nouveautés
               </button>
               <button
                 onClick={() => { haptic(); setShowFilters(false); setListMode("hype"); }}
-                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
+                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold pl-1.5 pr-3 py-1 min-h-[44px] rounded-full bg-white/40 backdrop-blur border border-white/50 text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
               >
                 <HypeStickerIcon size={20} /> Hype
               </button>
@@ -736,8 +849,17 @@ function Index() {
             {/* Divider */}
             <div className="w-px bg-foreground/15 self-stretch my-1 shrink-0" />
 
-            {/* Cuisine chips — big appetizing PNG, small label */}
-            {CUISINE_ORDER.map((value) => {
+            {/* Primary cuisine shortcuts — the full list lives behind “Plus” */}
+            {cuisine !== "any" && (
+              <button
+                onClick={() => { haptic(); setCuisine("any"); }}
+                className="shrink-0 inline-flex flex-col items-center justify-center w-[62px] h-[74px] rounded-2xl bg-white/70 backdrop-blur border border-white/60 text-[11px] font-bold text-foreground shadow-sm tap-bounce transition"
+              >
+                <X className="h-4 w-4 mb-1" />
+                Toutes
+              </button>
+            )}
+            {visibleCuisines.map((value) => {
               const meta = CUISINE_META[value];
               const active = value === cuisine;
               return (
@@ -764,18 +886,63 @@ function Index() {
                 </button>
               );
             })}
+            <button
+              onClick={() => { haptic(); setShowAllCuisines((v) => !v); }}
+              className="shrink-0 inline-flex flex-col items-center justify-center gap-1 w-[62px] h-[74px] rounded-2xl bg-white/40 backdrop-blur border border-white/50 text-[11px] font-semibold text-foreground/80 shadow-sm hover:bg-white/60 tap-bounce transition"
+            >
+              <ChevronDown className={`h-4 w-4 transition-transform ${showAllCuisines ? "rotate-180" : ""}`} />
+              {showAllCuisines ? "Moins" : "Plus"}
+            </button>
           </div>
+
+          {showAllCuisines && (
+            <div className="mx-1 rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-lg p-2 grid grid-cols-5 sm:grid-cols-6 gap-1.5 animate-pop-in">
+              {CUISINE_ORDER.map((value) => {
+                const meta = CUISINE_META[value];
+                const active = value === cuisine;
+                return (
+                  <button
+                    key={value}
+                    onClick={() => { haptic(); setCuisine(active ? "any" : value); setShowAllCuisines(false); }}
+                    className={`inline-flex flex-col items-center justify-center gap-0.5 h-[66px] rounded-xl transition ${
+                      active ? "bg-[color:var(--duo-green)]/15 ring-1 ring-[color:var(--duo-green)]" : "hover:bg-muted/60"
+                    }`}
+                  >
+                    <img
+                      src={meta.image}
+                      alt={meta.label}
+                      width={30}
+                      height={30}
+                      loading="lazy"
+                      draggable={false}
+                      className="object-contain select-none pointer-events-none"
+                      style={{ width: 30, height: 30 }}
+                    />
+                    <span className="text-[10px] leading-tight">{meta.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
+
 
 
 
       {/* Floating action buttons — bottom right */}
       <div
         className={`absolute right-3 z-30 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] transition-[bottom] duration-300 ease-out ${
-          selected ? "bottom-[calc(52vh+16px)] lg:bottom-3" : "bottom-3"
+          selected
+            ? sheetSnap === "collapsed"
+              ? "bottom-[142px] lg:bottom-3"
+              : sheetSnap === "expanded"
+                ? "bottom-[calc(86vh+16px)] lg:bottom-3"
+                : "bottom-[calc(52vh+16px)] lg:bottom-3"
+            : "bottom-3"
         }`}
       >
+
         <button
           onClick={() => { haptic(20); setShowFilters(false); setListMode("profile"); }}
           aria-label="Mon profil food"
@@ -1133,12 +1300,14 @@ function Index() {
         />
       )}
 
-      {/* Detail card */}
+      {/* Detail sheet */}
       {selected && (
         <DetailCard
           key={selected.id}
           restaurant={selected}
           visit={visits[selected.id] ?? { done: false, comment: "" }}
+          snap={sheetSnap}
+          onSnapChange={setSheetSnap}
           distanceKm={
             userLocation || currentCity
               ? haversineDistance(userLocation ?? { lat: currentCity!.lat, lng: currentCity!.lng }, selected)
@@ -1149,6 +1318,7 @@ function Index() {
           onClose={() => setSelected(null)}
         />
       )}
+
 
       <Mascot
         onPickCuisine={(c) => setCuisine(c)}
@@ -1426,11 +1596,15 @@ function formatDistance(km: number) {
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
 }
 
+export type SheetSnap = "collapsed" | "half" | "expanded";
+
 function DetailCard({
   restaurant: r,
   visit,
   distanceKm,
   fromUser,
+  snap,
+  onSnapChange,
   onUpdate,
   onClose,
 }: {
@@ -1438,6 +1612,8 @@ function DetailCard({
   visit: VisitEntry;
   distanceKm?: number | null;
   fromUser?: boolean;
+  snap: SheetSnap;
+  onSnapChange: (s: SheetSnap) => void;
   onUpdate: (patch: Partial<VisitEntry>) => void;
   onClose: () => void;
 }) {
@@ -1445,9 +1621,31 @@ function DetailCard({
   const [showHours, setShowHours] = useState(false);
   useEffect(() => setComment(visit.comment), [visit.comment, r.id]);
 
+  const heightClass =
+    snap === "collapsed"
+      ? "h-[118px]"
+      : snap === "expanded"
+        ? "h-[86vh]"
+        : "h-[52vh]";
+
+  const cycle = () => {
+    haptic(12);
+    onSnapChange(snap === "collapsed" ? "half" : snap === "half" ? "expanded" : "collapsed");
+  };
+
   return (
-    <div className="absolute left-3 right-3 bottom-3 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[360px] rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.12)] overflow-hidden max-h-[52vh] lg:max-h-[70vh] flex flex-col">
-      {r.photoUrls.length > 0 && (
+    <div
+      className={`absolute left-3 right-3 bottom-3 lg:left-4 lg:right-auto lg:bottom-4 lg:w-[360px] rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col transition-[height] duration-300 ease-out lg:h-auto lg:max-h-[70vh] ${heightClass}`}
+    >
+      <button
+        type="button"
+        onClick={cycle}
+        aria-label={snap === "expanded" ? "Réduire la fiche" : "Agrandir la fiche"}
+        className="lg:hidden shrink-0 h-6 w-full grid place-items-center touch-manipulation"
+      >
+        <span className="h-1.5 w-10 rounded-full bg-foreground/20" />
+      </button>
+      {r.photoUrls.length > 0 && snap !== "collapsed" && (
         <div
           className="flex overflow-x-auto snap-x snap-mandatory flex-shrink-0"
           style={{ overscrollBehaviorX: "contain", touchAction: "pan-x" }}
@@ -1463,7 +1661,8 @@ function DetailCard({
           ))}
         </div>
       )}
-      <div className="p-4 overflow-y-auto">
+      <div className={`px-4 pb-4 ${snap === "collapsed" ? "pt-0" : "pt-4"} overflow-y-auto`}>
+
         <div className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/60 backdrop-blur border border-white/50">
             <CuisineIcon cuisines={r.cuisines} size={32} />
