@@ -57,6 +57,7 @@ import {
   pickCuisine,
   useCuisineDataUrls,
 } from "@/components/icons/CuisineIcons";
+import { matchesCuisine } from "@/lib/cuisine";
 import { Onboarding, hasSeenOnboarding } from "@/components/onboarding/Onboarding";
 
 
@@ -1974,6 +1975,7 @@ export type SheetSnap = "collapsed" | "half" | "expanded";
 
 function DetailCard({
   restaurant: r,
+  preferredCuisine,
   visit,
   distanceKm,
   fromUser,
@@ -1983,6 +1985,7 @@ function DetailCard({
   onClose,
 }: {
   restaurant: Restaurant;
+  preferredCuisine?: Cuisine;
   visit: VisitEntry;
   distanceKm?: number | null;
   fromUser?: boolean;
