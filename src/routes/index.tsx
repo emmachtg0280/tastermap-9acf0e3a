@@ -463,7 +463,10 @@ function Index() {
   const [cuisine, setCuisine] = useState<Cuisine>(restored?.cuisine ?? "any");
   const [minRating, setMinRating] = useState(4);
   const [selected, setSelected] = useState<Restaurant | null>(null);
+  /** Tapping a marker shows a quick-action card; details are opt-in. */
+  const [detailOpen, setDetailOpen] = useState(false);
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>("half");
+  const [showLegend, setShowLegend] = useState(false);
 
   const [results, setResults] = useState<Restaurant[]>([]);
   const [searchText, setSearchText] = useState("");
