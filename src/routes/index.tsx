@@ -603,6 +603,15 @@ function Index() {
   }, [baseFiltered, sortBy, userLocation, currentCity]);
 
 
+  // Refs let the map layer read fresh data without re-rendering React on pan.
+  const visitsRef = useRef(visits);
+  visitsRef.current = visits;
+  const selectedIdRef = useRef<string | null>(null);
+  selectedIdRef.current = selected?.id ?? null;
+  const cuisineUrlsRef = useRef(cuisineDataUrls);
+  cuisineUrlsRef.current = cuisineDataUrls;
+  const rebuildRef = useRef<() => void>(() => {});
+
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstance.current) return;
     const map = new window.google!.maps.Map(mapRef.current, {
@@ -622,29 +631,32 @@ function Index() {
     mapInstance.current = map;
     map.addListener("click", () => setSelected(null));
     map.addListener("idle", () => {
-      const z = map.getZoom();
-      if (typeof z === "number") setZoomLevel((prev) => (z === prev ? prev : z));
-      setMapEpoch((n) => n + 1);
+      // Redraw markers directly — no React state update, so panning the map
+      // never re-renders the whole screen.
+      rebuildRef.current();
 
+      const z = map.getZoom() ?? DEFAULT_ZOOM;
       const c = map.getCenter();
       const b = map.getBounds();
-      if (c) {
-        writeMapState({ center: { lat: c.lat(), lng: c.lng() }, zoom: z ?? DEFAULT_ZOOM });
-        // "Search this area" only after a *significant* move.
-        const from = loadedCenterRef.current;
-        if (from && b) {
-          const ne = b.getNorthEast();
-          const sw = b.getSouthWest();
-          const spanKm = haversineDistance(
-            { lat: sw.lat(), lng: sw.lng() },
-            { lat: ne.lat(), lng: ne.lng() },
-          );
-          const moved = haversineDistance(from, { lat: c.lat(), lng: c.lng() });
-          setShowSearchArea(moved > Math.max(1.2, spanKm * 0.45));
-        }
+      if (!c) return;
+      writeMapState({ center: { lat: c.lat(), lng: c.lng() }, zoom: z });
+      resolveNeighborhood({ lat: c.lat(), lng: c.lng() }, z);
+
+      const from = loadedCenterRef.current;
+      if (from && b) {
+        const ne = b.getNorthEast();
+        const sw = b.getSouthWest();
+        const spanKm = haversineDistance(
+          { lat: sw.lat(), lng: sw.lng() },
+          { lat: ne.lat(), lng: ne.lng() },
+        );
+        const moved = haversineDistance(from, { lat: c.lat(), lng: c.lng() });
+        // setState with an identical boolean is a no-op for React.
+        setShowSearchArea(moved > Math.max(1.2, spanKm * 0.45));
       }
     });
-  }, [mapReady, restored]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady]);
 
   // Persist the product-level choices, not the transient ones.
   useEffect(() => {
@@ -659,14 +671,10 @@ function Index() {
       lastCityRef.current = currentCity.key;
       return;
     }
-    if (lastCityRef.current === currentCity.key && !restored?.center) {
-      mapInstance.current.panTo({ lat: currentCity.lat, lng: currentCity.lng });
-      mapInstance.current.setZoom(CITY_ZOOM);
-      return;
-    }
     lastCityRef.current = currentCity.key;
     mapInstance.current.panTo({ lat: currentCity.lat, lng: currentCity.lng });
     mapInstance.current.setZoom(CITY_ZOOM);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentCity, mapReady]);
 
   // Subtle personal location indicator
@@ -688,109 +696,181 @@ function Index() {
     userMarkerRef.current.setPosition(userLocation);
   }, [userLocation, mapReady]);
 
+  /* ── Lightweight neighbourhood cue (reverse geocode, heavily throttled) ── */
+  const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+  const geoTimerRef = useRef<number | null>(null);
+  const lastGeoRef = useRef<{ lat: number; lng: number } | null>(null);
+  const resolveNeighborhood = (center: { lat: number; lng: number }, zoom: number) => {
+    if (!window.google) return;
+    if (zoom < 14) {
+      setNeighborhood(null);
+      return;
+    }
+    const last = lastGeoRef.current;
+    if (last && haversineDistance(last, center) < 0.35) return;
+    if (geoTimerRef.current) window.clearTimeout(geoTimerRef.current);
+    geoTimerRef.current = window.setTimeout(() => {
+      lastGeoRef.current = center;
+      geocoderRef.current ??= new window.google!.maps.Geocoder();
+      geocoderRef.current.geocode({ location: center }, (res, status) => {
+        if (status !== "OK" || !res?.length) return;
+        const wanted = ["neighborhood", "sublocality", "sublocality_level_1"];
+        for (const r of res) {
+          const comp = r.address_components?.find((c) =>
+            c.types.some((t) => wanted.includes(t)),
+          );
+          if (comp) {
+            setNeighborhood(comp.long_name);
+            return;
+          }
+        }
+        setNeighborhood(null);
+      });
+    }, 700);
+  };
 
+  /* ── Marker layer ───────────────────────────────────────────────────────
+   * Markers are created once and afterwards only patched. Selecting a
+   * restaurant or flipping one state patches a single marker; panning never
+   * touches React state. Icon data-URIs are memoized in `map-markers.ts`.
+   */
+  const iconFor = (r: Restaurant, active: boolean) => {
+    const v = visitsRef.current[r.id];
+    const state: MarkerState = v?.done ? "done" : v?.favorite ? "saved" : "new";
+    const cuisineKey = pickCuisine(r.cuisines);
+    return {
+      cuisine: cuisineKey,
+      state,
+      active,
+      isNew: isNewRestaurant(r),
+      dataUrl: cuisineUrlsRef.current?.[cuisineKey],
+      inner: cuisineInnerSvg(r.cuisines),
+    };
+  };
 
-  // ── Incremental marker layer ────────────────────────────────────────────
-  // Markers are created once and afterwards only patched (setIcon / setZIndex).
-  // Flipping one restaurant's state never recreates the whole layer, and every
-  // icon data-URI is memoized in `map-markers.ts`.
-  const clustered = zoomLevel < CLUSTER_ZOOM;
+  const paintMarker = (id: string) => {
+    const g = window.google;
+    const entry = markersRef.current.get(id);
+    const r = restaurantsByIdRef.current.get(id);
+    if (!entry || !r || !g) return;
+    const active = selectedIdRef.current === id;
+    const input = iconFor(r, active);
+    const key = markerIconKey(input);
+    if (entry.key === key) return;
+    const visual = markerIcon(input);
+    entry.marker.setIcon({
+      url: visual.url,
+      scaledSize: new g.maps.Size(visual.size, visual.height),
+      anchor: new g.maps.Point(visual.size / 2, visual.size / 2),
+    });
+    const v = visitsRef.current[id];
+    entry.marker.setZIndex(active ? 999 : v?.done ? 40 : v?.favorite ? 20 : 1);
+    entry.key = key;
+  };
 
   useEffect(() => {
-    const map = mapInstance.current;
-    if (!map || !window.google) return;
-    const g = window.google;
+    rebuildRef.current = () => {
+      const map = mapInstance.current;
+      const g = window.google;
+      if (!map || !g) return;
 
-    restaurantsByIdRef.current = new Map(filtered.map((r) => [r.id, r]));
+      restaurantsByIdRef.current = new Map(filtered.map((r) => [r.id, r]));
+      const zoom = map.getZoom() ?? DEFAULT_ZOOM;
+      const visits = visitsRef.current;
 
-    // Only draw what is (roughly) on screen: keeps 1000+ restaurants usable.
-    const b = map.getBounds();
-    let inView = (r: Restaurant) => true as boolean;
-    if (b) {
-      const ne = b.getNorthEast();
-      const sw = b.getSouthWest();
-      const padLat = (ne.lat() - sw.lat()) * 0.25;
-      const padLng = (ne.lng() - sw.lng()) * 0.25;
-      const south = sw.lat() - padLat;
-      const north = ne.lat() + padLat;
-      const west = sw.lng() - padLng;
-      const east = ne.lng() + padLng;
-      inView = (r) => r.lat >= south && r.lat <= north && r.lng >= west && r.lng <= east;
-    }
-    const visible = filtered.filter(inView);
+      // Only draw what is (roughly) on screen: keeps 1000+ restaurants usable.
+      const b = map.getBounds();
+      let visible = filtered;
+      if (b) {
+        const ne = b.getNorthEast();
+        const sw = b.getSouthWest();
+        const padLat = (ne.lat() - sw.lat()) * 0.2;
+        const padLng = (ne.lng() - sw.lng()) * 0.2;
+        const south = sw.lat() - padLat;
+        const north = ne.lat() + padLat;
+        const west = sw.lng() - padLng;
+        const east = ne.lng() + padLng;
+        visible = filtered.filter(
+          (r) => r.lat >= south && r.lat <= north && r.lng >= west && r.lng <= east,
+        );
+      }
 
-    // ── Clusters (low zoom) ──
-    const clusterPool = clusterMarkersRef.current;
-    const singles: Restaurant[] = [];
-    let usedClusters = 0;
+      // ── Clusters (low zoom) ──
+      const clusterPool = clusterMarkersRef.current;
+      let singles: Restaurant[] = [];
+      let usedClusters = 0;
 
-    if (clustered && visible.length > 0) {
-      const cell = 360 / Math.pow(2, Math.max(4, Math.round(zoomLevel)) + 3);
-      const groups = new Map<string, Restaurant[]>();
-      visible.forEach((r) => {
-        const key = `${Math.floor(r.lat / cell)}:${Math.floor(r.lng / cell)}`;
-        const arr = groups.get(key) ?? [];
-        arr.push(r);
-        groups.set(key, arr);
-      });
-      groups.forEach((group) => {
-        if (group.length === 1) {
-          singles.push(group[0]);
+      if (zoom < CLUSTER_ZOOM && visible.length > 0) {
+        const cell = 360 / Math.pow(2, Math.max(4, Math.round(zoom)) + 3);
+        const groups = new Map<string, Restaurant[]>();
+        visible.forEach((r) => {
+          const key = `${Math.floor(r.lat / cell)}:${Math.floor(r.lng / cell)}`;
+          const arr = groups.get(key) ?? [];
+          arr.push(r);
+          groups.set(key, arr);
+        });
+        groups.forEach((group) => {
+          if (group.length === 1) {
+            singles.push(group[0]);
+            return;
+          }
+          const lat = group.reduce((s, r) => s + r.lat, 0) / group.length;
+          const lng = group.reduce((s, r) => s + r.lng, 0) / group.length;
+          const discovered = group.filter((r) => visits[r.id]?.done).length;
+          const visual = clusterIcon(group.length, discovered / group.length);
+          let m = clusterPool[usedClusters];
+          if (!m) {
+            m = new g.maps.Marker({ map, zIndex: 10, optimized: false });
+            clusterPool[usedClusters] = m;
+          }
+          m.setPosition({ lat, lng });
+          m.setIcon({
+            url: visual.url,
+            scaledSize: new g.maps.Size(visual.size, visual.size),
+            anchor: new g.maps.Point(visual.size / 2, visual.size / 2),
+          });
+          m.setMap(map);
+          g.maps.event.clearListeners(m, "click");
+          m.addListener("click", () => {
+            map.panTo({ lat, lng });
+            map.setZoom(Math.min(17, Math.round(zoom) + 2));
+          });
+          usedClusters += 1;
+        });
+      } else {
+        singles = visible;
+      }
+      for (let i = usedClusters; i < clusterPool.length; i++) clusterPool[i].setMap(null);
+
+      // Hard cap the DOM cost on mobile: personal states always win.
+      if (singles.length > MAX_MARKERS) {
+        const score = (r: Restaurant) => {
+          const v = visits[r.id];
+          if (v?.done) return 3;
+          if (v?.favorite) return 2;
+          return (r.userRatingCount ?? 0) > 300 ? 1 : 0;
+        };
+        singles = [...singles]
+          .sort((a, b) => score(b) - score(a))
+          .slice(0, MAX_MARKERS);
+      }
+
+      // ── Individual restaurant markers ──
+      const pool = markersRef.current;
+      const wanted = new Set<string>();
+
+      singles.forEach((r) => {
+        wanted.add(r.id);
+        const active = selectedIdRef.current === r.id;
+        const entry = pool.get(r.id);
+        if (entry) {
+          if (!entry.marker.getMap()) entry.marker.setMap(map);
+          paintMarker(r.id);
           return;
         }
-        const lat = group.reduce((s, r) => s + r.lat, 0) / group.length;
-        const lng = group.reduce((s, r) => s + r.lng, 0) / group.length;
-        const discovered = group.filter((r) => visits[r.id]?.done).length;
-        const visual = clusterIcon(group.length, discovered / group.length);
-        let m = clusterPool[usedClusters];
-        if (!m) {
-          m = new g.maps.Marker({ map, zIndex: 10, optimized: false });
-          clusterPool[usedClusters] = m;
-        }
-        m.setPosition({ lat, lng });
-        m.setIcon({
-          url: visual.url,
-          scaledSize: new g.maps.Size(visual.size, visual.size),
-          anchor: new g.maps.Point(visual.size / 2, visual.size / 2),
-        });
-        m.setMap(map);
-        g.maps.event.clearListeners(m, "click");
-        m.addListener("click", () => {
-          map.panTo({ lat, lng });
-          map.setZoom(Math.min(17, Math.round(zoomLevel) + 2));
-        });
-        usedClusters += 1;
-      });
-    } else {
-      singles.push(...visible);
-    }
-    for (let i = usedClusters; i < clusterPool.length; i++) clusterPool[i].setMap(null);
-
-    // ── Individual restaurant markers ──
-    const pool = markersRef.current;
-    const wanted = new Set<string>();
-
-    singles.forEach((r) => {
-      wanted.add(r.id);
-      const v = visits[r.id];
-      const state: MarkerState = v?.done ? "done" : v?.favorite ? "saved" : "new";
-      const active = selected?.id === r.id;
-      const cuisineKey = pickCuisine(r.cuisines);
-      const dataUrl = cuisineDataUrls?.[cuisineKey];
-      const iconInput = {
-        cuisine: cuisineKey,
-        state,
-        active,
-        isNew: isNewRestaurant(r),
-        dataUrl,
-        inner: cuisineInnerSvg(r.cuisines),
-      };
-      const key = markerIconKey(iconInput);
-      const zIndex = active ? 999 : state === "done" ? 40 : state === "saved" ? 20 : 1;
-
-      const entry = pool.get(r.id);
-      if (!entry) {
-        const visual = markerIcon(iconInput);
+        const input = iconFor(r, active);
+        const visual = markerIcon(input);
+        const v = visits[r.id];
         const marker = new g.maps.Marker({
           position: { lat: r.lat, lng: r.lng },
           map,
@@ -800,47 +880,51 @@ function Index() {
             scaledSize: new g.maps.Size(visual.size, visual.height),
             anchor: new g.maps.Point(visual.size / 2, visual.size / 2),
           },
-          zIndex,
+          zIndex: active ? 999 : v?.done ? 40 : v?.favorite ? 20 : 1,
           optimized: false,
         });
         marker.addListener("click", () => {
           const target = restaurantsByIdRef.current.get(r.id);
           if (target) setSelected(target);
         });
-        pool.set(r.id, { marker, key });
-        return;
-      }
+        pool.set(r.id, { marker, key: markerIconKey(input) });
+      });
 
-      entry.marker.setMap(map);
-      if (entry.key !== key) {
-        const visual = markerIcon(iconInput);
-        // Subtle, premium state transition: a short over-scale, then settle.
-        const bump = Math.round(visual.size * 1.14);
-        entry.marker.setIcon({
-          url: visual.url,
-          scaledSize: new g.maps.Size(bump, Math.round(visual.height * 1.14)),
-          anchor: new g.maps.Point(bump / 2, bump / 2),
-        });
-        const m = entry.marker;
-        window.setTimeout(() => {
-          m.setIcon({
-            url: visual.url,
-            scaledSize: new g.maps.Size(visual.size, visual.height),
-            anchor: new g.maps.Point(visual.size / 2, visual.size / 2),
-          });
-        }, 160);
-        entry.marker.setZIndex(zIndex);
-        entry.key = key;
-      }
-    });
+      pool.forEach((entry, id) => {
+        if (!wanted.has(id)) {
+          entry.marker.setMap(null);
+          pool.delete(id);
+        }
+      });
+    };
+    rebuildRef.current();
+    // `visits` and `selected` are handled by the incremental effects below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, cuisineDataUrls, mapReady]);
 
-    pool.forEach((entry, id) => {
-      if (!wanted.has(id)) {
-        entry.marker.setMap(null);
-        pool.delete(id);
-      }
+  // Selection: repaint only the two markers involved.
+  const prevSelectedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevSelectedRef.current;
+    const next = selected?.id ?? null;
+    prevSelectedRef.current = next;
+    if (prev && prev !== next) paintMarker(prev);
+    if (next) paintMarker(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.id]);
+
+  // Visit changes: repaint only the restaurants whose state actually changed.
+  const prevVisitsRef = useRef<VisitMap>({});
+  useEffect(() => {
+    const prev = prevVisitsRef.current;
+    prevVisitsRef.current = visits;
+    const sig = (v?: VisitEntry) => `${v?.done ? 1 : 0}${v?.favorite ? 1 : 0}`;
+    const ids = new Set([...Object.keys(prev), ...Object.keys(visits)]);
+    ids.forEach((id) => {
+      if (sig(prev[id]) !== sig(visits[id])) paintMarker(id);
     });
-  }, [filtered, selected, visits, cuisineDataUrls, zoomLevel, clustered, mapEpoch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visits]);
 
   // Bring the selected restaurant into a useful position: on mobile the sheet
   // covers the lower half, so nudge the marker into the upper area only when
@@ -872,6 +956,7 @@ function Index() {
     mutation.mutate({ city, minRating });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, minRating]);
+
 
 
 
