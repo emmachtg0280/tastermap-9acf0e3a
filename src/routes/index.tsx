@@ -476,10 +476,31 @@ function Index() {
   const [showCities, setShowCities] = useState(false);
   const [showAllCuisines, setShowAllCuisines] = useState(false);
   const [showSearchArea, setShowSearchArea] = useState(false);
-  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "profile">(null);
+  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "profile" | "mymap">(null);
   const [neighborhood, setNeighborhood] = useState<string | null>(null);
   const { user } = useAuthSession();
   const { visits, update } = useVisits(user?.id ?? null);
+
+  /**
+   * Every personal-map write goes through here: the marker repaints instantly
+   * (optimistic state) and a tiny, self-dismissing confirmation tells the user
+   * what just happened to *their* map. No modal, no map interruption.
+   */
+  const applyVisit = (id: string, patch: Partial<VisitEntry>) => {
+    const current = visits[id] ?? { done: false, comment: "", favorite: false };
+    if (patch.done !== undefined && patch.done !== current.done) {
+      toast[patch.done ? "success" : "message"](
+        patch.done ? "Découvert · ajouté à ta carte ✨" : "Retiré de tes découvertes",
+        { duration: 1600 },
+      );
+    } else if (patch.favorite !== undefined && patch.favorite !== current.favorite) {
+      toast[patch.favorite ? "success" : "message"](
+        patch.favorite ? "Enregistré sur ta carte ✨" : "Retiré de ta carte",
+        { duration: 1600 },
+      );
+    }
+    return update(id, patch);
+  };
   const userLocation = useGeolocation();
 
   const mapReady = useGoogleMaps();
