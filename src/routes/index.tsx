@@ -1620,12 +1620,24 @@ function Index() {
         />
       )}
 
-      {/* Detail sheet */}
-      {selected && (
+      {/* Quick actions — the primary way to build the personal map */}
+      {selected && !detailOpen && (
+        <QuickCard
+          key={`quick-${selected.id}`}
+          restaurant={selected}
+          visit={visits[selected.id] ?? { done: false, comment: "", favorite: false }}
+          onUpdate={(patch) => update(selected.id, patch)}
+          onDetails={() => { haptic(); setDetailOpen(true); }}
+          onClose={() => { haptic(); setSelected(null); }}
+        />
+      )}
+
+      {/* Detail sheet — secondary, opt-in */}
+      {selected && detailOpen && (
         <DetailCard
           key={selected.id}
           restaurant={selected}
-          visit={visits[selected.id] ?? { done: false, comment: "" }}
+          visit={visits[selected.id] ?? { done: false, comment: "", favorite: false }}
           snap={sheetSnap}
           onSnapChange={setSheetSnap}
           distanceKm={
@@ -1635,7 +1647,7 @@ function Index() {
           }
           fromUser={!!userLocation}
           onUpdate={(patch) => update(selected.id, patch)}
-          onClose={() => setSelected(null)}
+          onClose={() => { setDetailOpen(false); setSelected(null); }}
         />
       )}
 
