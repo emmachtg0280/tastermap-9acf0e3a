@@ -1476,20 +1476,30 @@ function Index() {
             ? filtered.filter((r) => visits[r.id]?.done)
             : listMode === "favorites"
               ? filtered.filter((r) => visits[r.id]?.favorite)
-              : listMode === "new"
-                ? [...baseFiltered]
-                    .filter((r) => isNewRestaurant(r))
-                    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-                : filtered;
+              : listMode === "mymap"
+                ? results
+                    .filter((r) => visits[r.id]?.done || visits[r.id]?.favorite)
+                    // Discovered first, then saved: the map's own hierarchy.
+                    .sort(
+                      (a, b) =>
+                        Number(!!visits[b.id]?.done) - Number(!!visits[a.id]?.done),
+                    )
+                : listMode === "new"
+                  ? [...baseFiltered]
+                      .filter((r) => isNewRestaurant(r))
+                      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+                  : filtered;
         const titleIcon = listMode === "new" ? <NewStickerIcon size={20} /> : null;
         const listTitle =
           listMode === "done"
             ? "Faits"
             : listMode === "favorites"
               ? "Enregistrés"
-              : listMode === "new"
-                ? "Découvrir"
-                : "Restaurants";
+              : listMode === "mymap"
+                ? "Ma carte food"
+                : listMode === "new"
+                  ? "Découvrir"
+                  : "Restaurants";
 
 
         return (
