@@ -6,7 +6,6 @@ import {
   type CityKey,
   type Cuisine,
   type Restaurant,
-  CITY_BY_KEY,
 } from "./places.shared";
 
 const GATEWAY = "https://connector-gateway.lovable.dev/google_maps";
@@ -327,9 +326,26 @@ async function cityRow(db: Admin, key: CityKey) {
 /** Persists identity + expiring cache for a batch of Google results. */
 async function persist(db: Admin, cityId: string, raws: PlaceRaw[]) {
   const now = new Date();
-  const placeRows: Array<Record<string, unknown>> = [];
-  const cacheRows: Array<Record<string, unknown>> = [];
-  const tagRows: Array<Record<string, unknown>> = [];
+  const placeRows: Array<{
+    place_id: string;
+    city_id: string;
+    geo_cell: string;
+    status: string;
+    last_refreshed_at: string;
+  }> = [];
+  const cacheRows: Array<{
+    place_id: string;
+    payload: CachePayload;
+    fetched_at: string;
+    expires_at: string;
+    rating_fetched_at: string;
+  }> = [];
+  const tagRows: Array<{
+    place_id: string;
+    tag: string;
+    source: string;
+    confidence: number;
+  }> = [];
 
   for (const raw of raws) {
     const payload = toPayload(raw);
@@ -358,7 +374,10 @@ async function persist(db: Admin, cityId: string, raws: PlaceRaw[]) {
   if (pErr) throw new Error(pErr.message);
   const { error: cErr } = await db
     .from("places_cache")
-    .upsert(cacheRows, { onConflict: "place_id" });
+    .upsert(
+      cacheRows.map((r) => ({ ...r, payload: r.payload as unknown as never })),
+      { onConflict: "place_id" },
+    );
   if (cErr) throw new Error(cErr.message);
   if (tagRows.length) {
     await db.from("place_tags").upsert(tagRows, { onConflict: "place_id,tag,source" });
@@ -508,7 +527,6 @@ export async function loadCityRestaurants(
 ): Promise<Restaurant[]> {
   const db = await admin();
   const city = await cityRow(db, cityKey);
-  const def = CITY_BY_KEY[cityKey];
   if (!city) throw new Error(`Unknown city: ${cityKey}`);
   const cityDef: CityDef = {
     key: cityKey,
@@ -516,7 +534,7 @@ export async function loadCityRestaurants(
     lat: city.lat,
     lng: city.lng,
     radius: city.radius,
-  } ?? def;
+  };
 
   let state = await readCity(db, city.id);
 
