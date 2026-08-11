@@ -59,16 +59,34 @@ export const upsertVisit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => upsertSchema.parse(data))
   .handler(async ({ context, data }) => {
+    // Merge with the existing row: `visited`, `saved` and `favorite` are
+    // independent states, so an update to one must not reset the others.
+    const { data: existing } = await context.supabase
+      .from("user_places")
+      .select("visited, saved, favorite, visited_at, personal_rating, comment")
+      .eq("user_id", context.userId)
+      .eq("place_id", data.place_id)
+      .maybeSingle();
+
+    const visited = data.done ?? existing?.visited ?? false;
+    const visitedAt = visited
+      ? (existing?.visited_at ?? new Date().toISOString())
+      : null;
+
     const { error } = await context.supabase.from("user_places").upsert(
       {
         user_id: context.userId,
         place_id: data.place_id,
-        visited: data.done ?? false,
-        visited_at: data.done ? new Date().toISOString() : null,
-        favorite: data.favorite ?? false,
-        saved: data.saved ?? false,
-        personal_rating: data.personal_rating ?? null,
-        comment: data.comment ?? null,
+        visited,
+        visited_at: visitedAt,
+        favorite: data.favorite ?? existing?.favorite ?? false,
+        saved: data.saved ?? existing?.saved ?? false,
+        personal_rating:
+          data.personal_rating !== undefined
+            ? data.personal_rating
+            : (existing?.personal_rating ?? null),
+        comment:
+          data.comment !== undefined ? data.comment : (existing?.comment ?? null),
       },
       { onConflict: "user_id,place_id" },
     );
@@ -80,6 +98,7 @@ export const upsertVisit = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
 
 export const deleteVisit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
