@@ -479,7 +479,8 @@ function Index() {
   const [showCities, setShowCities] = useState(false);
   const [showAllCuisines, setShowAllCuisines] = useState(false);
   const [showSearchArea, setShowSearchArea] = useState(false);
-  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "hype" | "profile">(null);
+  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "profile">(null);
+  const [neighborhood, setNeighborhood] = useState<string | null>(null);
   const { user } = useAuthSession();
   const { visits, update } = useVisits(user?.id ?? null);
   const userLocation = useGeolocation();
@@ -492,9 +493,8 @@ function Index() {
   const restaurantsByIdRef = useRef(new Map<string, Restaurant>());
   const userMarkerRef = useRef<google.maps.Marker | null>(null);
   const loadedCenterRef = useRef<{ lat: number; lng: number } | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(restored?.zoom ?? DEFAULT_ZOOM);
-  const [mapEpoch, setMapEpoch] = useState(0);
   const cuisineDataUrls = useCuisineDataUrls();
+
 
   // Reset the bottom sheet to its middle snap for each new restaurant.
   useEffect(() => {
