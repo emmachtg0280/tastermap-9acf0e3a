@@ -48,17 +48,17 @@ export function markerIcon(input: MarkerIconInput): MarkerVisual {
 
   const { state, active, isNew, dataUrl, inner } = input;
   // Discovered reads loudest, saved is clearly flagged, undiscovered stays quiet.
-  const base = state === "done" ? 42 : state === "saved" ? 38 : 28;
+  const base = state === "done" ? 44 : state === "saved" ? 40 : 26;
   const size = active ? base + 6 : base;
-  const iconOpacity = state === "new" ? 0.85 : 1;
+  const iconOpacity = state === "new" ? 0.72 : 1;
   const bg =
-    state === "done" ? "#E9FBD4" : state === "saved" ? "#FFF0F5" : "#ffffff";
-  const bgOpacity = state === "new" ? 0.78 : 1;
+    state === "done" ? "#E4FBC6" : state === "saved" ? "#FFE9F0" : "#ffffff";
+  const bgOpacity = state === "new" ? 0.7 : 1;
   const ring =
     state === "done"
-      ? { color: "#4CB800", width: 3 }
+      ? { color: "#4CB800", width: 3.4 }
       : state === "saved"
-        ? { color: "#F2789F", width: 2.6 }
+        ? { color: "#F2789F", width: 3.2 }
         : { color: "#ded3bf", width: 1 };
 
   const iconSize = size * (state === "new" ? 0.62 : 0.7);
