@@ -45,7 +45,6 @@ import {
   mergeLocalVisits,
   type Visit,
 } from "@/lib/visits.functions";
-import { getHypeStats, type HypeStats } from "@/lib/hype.functions";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptic";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,8 +53,6 @@ import { lovable } from "@/integrations/lovable";
 import {
   CUISINE_META,
   CuisineIcon,
-  SparkleIcon,
-  FlameIcon,
   cuisineInnerSvg,
   pickCuisine,
   useCuisineDataUrls,
@@ -69,15 +66,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import newTabAsset from "@/assets/tabs/new.png.asset.json";
-import hypeTabAsset from "@/assets/tabs/hype.png.asset.json";
 
 const NewStickerIcon = ({ size = 20 }: { size?: number }) => (
   <img src={newTabAsset.url} alt="" width={size} height={size} loading="lazy" draggable={false}
-    className="object-contain select-none pointer-events-none"
-    style={{ width: size, height: size, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" }} />
-);
-const HypeStickerIcon = ({ size = 20 }: { size?: number }) => (
-  <img src={hypeTabAsset.url} alt="" width={size} height={size} loading="lazy" draggable={false}
     className="object-contain select-none pointer-events-none"
     style={{ width: size, height: size, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" }} />
 );
