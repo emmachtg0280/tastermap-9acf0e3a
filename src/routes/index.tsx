@@ -837,11 +837,30 @@ function Index() {
     pool.forEach((entry, id) => {
       if (!wanted.has(id)) {
         entry.marker.setMap(null);
-        entry.marker.setMap(null);
         pool.delete(id);
       }
     });
   }, [filtered, selected, visits, cuisineDataUrls, zoomLevel, clustered, mapEpoch]);
+
+  // Bring the selected restaurant into a useful position: on mobile the sheet
+  // covers the lower half, so nudge the marker into the upper area only when
+  // it would otherwise be hidden. The map is never recentred otherwise.
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !selected) return;
+    const b = map.getBounds();
+    if (!b) return;
+    const ne = b.getNorthEast();
+    const sw = b.getSouthWest();
+    const latSpan = ne.lat() - sw.lat();
+    const hiddenBelow = sw.lat() + latSpan * 0.5;
+    const outside = !b.contains(new window.google!.maps.LatLng(selected.lat, selected.lng));
+    if (outside || (window.innerWidth < 1024 && selected.lat < hiddenBelow)) {
+      map.panTo({ lat: selected.lat - latSpan * 0.18, lng: selected.lng });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.id]);
+
 
   // City load — the only path allowed to reach Google
   useEffect(() => {
