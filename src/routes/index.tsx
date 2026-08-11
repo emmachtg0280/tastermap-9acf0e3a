@@ -1777,72 +1777,22 @@ function QuickCard({
 }
 
 /**
- * Welcome mascot. Its only job is to explain the concept — it never picks a
- * cuisine for the user and never blocks the map for more than one tap.
+ * First-run gate: a 3-screen concept intro, skippable, shown once. It never
+ * picks a cuisine and never gates the map beyond the intro.
  */
-function Mascot() {
-  const [visible, setVisible] = useState(false);
+function WelcomeGate() {
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
-    let seen = false;
-    try {
-      seen = localStorage.getItem("tastemap.welcome.v3") === "1";
-    } catch {
-      /* ignore */
-    }
-    if (seen) return;
-    const t = setTimeout(() => setVisible(true), 800);
+    if (hasSeenOnboarding()) return;
+    const t = setTimeout(() => setShow(true), 500);
     return () => clearTimeout(t);
   }, []);
 
-  const close = () => {
-    haptic();
-    try {
-      localStorage.setItem("tastemap.welcome.v3", "1");
-    } catch {
-      /* ignore */
-    }
-    setVisible(false);
-  };
-
-  if (!visible) return null;
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
-      <button
-        aria-label="Fermer"
-        onClick={close}
-        className="absolute inset-0 bg-black/40 backdrop-blur-[2px] animate-mascot-backdrop"
-      />
-      <div className="relative pointer-events-auto flex flex-col items-center gap-3 w-full max-w-[340px]">
-        <div className="animate-mascot-enter">
-          <div className="animate-mascot-hop">
-            <ChefBuddy />
-          </div>
-        </div>
-        <div className="relative w-full rounded-3xl bg-white/95 backdrop-blur border border-white/70 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.35)] px-5 py-4 animate-mascot-bubble">
-          <span
-            aria-hidden
-            className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-white/95 border-l border-t border-white/70 rounded-sm"
-          />
-          <p className="text-lg font-extrabold text-foreground text-center leading-snug">
-            Ta carte food commence ici.
-          </p>
-          <p className="mt-1.5 text-sm text-muted-foreground text-center leading-snug">
-            Enregistre les restos qui te tentent, marque ceux où tu es allé :
-            ta carte se colore au fil de tes découvertes.
-          </p>
-          <button
-            onClick={close}
-            className="mt-4 w-full h-12 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
-          >
-            Commencer l’exploration
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  if (!show) return null;
+  return <Onboarding onDone={() => setShow(false)} />;
 }
+
 
 
 
