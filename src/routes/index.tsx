@@ -1282,28 +1282,21 @@ function Index() {
             ? filtered.filter((r) => visits[r.id]?.done)
             : listMode === "favorites"
               ? filtered.filter((r) => visits[r.id]?.favorite)
-                : listMode === "new"
-                  ? [...baseFiltered]
-                      .filter((r) => isNewRestaurant(r))
-                      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-                : listMode === "hype"
-                  ? [...baseFiltered]
-                      .filter((r) => (hypeStats[r.id]?.score ?? 0) > 0)
-                      .sort((a, b) => (hypeStats[b.id]?.score ?? 0) - (hypeStats[a.id]?.score ?? 0))
-                  : filtered;
-        const titleIcon =
-          listMode === "new" ? <NewStickerIcon size={20} /> :
-          listMode === "hype" ? <HypeStickerIcon size={20} /> : null;
+              : listMode === "new"
+                ? [...baseFiltered]
+                    .filter((r) => isNewRestaurant(r))
+                    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+                : filtered;
+        const titleIcon = listMode === "new" ? <NewStickerIcon size={20} /> : null;
         const listTitle =
           listMode === "done"
             ? "Faits"
             : listMode === "favorites"
               ? "Favoris"
               : listMode === "new"
-                ? "Nouveautés"
-                : listMode === "hype"
-                  ? "Hype"
-                  : "Restaurants";
+                ? "Découvrir"
+                : "Restaurants";
+
 
         return (
         <>
