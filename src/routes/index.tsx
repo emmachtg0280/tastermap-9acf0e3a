@@ -1842,18 +1842,24 @@ function Mascot() {
 
 
 
+/**
+ * Profile — "who I am as a food explorer": identity and statistics only.
+ * The exploration itself (map + saved/discovered places) lives in Ma carte.
+ */
 function ProfilePanel({
   restaurants,
   visits,
   cityLabel,
+  email,
   onClose,
-  onSelect,
+  onOpenMap,
 }: {
   restaurants: Restaurant[];
   visits: VisitMap;
   cityLabel: string;
+  email: string | null;
   onClose: () => void;
-  onSelect: (r: Restaurant) => void;
+  onOpenMap: () => void;
 }) {
   const done = restaurants.filter((r) => visits[r.id]?.done);
   const saved = restaurants.filter((r) => visits[r.id]?.favorite && !visits[r.id]?.done);
