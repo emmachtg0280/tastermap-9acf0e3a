@@ -1536,9 +1536,11 @@ function Index() {
                       ? "Aucun restaurant marqué fait pour l'instant."
                       : listMode === "favorites"
                         ? "Aucun restaurant en favori pour l'instant."
-                        : listMode === "new"
-                          ? "Aucune nouveauté pour l'instant."
-                          : "Aucun restaurant trouvé."}
+                        : listMode === "mymap"
+                          ? "Ta carte est encore vierge. Touche un resto sur la carte et enregistre-le."
+                          : listMode === "new"
+                            ? "Aucune nouveauté pour l'instant."
+                            : "Aucun restaurant trouvé."}
 
 
                 </div>
