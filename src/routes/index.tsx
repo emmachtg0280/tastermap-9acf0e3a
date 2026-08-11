@@ -476,10 +476,31 @@ function Index() {
   const [showCities, setShowCities] = useState(false);
   const [showAllCuisines, setShowAllCuisines] = useState(false);
   const [showSearchArea, setShowSearchArea] = useState(false);
-  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "profile">(null);
+  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "profile" | "mymap">(null);
   const [neighborhood, setNeighborhood] = useState<string | null>(null);
   const { user } = useAuthSession();
   const { visits, update } = useVisits(user?.id ?? null);
+
+  /**
+   * Every personal-map write goes through here: the marker repaints instantly
+   * (optimistic state) and a tiny, self-dismissing confirmation tells the user
+   * what just happened to *their* map. No modal, no map interruption.
+   */
+  const applyVisit = (id: string, patch: Partial<VisitEntry>) => {
+    const current = visits[id] ?? { done: false, comment: "", favorite: false };
+    if (patch.done !== undefined && patch.done !== current.done) {
+      toast[patch.done ? "success" : "message"](
+        patch.done ? "Découvert · ajouté à ta carte ✨" : "Retiré de tes découvertes",
+        { duration: 1600 },
+      );
+    } else if (patch.favorite !== undefined && patch.favorite !== current.favorite) {
+      toast[patch.favorite ? "success" : "message"](
+        patch.favorite ? "Enregistré sur ta carte ✨" : "Retiré de ta carte",
+        { duration: 1600 },
+      );
+    }
+    return update(id, patch);
+  };
   const userLocation = useGeolocation();
 
   const mapReady = useGoogleMaps();
@@ -1091,11 +1112,11 @@ function Index() {
 
             {/* Primary: the user's own map. Discovery is the secondary action. */}
             <button
-              onClick={() => { haptic(20); setShowFilters(false); setListMode("profile"); }}
+              onClick={() => { haptic(20); setShowFilters(false); setListMode("mymap"); }}
               className="inline-flex items-center gap-1.5 h-11 pl-3 pr-4 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
             >
               <MapPin className="h-4 w-4" />
-              Ma carte
+              Ma carte food
               {personalCount > 0 && (
                 <span className="ml-0.5 rounded-full bg-white/25 px-1.5 text-xs font-extrabold">
                   {personalCount}
@@ -1455,20 +1476,30 @@ function Index() {
             ? filtered.filter((r) => visits[r.id]?.done)
             : listMode === "favorites"
               ? filtered.filter((r) => visits[r.id]?.favorite)
-              : listMode === "new"
-                ? [...baseFiltered]
-                    .filter((r) => isNewRestaurant(r))
-                    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-                : filtered;
+              : listMode === "mymap"
+                ? results
+                    .filter((r) => visits[r.id]?.done || visits[r.id]?.favorite)
+                    // Discovered first, then saved: the map's own hierarchy.
+                    .sort(
+                      (a, b) =>
+                        Number(!!visits[b.id]?.done) - Number(!!visits[a.id]?.done),
+                    )
+                : listMode === "new"
+                  ? [...baseFiltered]
+                      .filter((r) => isNewRestaurant(r))
+                      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+                  : filtered;
         const titleIcon = listMode === "new" ? <NewStickerIcon size={20} /> : null;
         const listTitle =
           listMode === "done"
             ? "Faits"
             : listMode === "favorites"
               ? "Enregistrés"
-              : listMode === "new"
-                ? "Découvrir"
-                : "Restaurants";
+              : listMode === "mymap"
+                ? "Ma carte food"
+                : listMode === "new"
+                  ? "Découvrir"
+                  : "Restaurants";
 
 
         return (
@@ -1505,9 +1536,11 @@ function Index() {
                       ? "Aucun restaurant marqué fait pour l'instant."
                       : listMode === "favorites"
                         ? "Aucun restaurant en favori pour l'instant."
-                        : listMode === "new"
-                          ? "Aucune nouveauté pour l'instant."
-                          : "Aucun restaurant trouvé."}
+                        : listMode === "mymap"
+                          ? "Ta carte est encore vierge. Touche un resto sur la carte et enregistre-le."
+                          : listMode === "new"
+                            ? "Aucune nouveauté pour l'instant."
+                            : "Aucun restaurant trouvé."}
 
 
                 </div>
@@ -1584,7 +1617,7 @@ function Index() {
                         onClick={(e) => {
                           e.stopPropagation();
                           haptic(favorite ? 12 : 20);
-                          update(r.id, { favorite: !favorite });
+                          applyVisit(r.id, { favorite: !favorite });
                         }}
                         className="p-1.5 rounded-full hover:bg-muted tap-bounce transition flex-shrink-0"
                         aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
@@ -1605,20 +1638,15 @@ function Index() {
         );
       })()}
 
-      {/* Personal food map profile */}
+      {/* Profile — who I am as an explorer. No map, no restaurant lists here. */}
       {listMode === "profile" && (
         <ProfilePanel
           restaurants={results}
           visits={visits}
           cityLabel={currentCity?.label ?? ""}
+          email={user?.email ?? null}
           onClose={() => setListMode(null)}
-          onSelect={(r) => {
-            setListMode(null);
-            setSelected(r);
-            setDetailOpen(true);
-            mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
-            mapInstance.current?.setZoom(15);
-          }}
+          onOpenMap={() => setListMode("mymap")}
         />
       )}
 
@@ -1628,7 +1656,7 @@ function Index() {
           key={`quick-${selected.id}`}
           restaurant={selected}
           visit={visits[selected.id] ?? { done: false, comment: "", favorite: false }}
-          onUpdate={(patch) => update(selected.id, patch)}
+          onUpdate={(patch) => applyVisit(selected.id, patch)}
           onDetails={() => { haptic(); setDetailOpen(true); }}
           onClose={() => { haptic(); setSelected(null); }}
         />
@@ -1648,7 +1676,7 @@ function Index() {
               : null
           }
           fromUser={!!userLocation}
-          onUpdate={(patch) => update(selected.id, patch)}
+          onUpdate={(patch) => applyVisit(selected.id, patch)}
           onClose={() => { setDetailOpen(false); setSelected(null); }}
         />
       )}
@@ -1789,12 +1817,11 @@ function Mascot() {
             className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-white/95 border-l border-t border-white/70 rounded-sm"
           />
           <p className="text-lg font-extrabold text-foreground text-center leading-snug">
-            Ta ville. Ta carte food.
+            Ta carte food commence ici.
           </p>
           <p className="mt-1.5 text-sm text-muted-foreground text-center leading-snug">
-            Touche un resto sur la carte : enregistre ceux qui te tentent,
-            marque « J'y suis allé » ceux que tu as goûtés. Ta carte se colore
-            au fil de tes découvertes.
+            Enregistre les restos qui te tentent, marque ceux où tu es allé :
+            ta carte se colore au fil de tes découvertes.
           </p>
           <button
             onClick={close}
@@ -1814,35 +1841,27 @@ function Mascot() {
 
 
 
+/**
+ * Profile — "who I am as a food explorer": identity and statistics only.
+ * The exploration itself (map + saved/discovered places) lives in Ma carte.
+ */
 function ProfilePanel({
   restaurants,
   visits,
   cityLabel,
+  email,
   onClose,
-  onSelect,
+  onOpenMap,
 }: {
   restaurants: Restaurant[];
   visits: VisitMap;
   cityLabel: string;
+  email: string | null;
   onClose: () => void;
-  onSelect: (r: Restaurant) => void;
+  onOpenMap: () => void;
 }) {
   const done = restaurants.filter((r) => visits[r.id]?.done);
   const saved = restaurants.filter((r) => visits[r.id]?.favorite && !visits[r.id]?.done);
-
-  // Neighbourhoods are approximated with a geographic grid (~1 km cells) so
-  // exploration is measured per area, not globally.
-  const CELL = 0.012;
-  const cellKey = (r: Restaurant) => `${Math.floor(r.lat / CELL)}:${Math.floor(r.lng / CELL)}`;
-  const areas = new Map<string, { total: number; done: number }>();
-  restaurants.forEach((r) => {
-    const k = cellKey(r);
-    const a = areas.get(k) ?? { total: 0, done: 0 };
-    a.total += 1;
-    if (visits[r.id]?.done) a.done += 1;
-    areas.set(k, a);
-  });
-  const exploredAreas = Array.from(areas.values()).filter((a) => a.done > 0).length;
 
   const cuisineCount = new Map<Cuisine, number>();
   done.forEach((r) => {
@@ -1864,7 +1883,7 @@ function ProfilePanel({
       <div className="absolute inset-0 z-30 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="absolute z-40 left-2 right-2 bottom-2 top-20 sm:left-4 sm:right-auto sm:top-4 sm:bottom-4 sm:w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl overflow-hidden flex flex-col animate-pop-in">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
-          <h2 className="font-display font-bold text-sm">Ma carte food{cityLabel ? ` · ${cityLabel}` : ""}</h2>
+          <h2 className="font-display font-bold text-sm">Mon profil</h2>
           <button
             onClick={() => { haptic(); onClose(); }}
             className="p-1 -m-1 text-muted-foreground hover:text-foreground tap-bounce"
@@ -1875,9 +1894,23 @@ function ProfilePanel({
         </div>
 
         <div className="flex-1 overflow-auto p-4 space-y-5">
+          <div className="flex items-center gap-3">
+            <span className="h-12 w-12 rounded-full bg-[color:var(--duo-green)]/15 grid place-items-center">
+              <User className="h-6 w-6 text-[color:var(--duo-green-dark)]" />
+            </span>
+            <div className="min-w-0">
+              <div className="font-display font-extrabold text-[15px] leading-tight truncate">
+                {email ?? "Explorateur food"}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {cityLabel ? `Explore ${cityLabel}` : "Choisis une ville pour explorer"}
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-2">
             <Stat value={String(done.length)} label="Restaurants découverts" />
-            <Stat value={`${exploredAreas}/${areas.size || 0}`} label="Quartiers explorés" />
+            <Stat value={String(saved.length)} label="Enregistrés" />
             <Stat value={String(cuisineCount.size)} label="Cuisines goûtées" />
           </div>
 
@@ -1913,54 +1946,15 @@ function ProfilePanel({
             </div>
           )}
 
-          <ProfileList title="Mes découvertes récentes" items={done.slice(0, 6)} empty="Marquez un restaurant « Fait » pour démarrer votre carte." onSelect={onSelect} />
-          <ProfileList title="À découvrir" items={saved.slice(0, 6)} empty="Aucun restaurant enregistré pour l'instant." onSelect={onSelect} />
+          <button
+            onClick={() => { haptic(20); onOpenMap(); }}
+            className="w-full h-11 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
+          >
+            Voir ma carte food
+          </button>
         </div>
       </div>
     </>
-  );
-}
-
-function ProfileList({
-  title,
-  items,
-  empty,
-  onSelect,
-}: {
-  title: string;
-  items: Restaurant[];
-  empty: string;
-  onSelect: (r: Restaurant) => void;
-}) {
-  return (
-    <div>
-      <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">{title}</h3>
-      {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{empty}</p>
-      ) : (
-        <div className="space-y-1">
-          {items.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => { haptic(); onSelect(r); }}
-              className="w-full flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-muted/60 transition text-left"
-            >
-              {r.photoUrls[0] ? (
-                <img src={r.photoUrls[0]} alt={r.name} loading="lazy" className="h-10 w-10 rounded-lg object-cover flex-shrink-0" />
-              ) : (
-                <div className="h-10 w-10 rounded-lg bg-muted grid place-items-center flex-shrink-0">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="text-sm font-medium truncate">{r.name}</div>
-                <div className="text-xs text-muted-foreground truncate">{r.primaryType ?? "Restaurant"}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }
 
