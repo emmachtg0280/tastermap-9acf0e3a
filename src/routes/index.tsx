@@ -1300,7 +1300,7 @@ function Index() {
         </button>
         <button
           onClick={() => { haptic(20); setShowFilters(false); setListMode("favorites"); }}
-          aria-label="Favoris"
+          aria-label="Enregistrés"
           className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-rose-500 grid place-items-center hover:bg-white/60 tap-bounce transition"
         >
           <Heart className="h-5 w-5" />
@@ -1465,7 +1465,7 @@ function Index() {
           listMode === "done"
             ? "Faits"
             : listMode === "favorites"
-              ? "Favoris"
+              ? "Enregistrés"
               : listMode === "new"
                 ? "Découvrir"
                 : "Restaurants";
@@ -1521,6 +1521,8 @@ function Index() {
                     key={r.id}
                     onClick={() => {
                       setSelected(r);
+            setDetailOpen(true);
+                      setDetailOpen(true);
                       mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
                       mapInstance.current?.setZoom(15);
                       setListMode(null);
@@ -1614,6 +1616,7 @@ function Index() {
           onSelect={(r) => {
             setListMode(null);
             setSelected(r);
+            setDetailOpen(true);
             mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
             mapInstance.current?.setZoom(15);
           }}
@@ -1747,7 +1750,7 @@ function Mascot() {
   useEffect(() => {
     let seen = false;
     try {
-      seen = localStorage.getItem("tastemap.welcome.v2") === "1";
+      seen = localStorage.getItem("tastemap.welcome.v3") === "1";
     } catch {
       /* ignore */
     }
@@ -1759,7 +1762,7 @@ function Mascot() {
   const close = () => {
     haptic();
     try {
-      localStorage.setItem("tastemap.welcome.v2", "1");
+      localStorage.setItem("tastemap.welcome.v3", "1");
     } catch {
       /* ignore */
     }
@@ -1786,18 +1789,19 @@ function Mascot() {
             aria-hidden
             className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-white/95 border-l border-t border-white/70 rounded-sm"
           />
-          <p className="text-base font-extrabold text-foreground text-center leading-snug">
-            Explore ta ville, quartier par quartier.
+          <p className="text-lg font-extrabold text-foreground text-center leading-snug">
+            Ta ville. Ta carte food.
           </p>
           <p className="mt-1.5 text-sm text-muted-foreground text-center leading-snug">
-            Chaque resto testé colore ta carte. Enregistre ceux qui te tentent,
-            marque « Fait » ceux que tu as goûtés.
+            Touche un resto sur la carte : enregistre ceux qui te tentent,
+            marque « J'y suis allé » ceux que tu as goûtés. Ta carte se colore
+            au fil de tes découvertes.
           </p>
           <button
             onClick={close}
             className="mt-4 w-full h-12 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
           >
-            Explorer la carte
+            Commencer l’exploration
           </button>
         </div>
       </div>
