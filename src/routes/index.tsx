@@ -688,6 +688,24 @@ function Index() {
         </div>
       )}
 
+      {/* Data failure: never leave the map silently empty */}
+      {mapReady && mutation.isError && results.length === 0 && (
+        <div className="absolute inset-x-0 bottom-24 z-30 flex justify-center px-4 pointer-events-none">
+          <div className="pointer-events-auto rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-md px-4 py-3 text-sm text-foreground flex items-center gap-3 max-w-[340px]">
+            <span>Impossible de charger les restaurants pour le moment.</span>
+            <button
+              type="button"
+              className="rounded-full bg-[color:var(--duo-green)] text-white font-extrabold text-xs px-3 py-1.5 shadow-sm active:translate-y-[1px]"
+              onClick={() => city && mutation.mutate({ city, minRating, force: true })}
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      )}
+
+
+
       {/* Floating top bar — auth only, top right */}
       <div className="absolute top-0 right-0 z-30 pt-[env(safe-area-inset-top)] px-3">
         <div className="pt-0.5 rounded-full bg-card/80 backdrop-blur border border-white/40 shadow-sm px-2 py-1">
