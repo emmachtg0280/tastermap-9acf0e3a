@@ -1638,20 +1638,15 @@ function Index() {
         );
       })()}
 
-      {/* Personal food map profile */}
+      {/* Profile — who I am as an explorer. No map, no restaurant lists here. */}
       {listMode === "profile" && (
         <ProfilePanel
           restaurants={results}
           visits={visits}
           cityLabel={currentCity?.label ?? ""}
+          email={user?.email ?? null}
           onClose={() => setListMode(null)}
-          onSelect={(r) => {
-            setListMode(null);
-            setSelected(r);
-            setDetailOpen(true);
-            mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
-            mapInstance.current?.setZoom(15);
-          }}
+          onOpenMap={() => setListMode("mymap")}
         />
       )}
 
