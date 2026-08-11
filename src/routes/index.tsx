@@ -1483,38 +1483,42 @@ function Index() {
   );
 }
 
-function Mascot({
-  onPickCuisine,
-  onShowAll,
-}: {
-  onPickCuisine: (c: Cuisine) => void;
-  onShowAll: () => void;
-}) {
+/**
+ * Welcome mascot. Its only job is to explain the concept — it never picks a
+ * cuisine for the user and never blocks the map for more than one tap.
+ */
+function Mascot() {
   const [visible, setVisible] = useState(false);
-  const [step, setStep] = useState<"ask" | "pick">("ask");
 
   useEffect(() => {
+    let seen = false;
     try {
-      const last = localStorage.getItem("tastemap.mascot.lastSeen");
-      const now = Date.now();
-      if (last && now - Number(last) < 6 * 60 * 60 * 1000) return;
-      localStorage.setItem("tastemap.mascot.lastSeen", String(now));
+      seen = localStorage.getItem("tastemap.welcome.v2") === "1";
     } catch {
       /* ignore */
     }
-    const t1 = setTimeout(() => setVisible(true), 900);
-    return () => { clearTimeout(t1); };
+    if (seen) return;
+    const t = setTimeout(() => setVisible(true), 800);
+    return () => clearTimeout(t);
   }, []);
 
-  if (!visible) return null;
+  const close = () => {
+    haptic();
+    try {
+      localStorage.setItem("tastemap.welcome.v2", "1");
+    } catch {
+      /* ignore */
+    }
+    setVisible(false);
+  };
 
-  const quickPicks: Cuisine[] = ["italian", "japanese", "french", "american", "mexican", "thai"];
+  if (!visible) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
       <button
         aria-label="Fermer"
-        onClick={() => { haptic(); setVisible(false); }}
+        onClick={close}
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px] animate-mascot-backdrop"
       />
       <div className="relative pointer-events-auto flex flex-col items-center gap-3 w-full max-w-[340px]">
@@ -1523,74 +1527,30 @@ function Mascot({
             <ChefBuddy />
           </div>
         </div>
-        <div className="relative w-full rounded-3xl bg-white/90 backdrop-blur border border-white/70 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.35)] px-4 py-3 animate-mascot-bubble">
+        <div className="relative w-full rounded-3xl bg-white/95 backdrop-blur border border-white/70 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.35)] px-5 py-4 animate-mascot-bubble">
           <span
             aria-hidden
-            className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-white/90 border-l border-t border-white/70 rounded-sm"
+            className="absolute -top-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 bg-white/95 border-l border-t border-white/70 rounded-sm"
           />
+          <p className="text-base font-extrabold text-foreground text-center leading-snug">
+            Explore ta ville, quartier par quartier.
+          </p>
+          <p className="mt-1.5 text-sm text-muted-foreground text-center leading-snug">
+            Chaque resto testé colore ta carte. Enregistre ceux qui te tentent,
+            marque « Fait » ceux que tu as goûtés.
+          </p>
           <button
-            onClick={() => { haptic(); setVisible(false); }}
-            className="absolute -top-2.5 -right-2.5 h-6 w-6 rounded-full bg-white border border-border/60 grid place-items-center shadow-md tap-bounce"
-            aria-label="Fermer"
+            onClick={close}
+            className="mt-4 w-full h-12 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
           >
-            <X className="h-3 w-3" />
+            Explorer la carte
           </button>
-          {step === "ask" ? (
-            <>
-              <p className="text-sm font-extrabold text-foreground text-center">
-                Coucou&nbsp;! Tu veux manger un truc en particulier&nbsp;?
-              </p>
-              <div className="mt-3 flex gap-2 justify-center">
-                <button
-                  onClick={() => { haptic(); onShowAll(); setVisible(false); }}
-                  className="inline-flex items-center text-xs font-extrabold px-4 py-1.5 rounded-full bg-white hover:bg-muted/60 border border-border/70 shadow-sm active:translate-y-[1px] tap-bounce"
-                >
-                  Non
-                </button>
-                <button
-                  onClick={() => { haptic(20); setStep("pick"); }}
-                  className="inline-flex items-center text-xs font-extrabold px-4 py-1.5 rounded-full bg-[color:var(--duo-green)] text-white shadow-md active:translate-y-[1px] tap-bounce"
-                >
-                  Oui
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-sm font-extrabold text-foreground text-center">
-                Choisis ton envie&nbsp;!
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
-                {quickPicks.map((value) => {
-                  const meta = CUISINE_META[value];
-                  return (
-                    <button
-                      key={value}
-                      onClick={() => { haptic(); onPickCuisine(value); setVisible(false); }}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold pl-1.5 pr-3 py-1 rounded-full bg-white hover:bg-muted/60 border border-border/70 shadow-sm active:translate-y-[1px] tap-bounce"
-                    >
-                      <img
-                        src={meta.image}
-                        alt=""
-                        width={22}
-                        height={22}
-                        loading="lazy"
-                        draggable={false}
-                        className="object-contain select-none pointer-events-none"
-                        style={{ width: 22, height: 22 }}
-                      />
-                      {meta.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
         </div>
       </div>
     </div>
   );
 }
+
 
 
 
