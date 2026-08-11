@@ -1,6 +1,7 @@
 // Server-only place data layer.
 // Reads Tastemap's persistent identity layer (`places`) + the expiring Google
 // cache (`places_cache`), and only calls Google when the cache is cold.
+import { classifyCuisines, sanitizeCuisines } from "./cuisine";
 import {
   type CityDef,
   type CityKey,
@@ -31,26 +32,6 @@ const CUISINE_LABEL: Record<Exclude<Cuisine, "any">, string> = {
   greek: "grecs",
   american: "américains burgers",
   vegetarian: "végétariens",
-};
-
-const PRIMARY_TYPE_TO_CUISINE: Record<string, Cuisine> = {
-  italian_restaurant: "italian",
-  french_restaurant: "french",
-  chinese_restaurant: "chinese",
-  japanese_restaurant: "japanese",
-  sushi_restaurant: "japanese",
-  ramen_restaurant: "japanese",
-  indian_restaurant: "indian",
-  mexican_restaurant: "mexican",
-  thai_restaurant: "thai",
-  spanish_restaurant: "spanish",
-  tapas_restaurant: "spanish",
-  greek_restaurant: "greek",
-  american_restaurant: "american",
-  hamburger_restaurant: "american",
-  steak_house: "american",
-  vegetarian_restaurant: "vegetarian",
-  vegan_restaurant: "vegetarian",
 };
 
 type Period = {
@@ -107,6 +88,8 @@ export interface CachePayload {
   periods: Period[];
   photoNames: string[];
   cuisines: Cuisine[];
+  /** Raw Google types, kept so classification can be re-derived at read time. */
+  types?: string[];
 }
 
 const DETAIL_FIELDS = [
@@ -210,16 +193,6 @@ async function fetchPlaceDetails(placeId: string): Promise<PlaceRaw | null> {
   return (await res.json()) as PlaceRaw;
 }
 
-function detectCuisines(p: PlaceRaw): Cuisine[] {
-  const set = new Set<Cuisine>();
-  const candidates = [p.primaryType, ...(p.types ?? [])].filter(Boolean) as string[];
-  for (const t of candidates) {
-    const c = PRIMARY_TYPE_TO_CUISINE[t];
-    if (c) set.add(c);
-  }
-  return Array.from(set);
-}
-
 function toPayload(p: PlaceRaw): CachePayload | null {
   if (!p.location) return null;
   return {
@@ -241,7 +214,8 @@ function toPayload(p: PlaceRaw): CachePayload | null {
     weekdayDescriptions: p.regularOpeningHours?.weekdayDescriptions ?? [],
     periods: p.regularOpeningHours?.periods ?? [],
     photoNames: (p.photos ?? []).slice(0, 6).map((ph) => ph.name),
-    cuisines: detectCuisines(p),
+    cuisines: classifyCuisines(p.primaryType, p.types ?? []),
+    types: p.types ?? [],
   };
 }
 
@@ -296,7 +270,13 @@ export function payloadToRestaurant(placeId: string, payload: CachePayload): Res
     photoUrls: (payload.photoNames ?? []).map(
       (name) => `/api/public/place-photo?name=${encodeURIComponent(name)}`,
     ),
-    cuisines: payload.cuisines ?? [],
+    // Canonical classification is re-derived on read so rows cached under an
+    // older mapping cannot desync the filter from the marker icon.
+    cuisines: (() => {
+      const derived = classifyCuisines(payload.primaryTypeKey, payload.types ?? []);
+      const stored = sanitizeCuisines(payload.cuisines ?? []);
+      return derived.length ? derived : stored;
+    })(),
   };
 }
 

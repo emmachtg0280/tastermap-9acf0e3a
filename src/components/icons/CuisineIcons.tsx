@@ -189,29 +189,25 @@ export const CUISINE_META: Record<
   vegetarian: { label: "Végétarien",  Icon: SaladIcon,    inner: INNER_SALAD,    image: vegetarianAsset.url },
 };
 
-const PRIORITY: Cuisine[] = [
-  "italian", "japanese", "french", "chinese", "indian",
-  "mexican", "thai", "spanish", "greek", "american", "vegetarian",
-];
-
-export function pickCuisine(cs: Cuisine[]): Cuisine {
-  for (const p of PRIORITY) if (cs.includes(p)) return p;
-  return "any";
-}
+export { pickCuisine } from "@/lib/cuisine";
+import { pickCuisine } from "@/lib/cuisine";
 
 /** PNG-based appetizing cuisine icon (sticker illustration). */
 export function CuisineIcon({
   cuisines,
+  preferred,
   size = 32,
   className = "",
   shadow = false,
 }: {
   cuisines: Cuisine[];
+  /** Active cuisine filter, so the icon always agrees with the filter. */
+  preferred?: Cuisine | null;
   size?: number;
   className?: string;
   shadow?: boolean;
 }) {
-  const c = pickCuisine(cuisines);
+  const c = pickCuisine(cuisines, preferred);
   return (
     <img
       src={CUISINE_META[c].image}
@@ -231,8 +227,8 @@ export function CuisineIcon({
 }
 
 /** Raw inner SVG (legacy fallback). */
-export function cuisineInnerSvg(cuisines: Cuisine[]): string {
-  return CUISINE_META[pickCuisine(cuisines)].inner;
+export function cuisineInnerSvg(cuisines: Cuisine[], preferred?: Cuisine | null): string {
+  return CUISINE_META[pickCuisine(cuisines, preferred)].inner;
 }
 
 /** Fetch a cuisine PNG once and return it as a base64 data URL,
