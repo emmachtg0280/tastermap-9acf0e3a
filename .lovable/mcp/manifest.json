@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.2",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://bnlsouberlazacdbbfib.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "remix-of-french-food-finder",
+      "version": "0.1.0",
+      "title": "Remix of French Food Finder"
+    },
+    "tools": [
+      {
+        "name": "list_my_restaurants",
+        "title": "List my restaurants",
+        "description": "List the restaurants the signed-in user has marked as visited (done) and/or favorite on their food map.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filter": {
+              "type": "string",
+              "enum": [
+                "all",
+                "done",
+                "favorite"
+              ],
+              "description": "Which entries to return. Defaults to all."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "save_restaurant",
+        "title": "Save or update a restaurant",
+        "description": "Mark a restaurant (by its Google place id) as visited and/or favorite for the signed-in user, with an optional personal rating and comment.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "place_id": {
+              "type": "string",
+              "description": "Google Places place id of the restaurant."
+            },
+            "done": {
+              "type": "boolean",
+              "description": "Whether the user has visited it."
+            },
+            "favorite": {
+              "type": "boolean",
+              "description": "Whether the user marks it as favorite."
+            },
+            "personal_rating": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Personal rating from 0 to 5."
+            },
+            "comment": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Personal note about the place."
+            }
+          },
+          "required": [
+            "place_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "remove_restaurant",
+        "title": "Remove a restaurant from my map",
+        "description": "Delete the signed-in user's saved entry (visited/favorite) for a restaurant, by its Google place id.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "place_id": {
+              "type": "string",
+              "description": "Google Places place id of the restaurant."
+            }
+          },
+          "required": [
+            "place_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "my_food_stats",
+        "title": "My food map stats",
+        "description": "Summarize the signed-in user's food map: how many restaurants they visited, how many are favorites, and their average personal rating.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "_unused": {
+              "type": "string",
+              "description": "Ignored. No input required."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
