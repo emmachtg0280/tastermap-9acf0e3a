@@ -99,6 +99,74 @@ export const upsertVisit = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const mergeSchema = z.object({
+  entries: z
+    .array(
+      z.object({
+        place_id: z.string().min(1),
+        done: z.boolean().optional(),
+        favorite: z.boolean().optional(),
+        saved: z.boolean().optional(),
+        personal_rating: z.number().nullable().optional(),
+        comment: z.string().nullable().optional(),
+      }),
+    )
+    .max(2000),
+});
+
+/**
+ * Merges anonymous (localStorage) restaurant states into the signed-in
+ * account. The strongest state wins: a boolean already true stays true, and a
+ * rating/comment is only filled in when the account has none.
+ */
+export const mergeLocalVisits = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => mergeSchema.parse(data))
+  .handler(async ({ context, data }) => {
+    if (!data.entries.length) return { merged: 0 };
+
+    const ids = data.entries.map((e) => e.place_id);
+    const { data: existingRows, error: readError } = await context.supabase
+      .from("user_places")
+      .select("place_id, visited, saved, favorite, visited_at, personal_rating, comment")
+      .eq("user_id", context.userId)
+      .in("place_id", ids);
+
+    if (readError) {
+      console.error("[mergeLocalVisits] read error", readError);
+      throw new Error(readError.message);
+    }
+
+    const existing = new Map((existingRows ?? []).map((r) => [r.place_id, r]));
+    const now = new Date().toISOString();
+
+    const rows = data.entries.map((e) => {
+      const prev = existing.get(e.place_id);
+      const visited = Boolean(prev?.visited || e.done);
+      return {
+        user_id: context.userId,
+        place_id: e.place_id,
+        visited,
+        visited_at: visited ? (prev?.visited_at ?? now) : null,
+        favorite: Boolean(prev?.favorite || e.favorite),
+        saved: Boolean(prev?.saved || e.saved),
+        personal_rating: prev?.personal_rating ?? e.personal_rating ?? null,
+        comment: prev?.comment ?? e.comment ?? null,
+      };
+    });
+
+    const { error } = await context.supabase
+      .from("user_places")
+      .upsert(rows, { onConflict: "user_id,place_id" });
+
+    if (error) {
+      console.error("[mergeLocalVisits] error", error);
+      throw new Error(error.message);
+    }
+
+    return { merged: rows.length };
+  });
+
 
 export const deleteVisit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
