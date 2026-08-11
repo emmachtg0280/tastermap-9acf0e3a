@@ -427,17 +427,23 @@ function sortRestaurants(
 }
 
 function Index() {
-  const [city, setCity] = useState<CityKey | null>("toulouse");
+  const restored = useMemo(() => readMapState(), []);
 
-  const [cuisine, setCuisine] = useState<Cuisine>("any");
+  const [city, setCity] = useState<CityKey | null>(restored?.city ?? "toulouse");
+
+  const [cuisine, setCuisine] = useState<Cuisine>(restored?.cuisine ?? "any");
   const [minRating, setMinRating] = useState(4);
   const [selected, setSelected] = useState<Restaurant | null>(null);
+  const [sheetSnap, setSheetSnap] = useState<SheetSnap>("half");
 
   const [results, setResults] = useState<Restaurant[]>([]);
   const [searchText, setSearchText] = useState("");
   const [onlyOpenNow, setOnlyOpenNow] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("score");
   const [showFilters, setShowFilters] = useState(false);
+  const [showCities, setShowCities] = useState(false);
+  const [showAllCuisines, setShowAllCuisines] = useState(false);
+  const [showSearchArea, setShowSearchArea] = useState(false);
   const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "hype" | "profile">(null);
   const { user } = useAuthSession();
   const { visits, update } = useVisits(user?.id ?? null);
@@ -446,15 +452,30 @@ function Index() {
   const mapReady = useGoogleMaps();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
+  const markersRef = useRef(new Map<string, { marker: google.maps.Marker; key: string }>());
+  const clusterMarkersRef = useRef<google.maps.Marker[]>([]);
+  const restaurantsByIdRef = useRef(new Map<string, Restaurant>());
   const userMarkerRef = useRef<google.maps.Marker | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM);
+  const loadedCenterRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(restored?.zoom ?? DEFAULT_ZOOM);
+  const [mapEpoch, setMapEpoch] = useState(0);
   const cuisineDataUrls = useCuisineDataUrls();
+
+  // Reset the bottom sheet to its middle snap for each new restaurant.
+  useEffect(() => {
+    if (selected) setSheetSnap("half");
+  }, [selected?.id]);
 
   const currentCity = useMemo(
     () => CITIES.find((c) => c.key === city) ?? null,
     [city],
   );
+
+  const visibleCuisines = useMemo(() => {
+    const list = [...PRIMARY_CUISINES];
+    if (cuisine !== "any" && !list.includes(cuisine)) list.unshift(cuisine);
+    return list;
+  }, [cuisine]);
 
   const search = useServerFn(searchRestaurants);
   const mutation = useMutation({
@@ -462,8 +483,51 @@ function Index() {
       search({ data: vars }),
     onSuccess: (data) => {
       setResults(data);
+      setShowSearchArea(false);
+      const c = mapInstance.current?.getCenter();
+      loadedCenterRef.current = c
+        ? { lat: c.lat(), lng: c.lng() }
+        : currentCity
+          ? { lat: currentCity.lat, lng: currentCity.lng }
+          : null;
     },
   });
+
+  // Viewport reads never touch Google — database only.
+  const searchArea = useServerFn(searchViewport);
+  const viewportMutation = useMutation({
+    mutationFn: (vars: { south: number; west: number; north: number; east: number; minRating: number }) =>
+      searchArea({ data: vars }),
+    onSuccess: (data) => {
+      // Merge: already-loaded restaurants are never refetched or duplicated.
+      setResults((prev) => {
+        const byId = new Map(prev.map((r) => [r.id, r]));
+        data.forEach((r) => byId.set(r.id, r));
+        return Array.from(byId.values());
+      });
+      setShowSearchArea(false);
+      const c = mapInstance.current?.getCenter();
+      if (c) loadedCenterRef.current = { lat: c.lat(), lng: c.lng() };
+    },
+  });
+
+  const isLoadingRestaurants = mutation.isPending || viewportMutation.isPending;
+  const loadError = mutation.isError || viewportMutation.isError;
+
+  const searchThisArea = () => {
+    const map = mapInstance.current;
+    const b = map?.getBounds();
+    if (!b) return;
+    const ne = b.getNorthEast();
+    const sw = b.getSouthWest();
+    viewportMutation.mutate({
+      south: sw.lat(),
+      west: sw.lng(),
+      north: ne.lat(),
+      east: ne.lng(),
+      minRating,
+    });
+  };
 
   const serverHype = useServerFn(getHypeStats);
   const hypeQuery = useQuery({
@@ -506,9 +570,9 @@ function Index() {
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstance.current) return;
-    mapInstance.current = new window.google!.maps.Map(mapRef.current, {
-      center: DEFAULT_CENTER,
-      zoom: DEFAULT_ZOOM,
+    const map = new window.google!.maps.Map(mapRef.current, {
+      center: restored?.center ?? DEFAULT_CENTER,
+      zoom: restored?.zoom ?? DEFAULT_ZOOM,
       disableDefaultUI: true,
       zoomControl: false,
       clickableIcons: false,
@@ -520,20 +584,55 @@ function Index() {
       minZoom: 4,
       styles: minimalMapStyle,
     });
-    mapInstance.current.addListener("click", () => setSelected(null));
-    mapInstance.current.addListener("idle", () => {
-      const z = mapInstance.current?.getZoom();
-      if (typeof z === "number") setZoomLevel((prev) => (Math.round(z) === Math.round(prev) ? prev : z));
+    mapInstance.current = map;
+    map.addListener("click", () => setSelected(null));
+    map.addListener("idle", () => {
+      const z = map.getZoom();
+      if (typeof z === "number") setZoomLevel((prev) => (z === prev ? prev : z));
+      setMapEpoch((n) => n + 1);
+
+      const c = map.getCenter();
+      const b = map.getBounds();
+      if (c) {
+        writeMapState({ center: { lat: c.lat(), lng: c.lng() }, zoom: z ?? DEFAULT_ZOOM });
+        // "Search this area" only after a *significant* move.
+        const from = loadedCenterRef.current;
+        if (from && b) {
+          const ne = b.getNorthEast();
+          const sw = b.getSouthWest();
+          const spanKm = haversineDistance(
+            { lat: sw.lat(), lng: sw.lng() },
+            { lat: ne.lat(), lng: ne.lng() },
+          );
+          const moved = haversineDistance(from, { lat: c.lat(), lng: c.lng() });
+          setShowSearchArea(moved > Math.max(1.2, spanKm * 0.45));
+        }
+      }
     });
-  }, [mapReady]);
+  }, [mapReady, restored]);
 
+  // Persist the product-level choices, not the transient ones.
+  useEffect(() => {
+    writeMapState({ city, cuisine });
+  }, [city, cuisine]);
 
-  // Recenter map when city changes
+  // Recenter only when the *city* actually changes — never on state updates.
+  const lastCityRef = useRef<CityKey | null>(restored?.city ?? "toulouse");
   useEffect(() => {
     if (!mapInstance.current || !currentCity) return;
+    if (lastCityRef.current === currentCity.key && restored?.center) {
+      lastCityRef.current = currentCity.key;
+      return;
+    }
+    if (lastCityRef.current === currentCity.key && !restored?.center) {
+      mapInstance.current.panTo({ lat: currentCity.lat, lng: currentCity.lng });
+      mapInstance.current.setZoom(CITY_ZOOM);
+      return;
+    }
+    lastCityRef.current = currentCity.key;
     mapInstance.current.panTo({ lat: currentCity.lat, lng: currentCity.lng });
     mapInstance.current.setZoom(CITY_ZOOM);
-  }, [currentCity]);
+  }, [currentCity, mapReady]);
 
   // Subtle personal location indicator
   useEffect(() => {
@@ -546,13 +645,15 @@ function Index() {
         optimized: false,
         icon: {
           url: `data:image/svg+xml;utf8,${encodeURIComponent(USER_DOT_SVG)}`,
-          scaledSize: new window.google.maps.Size(48, 48),
-          anchor: new window.google.maps.Point(24, 24),
+          scaledSize: new window.google.maps.Size(44, 44),
+          anchor: new window.google.maps.Point(22, 22),
         },
       });
     }
     userMarkerRef.current.setPosition(userLocation);
   }, [userLocation, mapReady]);
+
+
 
   // ── Incremental marker layer ────────────────────────────────────────────
   // Markers are created once and afterwards only patched (setIcon / setZIndex).
