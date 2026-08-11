@@ -1227,19 +1227,46 @@ function Index() {
         </div>
       )}
 
-
-
-
+      {/* Compact map legend — disappears as soon as the map becomes personal */}
+      {mapReady && showLegend && !selected && (
+        <div className="absolute left-3 bottom-3 z-20 pb-[env(safe-area-inset-bottom)]">
+          <div className="rounded-2xl bg-white/85 backdrop-blur border border-white/70 shadow-sm px-3 py-2 flex items-center gap-3 animate-pop-in">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-foreground/60">
+              <span className="h-2.5 w-2.5 rounded-full bg-white border border-[#ded3bf]" />
+              À explorer
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-500">
+              <Heart className="h-3 w-3 fill-rose-500" />
+              Enregistré
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[color:var(--duo-green-dark)]">
+              <span className="h-3.5 w-3.5 rounded-full bg-[color:var(--duo-green)] grid place-items-center">
+                <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />
+              </span>
+              Découvert
+            </span>
+            <button
+              onClick={dismissLegend}
+              aria-label="Masquer la légende"
+              className="text-foreground/40 hover:text-foreground/70 -mr-1"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Floating action buttons — bottom right */}
       <div
         className={`absolute right-3 z-30 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] transition-[bottom] duration-300 ease-out ${
           selected
-            ? sheetSnap === "collapsed"
-              ? "bottom-[142px] lg:bottom-3"
-              : sheetSnap === "expanded"
-                ? "bottom-[calc(86vh+16px)] lg:bottom-3"
-                : "bottom-[calc(52vh+16px)] lg:bottom-3"
+            ? !detailOpen
+              ? "bottom-[184px] lg:bottom-3"
+              : sheetSnap === "collapsed"
+                ? "bottom-[142px] lg:bottom-3"
+                : sheetSnap === "expanded"
+                  ? "bottom-[calc(86vh+16px)] lg:bottom-3"
+                  : "bottom-[calc(52vh+16px)] lg:bottom-3"
             : "bottom-3"
         }`}
       >
