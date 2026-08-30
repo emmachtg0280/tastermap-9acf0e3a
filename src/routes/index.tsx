@@ -1392,7 +1392,9 @@ function Index() {
                   Ville
                 </h3>
                 <select
+                  aria-label="Choisir une ville"
                   value={city ?? ""}
+
                   onChange={(e) =>
                     setCity((e.target.value || null) as CityKey | null)
                   }
