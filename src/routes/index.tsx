@@ -1463,7 +1463,9 @@ function Index() {
                   Trier par
                 </label>
                 <select
+                  aria-label="Trier par"
                   value={sortBy}
+
                   onChange={(e) => setSortBy(e.target.value as SortBy)}
                   className="w-full text-xs px-2 py-2 rounded-md border border-border/60 bg-background/60 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
                 >
