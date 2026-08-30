@@ -1027,6 +1027,10 @@ function Index() {
 
   return (
     <div className="h-screen w-screen relative overflow-hidden bg-background">
+      <h1 className="sr-only">
+        Tastemap — votre carte des meilleurs restaurants en France
+      </h1>
+
       {/* Full-screen map background */}
       <div
         ref={mapRef}
