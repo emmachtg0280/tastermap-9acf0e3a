@@ -1380,9 +1380,11 @@ function Index() {
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                     placeholder="Nom, adresse, type…"
+                    aria-label="Rechercher un restaurant"
                     className="pl-8 text-sm"
                   />
                 </div>
+
               </div>
 
               <div>
