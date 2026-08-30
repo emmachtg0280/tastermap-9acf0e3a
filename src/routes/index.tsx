@@ -143,21 +143,39 @@ declare global {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Tastemap · Restaurants de France" },
+      { title: "Carte des meilleurs restaurants en France · Tastemap" },
       {
         name: "description",
         content:
-          "Explorez les meilleurs restaurants des grandes villes de France sur une carte minimaliste. Filtrez, marquez, commentez et synchronisez.",
+          "Découvrez et marquez les meilleurs restaurants de Toulouse, Paris, Lyon, Marseille, Bordeaux et Montpellier sur une carte food interactive.",
       },
-      { property: "og:title", content: "Tastemap · Restaurants de France" },
+      { property: "og:title", content: "Carte des meilleurs restaurants en France · Tastemap" },
       {
         property: "og:description",
-        content: "Explorez les meilleurs restaurants des grandes villes de France sur une carte minimaliste. Filtrez, marquez, commentez et synchronisez.",
+        content:
+          "Découvrez et marquez les meilleurs restaurants de Toulouse, Paris, Lyon, Marseille, Bordeaux et Montpellier sur une carte food interactive.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://tastermap.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://tastermap.lovable.app/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Carte des meilleurs restaurants en France",
+          url: "https://tastermap.lovable.app/",
+          description:
+            "Carte food interactive des meilleurs restaurants des grandes villes de France.",
+          about: CITIES.map((c) => ({ "@type": "City", name: c.label })),
+        }),
+      },
+    ],
   }),
+
   component: Index,
 });
 
@@ -1027,6 +1045,10 @@ function Index() {
 
   return (
     <div className="h-screen w-screen relative overflow-hidden bg-background">
+      <h1 className="sr-only">
+        Tastemap — votre carte des meilleurs restaurants en France
+      </h1>
+
       {/* Full-screen map background */}
       <div
         ref={mapRef}
@@ -1376,9 +1398,11 @@ function Index() {
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                     placeholder="Nom, adresse, type…"
+                    aria-label="Rechercher un restaurant"
                     className="pl-8 text-sm"
                   />
                 </div>
+
               </div>
 
               <div>
@@ -1386,7 +1410,9 @@ function Index() {
                   Ville
                 </h3>
                 <select
+                  aria-label="Choisir une ville"
                   value={city ?? ""}
+
                   onChange={(e) =>
                     setCity((e.target.value || null) as CityKey | null)
                   }
@@ -1437,7 +1463,9 @@ function Index() {
                   Trier par
                 </label>
                 <select
+                  aria-label="Trier par"
                   value={sortBy}
+
                   onChange={(e) => setSortBy(e.target.value as SortBy)}
                   className="w-full text-xs px-2 py-2 rounded-md border border-border/60 bg-background/60 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
                 >

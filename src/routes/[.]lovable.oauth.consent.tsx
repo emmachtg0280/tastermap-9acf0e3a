@@ -26,7 +26,25 @@ function oauthApi(): OAuthNamespace {
 }
 
 export const Route = createFileRoute("/.lovable/oauth/consent")({
+  head: () => ({
+    meta: [
+      { title: "Autorisation d'accès — Tastemap" },
+      {
+        name: "description",
+        content:
+          "Autorisez ou refusez l'accès d'une application tierce à votre compte Tastemap et à votre carte food personnelle.",
+      },
+      { property: "og:title", content: "Autorisation d'accès — Tastemap" },
+      {
+        property: "og:description",
+        content:
+          "Page de consentement Tastemap : validez les autorisations demandées par une application tierce.",
+      },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   ssr: false,
+
   validateSearch: (s: Record<string, unknown>) => ({
     authorization_id: typeof s.authorization_id === "string" ? s.authorization_id : "",
   }),
