@@ -69,9 +69,7 @@ export const upsertVisit = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const visited = data.done ?? existing?.visited ?? false;
-    const visitedAt = visited
-      ? (existing?.visited_at ?? new Date().toISOString())
-      : null;
+    const visitedAt = visited ? (existing?.visited_at ?? new Date().toISOString()) : null;
 
     const { error } = await context.supabase.from("user_places").upsert(
       {
@@ -85,8 +83,7 @@ export const upsertVisit = createServerFn({ method: "POST" })
           data.personal_rating !== undefined
             ? data.personal_rating
             : (existing?.personal_rating ?? null),
-        comment:
-          data.comment !== undefined ? data.comment : (existing?.comment ?? null),
+        comment: data.comment !== undefined ? data.comment : (existing?.comment ?? null),
       },
       { onConflict: "user_id,place_id" },
     );
@@ -166,7 +163,6 @@ export const mergeLocalVisits = createServerFn({ method: "POST" })
 
     return { merged: rows.length };
   });
-
 
 export const deleteVisit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

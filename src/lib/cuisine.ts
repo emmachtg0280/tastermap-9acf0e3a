@@ -81,8 +81,17 @@ export function sanitizeCuisines(input: readonly unknown[] = []): Exclude<Cuisin
 
 /** Fallback display order when no cuisine is being filtered on. */
 const PRIORITY: Cuisine[] = [
-  "italian", "japanese", "french", "chinese", "indian",
-  "mexican", "thai", "spanish", "greek", "american", "vegetarian",
+  "italian",
+  "japanese",
+  "french",
+  "chinese",
+  "indian",
+  "mexican",
+  "thai",
+  "spanish",
+  "greek",
+  "american",
+  "vegetarian",
 ];
 
 /**

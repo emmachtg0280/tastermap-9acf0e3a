@@ -4,7 +4,7 @@ import saveRestaurant from "./tools/save-restaurant";
 import removeRestaurant from "./tools/remove-restaurant";
 import myFoodStats from "./tools/my-food-stats";
 
-const projectRef = import.meta.env['VITE_SUPABASE_PROJECT_ID'] ?? "project-ref-unset";
+const projectRef = import.meta.env["VITE_SUPABASE_PROJECT_ID"] ?? "project-ref-unset";
 
 export default defineMcp({
   name: "remix-of-french-food-finder",

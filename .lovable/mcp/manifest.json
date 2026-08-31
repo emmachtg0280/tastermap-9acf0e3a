@@ -5,9 +5,7 @@
   "auth": {
     "type": "oauth",
     "issuer": "https://bnlsouberlazacdbbfib.supabase.co/auth/v1",
-    "accepted_audiences": [
-      "authenticated"
-    ]
+    "accepted_audiences": ["authenticated"]
   },
   "mcp": {
     "server": {
@@ -30,11 +28,7 @@
           "properties": {
             "filter": {
               "type": "string",
-              "enum": [
-                "all",
-                "done",
-                "favorite"
-              ],
+              "enum": ["all", "done", "favorite"],
               "description": "Which entries to return. Defaults to all."
             }
           },
@@ -68,23 +62,15 @@
               "description": "Whether the user marks it as favorite."
             },
             "personal_rating": {
-              "type": [
-                "number",
-                "null"
-              ],
+              "type": ["number", "null"],
               "description": "Personal rating from 0 to 5."
             },
             "comment": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": ["string", "null"],
               "description": "Personal note about the place."
             }
           },
-          "required": [
-            "place_id"
-          ],
+          "required": ["place_id"],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
@@ -107,9 +93,7 @@
               "description": "Google Places place id of the restaurant."
             }
           },
-          "required": [
-            "place_id"
-          ],
+          "required": ["place_id"],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
         },

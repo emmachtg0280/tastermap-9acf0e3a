@@ -2,12 +2,7 @@
 // Reads Tastemap's persistent identity layer (`places`) + the expiring Google
 // cache (`places_cache`), and only calls Google when the cache is cold.
 import { classifyCuisines, sanitizeCuisines } from "./cuisine";
-import {
-  type CityDef,
-  type CityKey,
-  type Cuisine,
-  type Restaurant,
-} from "./places.shared";
+import { type CityDef, type CityKey, type Cuisine, type Restaurant } from "./places.shared";
 
 const GATEWAY = "https://connector-gateway.lovable.dev/google_maps";
 
@@ -113,14 +108,11 @@ const DETAIL_FIELDS = [
   "photos",
 ];
 
-const SEARCH_FIELD_MASK = [
-  ...DETAIL_FIELDS.map((f) => `places.${f}`),
-  "nextPageToken",
-].join(",");
+const SEARCH_FIELD_MASK = [...DETAIL_FIELDS.map((f) => `places.${f}`), "nextPageToken"].join(",");
 
 function auth() {
-  const lov = process.env['LOVABLE_API_KEY'];
-  const key = process.env['GOOGLE_MAPS_API_KEY'];
+  const lov = process.env["LOVABLE_API_KEY"];
+  const key = process.env["GOOGLE_MAPS_API_KEY"];
   if (!lov || !key) throw new Error("Google Maps connector is not configured");
   return { lov, key };
 }
@@ -133,11 +125,7 @@ function broadQueries(cityLabel: string): string[] {
   ];
 }
 
-async function fetchPage(
-  textQuery: string,
-  pageToken: string | undefined,
-  city: CityDef,
-) {
+async function fetchPage(textQuery: string, pageToken: string | undefined, city: CityDef) {
   const { lov, key } = auth();
   const body: Record<string, unknown> = {
     textQuery,
@@ -174,16 +162,13 @@ async function fetchPage(
 /** Returns the raw place, or `null` when Google reports it as gone. */
 async function fetchPlaceDetails(placeId: string): Promise<PlaceRaw | null> {
   const { lov, key } = auth();
-  const res = await fetch(
-    `${GATEWAY}/places/v1/places/${encodeURIComponent(placeId)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${lov}`,
-        "X-Connection-Api-Key": key,
-        "X-Goog-FieldMask": DETAIL_FIELDS.join(","),
-      },
+  const res = await fetch(`${GATEWAY}/places/v1/places/${encodeURIComponent(placeId)}`, {
+    headers: {
+      Authorization: `Bearer ${lov}`,
+      "X-Connection-Api-Key": key,
+      "X-Goog-FieldMask": DETAIL_FIELDS.join(","),
     },
-  );
+  });
   if (res.status === 404) return null;
   if (!res.ok) {
     const text = await res.text();
@@ -208,8 +193,7 @@ function toPayload(p: PlaceRaw): CachePayload | null {
     googleMapsUri: p.googleMapsUri ?? null,
     websiteUri: p.websiteUri ?? null,
     phone: p.nationalPhoneNumber ?? null,
-    summary:
-      p.editorialSummary?.text ?? p.generativeSummary?.overview?.text ?? null,
+    summary: p.editorialSummary?.text ?? p.generativeSummary?.overview?.text ?? null,
     reservable: p.reservable ?? null,
     weekdayDescriptions: p.regularOpeningHours?.weekdayDescriptions ?? [],
     periods: p.regularOpeningHours?.periods ?? [],
@@ -284,9 +268,7 @@ function geoCell(lat: number, lng: number): string {
   return `${Math.floor(lat / 0.01)}:${Math.floor(lng / 0.01)}`;
 }
 
-type Admin = Awaited<
-  typeof import("@/integrations/supabase/client.server")
->["supabaseAdmin"];
+type Admin = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
 async function admin(): Promise<Admin> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -352,12 +334,10 @@ async function persist(db: Admin, cityId: string, raws: PlaceRaw[]) {
 
   const { error: pErr } = await db.from("places").upsert(placeRows, { onConflict: "place_id" });
   if (pErr) throw new Error(pErr.message);
-  const { error: cErr } = await db
-    .from("places_cache")
-    .upsert(
-      cacheRows.map((r) => ({ ...r, payload: r.payload as unknown as never })),
-      { onConflict: "place_id" },
-    );
+  const { error: cErr } = await db.from("places_cache").upsert(
+    cacheRows.map((r) => ({ ...r, payload: r.payload as unknown as never })),
+    { onConflict: "place_id" },
+  );
   if (cErr) throw new Error(cErr.message);
   if (tagRows.length) {
     await db.from("place_tags").upsert(tagRows, { onConflict: "place_id,tag,source" });
@@ -453,8 +433,7 @@ function rank(list: Restaurant[]): Restaurant[] {
   const popular = list
     .filter((r) => !gemIds.has(r.id))
     .sort((a, b) => {
-      const score = (r: Restaurant) =>
-        (r.rating ?? 0) * Math.log10((r.userRatingCount ?? 0) + 10);
+      const score = (r: Restaurant) => (r.rating ?? 0) * Math.log10((r.userRatingCount ?? 0) + 10);
       return score(b) - score(a);
     })
     .slice(0, RESULT_LIMIT - hiddenGems.length);
@@ -518,8 +497,7 @@ export async function loadCityRestaurants(
 
   let state = await readCity(db, city.id);
 
-  const needsIndex =
-    force || state.ids.length === 0 || state.indexAgeMs > INDEX_TTL_MS;
+  const needsIndex = force || state.ids.length === 0 || state.indexAgeMs > INDEX_TTL_MS;
 
   if (needsIndex || state.stale.length > 0) {
     try {

@@ -138,8 +138,8 @@ function Consent() {
               Connecter {loaded.details?.client?.name ?? "une application"}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {loaded.details?.client?.name ?? "Cette application"} pourra lire et modifier
-              tes restaurants faits et favoris, en ton nom.
+              {loaded.details?.client?.name ?? "Cette application"} pourra lire et modifier tes
+              restaurants faits et favoris, en ton nom.
             </p>
             {error && (
               <p role="alert" className="text-sm text-destructive">

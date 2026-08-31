@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  classifyCuisines,
-  matchesCuisine,
-  pickCuisine,
-  sanitizeCuisines,
-} from "@/lib/cuisine";
+import { classifyCuisines, matchesCuisine, pickCuisine, sanitizeCuisines } from "@/lib/cuisine";
 import type { Cuisine } from "@/lib/places.shared";
 
 /**
@@ -18,13 +13,55 @@ const CASES: Array<{
   filter: Cuisine;
   expected: Cuisine;
 }> = [
-  { name: "Greek taverna", primaryType: "greek_restaurant", types: ["greek_restaurant", "restaurant"], filter: "greek", expected: "greek" },
-  { name: "Sushi bar", primaryType: "sushi_restaurant", types: ["japanese_restaurant"], filter: "japanese", expected: "japanese" },
-  { name: "Trattoria", primaryType: "italian_restaurant", types: ["pizza_restaurant"], filter: "italian", expected: "italian" },
-  { name: "Taqueria", primaryType: "mexican_restaurant", types: [], filter: "mexican", expected: "mexican" },
-  { name: "Bistrot", primaryType: "french_restaurant", types: ["restaurant"], filter: "french", expected: "french" },
-  { name: "Curry house", primaryType: "indian_restaurant", types: ["vegetarian_restaurant"], filter: "indian", expected: "indian" },
-  { name: "Burger joint", primaryType: "hamburger_restaurant", types: ["american_restaurant"], filter: "american", expected: "american" },
+  {
+    name: "Greek taverna",
+    primaryType: "greek_restaurant",
+    types: ["greek_restaurant", "restaurant"],
+    filter: "greek",
+    expected: "greek",
+  },
+  {
+    name: "Sushi bar",
+    primaryType: "sushi_restaurant",
+    types: ["japanese_restaurant"],
+    filter: "japanese",
+    expected: "japanese",
+  },
+  {
+    name: "Trattoria",
+    primaryType: "italian_restaurant",
+    types: ["pizza_restaurant"],
+    filter: "italian",
+    expected: "italian",
+  },
+  {
+    name: "Taqueria",
+    primaryType: "mexican_restaurant",
+    types: [],
+    filter: "mexican",
+    expected: "mexican",
+  },
+  {
+    name: "Bistrot",
+    primaryType: "french_restaurant",
+    types: ["restaurant"],
+    filter: "french",
+    expected: "french",
+  },
+  {
+    name: "Curry house",
+    primaryType: "indian_restaurant",
+    types: ["vegetarian_restaurant"],
+    filter: "indian",
+    expected: "indian",
+  },
+  {
+    name: "Burger joint",
+    primaryType: "hamburger_restaurant",
+    types: ["american_restaurant"],
+    filter: "american",
+    expected: "american",
+  },
 ];
 
 describe("canonical cuisine classification", () => {

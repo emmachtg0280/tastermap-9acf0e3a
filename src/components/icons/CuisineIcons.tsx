@@ -175,18 +175,23 @@ export const CUISINE_META: Record<
   Cuisine,
   { label: string; Icon: (p: IconProps) => ReactElement; inner: string; image: string }
 > = {
-  any:        { label: "Tous",        Icon: PlateIcon,    inner: INNER_PLATE,    image: anyAsset.url        },
-  french:     { label: "Français",    Icon: BaguetteIcon, inner: INNER_BAGUETTE, image: frenchAsset.url     },
-  italian:    { label: "Italien",     Icon: PastaIcon,    inner: INNER_PASTA,    image: italianAsset.url    },
-  chinese:    { label: "Chinois",     Icon: DumplingIcon, inner: INNER_DUMPLING, image: chineseAsset.url    },
-  japanese:   { label: "Japonais",    Icon: SushiIcon,    inner: INNER_SUSHI,    image: japaneseAsset.url   },
-  indian:     { label: "Indien",      Icon: CurryIcon,    inner: INNER_CURRY,    image: indianAsset.url     },
-  mexican:    { label: "Mexicain",    Icon: TacoIcon,     inner: INNER_TACO,     image: mexicanAsset.url    },
-  thai:       { label: "Thaï",        Icon: ChiliIcon,    inner: INNER_CHILI,    image: thaiAsset.url       },
-  spanish:    { label: "Espagnol",    Icon: PaellaIcon,   inner: INNER_PAELLA,   image: spanishAsset.url    },
-  greek:      { label: "Grec",        Icon: OliveIcon,    inner: INNER_OLIVE,    image: greekAsset.url      },
-  american:   { label: "Américain",   Icon: BurgerIcon,   inner: INNER_BURGER,   image: americanAsset.url   },
-  vegetarian: { label: "Végétarien",  Icon: SaladIcon,    inner: INNER_SALAD,    image: vegetarianAsset.url },
+  any: { label: "Tous", Icon: PlateIcon, inner: INNER_PLATE, image: anyAsset.url },
+  french: { label: "Français", Icon: BaguetteIcon, inner: INNER_BAGUETTE, image: frenchAsset.url },
+  italian: { label: "Italien", Icon: PastaIcon, inner: INNER_PASTA, image: italianAsset.url },
+  chinese: { label: "Chinois", Icon: DumplingIcon, inner: INNER_DUMPLING, image: chineseAsset.url },
+  japanese: { label: "Japonais", Icon: SushiIcon, inner: INNER_SUSHI, image: japaneseAsset.url },
+  indian: { label: "Indien", Icon: CurryIcon, inner: INNER_CURRY, image: indianAsset.url },
+  mexican: { label: "Mexicain", Icon: TacoIcon, inner: INNER_TACO, image: mexicanAsset.url },
+  thai: { label: "Thaï", Icon: ChiliIcon, inner: INNER_CHILI, image: thaiAsset.url },
+  spanish: { label: "Espagnol", Icon: PaellaIcon, inner: INNER_PAELLA, image: spanishAsset.url },
+  greek: { label: "Grec", Icon: OliveIcon, inner: INNER_OLIVE, image: greekAsset.url },
+  american: { label: "Américain", Icon: BurgerIcon, inner: INNER_BURGER, image: americanAsset.url },
+  vegetarian: {
+    label: "Végétarien",
+    Icon: SaladIcon,
+    inner: INNER_SALAD,
+    image: vegetarianAsset.url,
+  },
 };
 
 export { pickCuisine } from "@/lib/cuisine";
@@ -267,4 +272,3 @@ export function useCuisineDataUrls(): Record<Cuisine, string> | null {
   }, []);
   return urls;
 }
-

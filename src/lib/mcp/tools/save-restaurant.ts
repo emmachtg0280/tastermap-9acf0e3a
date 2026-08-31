@@ -11,11 +11,7 @@ export default defineTool({
     place_id: z.string().trim().describe("Google Places place id of the restaurant."),
     done: z.boolean().optional().describe("Whether the user has visited it."),
     favorite: z.boolean().optional().describe("Whether the user marks it as favorite."),
-    personal_rating: z
-      .number()
-      .nullable()
-      .optional()
-      .describe("Personal rating from 0 to 5."),
+    personal_rating: z.number().nullable().optional().describe("Personal rating from 0 to 5."),
     comment: z.string().nullable().optional().describe("Personal note about the place."),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
@@ -39,8 +35,7 @@ export default defineTool({
       )
       .select();
 
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
 
     return {
       content: [{ type: "text", text: JSON.stringify(data?.[0] ?? {}) }],

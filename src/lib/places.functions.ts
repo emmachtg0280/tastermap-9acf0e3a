@@ -1,12 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { CityKey } from "./places.shared";
 
-export type {
-  Cuisine,
-  Restaurant,
-  CityKey,
-  CityDef,
-} from "./places.shared";
+export type { Cuisine, Restaurant, CityKey, CityDef } from "./places.shared";
 
 interface SearchInput {
   city: CityKey;
@@ -14,14 +9,7 @@ interface SearchInput {
   force?: boolean;
 }
 
-const CITY_KEYS: CityKey[] = [
-  "toulouse",
-  "montpellier",
-  "paris",
-  "lyon",
-  "marseille",
-  "bordeaux",
-];
+const CITY_KEYS: CityKey[] = ["toulouse", "montpellier", "paris", "lyon", "marseille", "bordeaux"];
 
 export const searchRestaurants = createServerFn({ method: "POST" })
   .inputValidator((input: SearchInput) => {
@@ -69,4 +57,3 @@ export const searchViewport = createServerFn({ method: "POST" })
       data.minRating,
     );
   });
-

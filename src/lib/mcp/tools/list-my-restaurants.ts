@@ -28,8 +28,7 @@ export default defineTool({
     if (filter === "favorite") query = query.eq("favorite", true);
 
     const { data, error } = await query;
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
 
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? []) }],

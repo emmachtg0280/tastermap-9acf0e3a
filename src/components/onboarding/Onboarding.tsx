@@ -92,14 +92,23 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
     <div className="fixed inset-0 z-[70] flex items-center justify-center px-6 bg-black/45 backdrop-blur-[2px]">
       <div className="relative w-full max-w-[360px] rounded-[28px] bg-white/97 border border-white/70 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.4)] px-6 py-6 animate-pop-in">
         <button
-          onClick={() => { haptic(); finish(); }}
+          onClick={() => {
+            haptic();
+            finish();
+          }}
           className="absolute top-3 right-4 text-[13px] font-bold text-muted-foreground hover:text-foreground"
         >
           Passer
         </button>
 
         <div className="flex justify-center">
-          {step === 0 ? <TastyFox size={150} /> : <div className="py-6"><PinsVisual step={step} /></div>}
+          {step === 0 ? (
+            <TastyFox size={150} />
+          ) : (
+            <div className="py-6">
+              <PinsVisual step={step} />
+            </div>
+          )}
         </div>
 
         <h2 className="mt-3 text-center font-display text-[22px] font-extrabold leading-tight">

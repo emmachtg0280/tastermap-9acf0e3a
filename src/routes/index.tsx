@@ -24,12 +24,7 @@ import {
 } from "lucide-react";
 
 import { searchRestaurants, searchViewport } from "@/lib/places.functions";
-import {
-  CITIES,
-  type Cuisine,
-  type Restaurant,
-  type CityKey,
-} from "@/lib/places.shared";
+import { CITIES, type Cuisine, type Restaurant, type CityKey } from "@/lib/places.shared";
 import {
   USER_DOT_SVG,
   clusterIcon,
@@ -38,13 +33,7 @@ import {
   type MarkerState,
 } from "@/lib/map-markers";
 
-
-import {
-  getMyVisits,
-  upsertVisit,
-  mergeLocalVisits,
-  type Visit,
-} from "@/lib/visits.functions";
+import { getMyVisits, upsertVisit, mergeLocalVisits, type Visit } from "@/lib/visits.functions";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptic";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,7 +49,6 @@ import {
 import { matchesCuisine } from "@/lib/cuisine";
 import { Onboarding, hasSeenOnboarding } from "@/components/onboarding/Onboarding";
 
-
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
@@ -69,16 +57,31 @@ import { Checkbox } from "@/components/ui/checkbox";
 import newTabAsset from "@/assets/tabs/new.png.asset.json";
 
 const NewStickerIcon = ({ size = 20 }: { size?: number }) => (
-  <img src={newTabAsset.url} alt="" width={size} height={size} loading="lazy" draggable={false}
+  <img
+    src={newTabAsset.url}
+    alt=""
+    width={size}
+    height={size}
+    loading="lazy"
+    draggable={false}
     className="object-contain select-none pointer-events-none"
-    style={{ width: size, height: size, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" }} />
+    style={{ width: size, height: size, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" }}
+  />
 );
 
 const CUISINE_ORDER: Cuisine[] = [
-  "french", "italian", "chinese", "japanese", "indian",
-  "mexican", "thai", "spanish", "greek", "american", "vegetarian",
+  "french",
+  "italian",
+  "chinese",
+  "japanese",
+  "indian",
+  "mexican",
+  "thai",
+  "spanish",
+  "greek",
+  "american",
+  "vegetarian",
 ];
-
 
 // Google Places API does not expose an opening date. We use a low review count
 // as a proxy for "opened in the last rolling year".
@@ -97,7 +100,6 @@ const MAX_MARKERS = 220;
 
 /** Cuisine shortcuts kept visible; the full list lives behind “Plus”. */
 const PRIMARY_CUISINES: Cuisine[] = ["italian", "japanese", "mexican"];
-
 
 type VisitEntry = { done: boolean; comment: string; favorite: boolean; personalRating?: number };
 type VisitMap = Record<string, VisitEntry>;
@@ -131,7 +133,6 @@ function writeMapState(patch: MapState) {
     /* ignore */
   }
 }
-
 
 declare global {
   interface Window {
@@ -283,7 +284,6 @@ function useVisits(userId: string | null) {
       });
   }, [userId, serverMerge, queryClient]);
 
-
   // Cloud visits
   const cloudQuery = useQuery({
     queryKey: ["my-visits"],
@@ -358,7 +358,6 @@ function useVisits(userId: string | null) {
     }
   };
 
-
   return { visits, update, isLoading: cloudQuery.isLoading };
 }
 
@@ -418,10 +417,7 @@ function useGeolocation() {
   return location;
 }
 
-function haversineDistance(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number },
-) {
+function haversineDistance(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371; // km
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat);
@@ -454,8 +450,7 @@ function sortRestaurants(
   city: { lat: number; lng: number } | null,
 ) {
   const origin = userLocation ?? city;
-  const score = (r: Restaurant) =>
-    (r.rating ?? 0) * Math.log10((r.userRatingCount ?? 1) + 1);
+  const score = (r: Restaurant) => (r.rating ?? 0) * Math.log10((r.userRatingCount ?? 1) + 1);
   switch (sortBy) {
     case "rating":
       return (b.rating ?? 0) - (a.rating ?? 0);
@@ -465,9 +460,7 @@ function sortRestaurants(
       return priceValue(a.priceLevel ?? "") - priceValue(b.priceLevel ?? "");
     case "distance":
       if (!origin) return 0;
-      return (
-        haversineDistance(origin, a) - haversineDistance(origin, b)
-      );
+      return haversineDistance(origin, a) - haversineDistance(origin, b);
     case "score":
     default:
       return score(b) - score(a);
@@ -495,7 +488,9 @@ function Index() {
   const [showCities, setShowCities] = useState(false);
   const [showAllCuisines, setShowAllCuisines] = useState(false);
   const [showSearchArea, setShowSearchArea] = useState(false);
-  const [listMode, setListMode] = useState<null | "all" | "done" | "favorites" | "new" | "profile" | "mymap">(null);
+  const [listMode, setListMode] = useState<
+    null | "all" | "done" | "favorites" | "new" | "profile" | "mymap"
+  >(null);
   const [neighborhood, setNeighborhood] = useState<string | null>(null);
   const { user } = useAuthSession();
   const { visits, update } = useVisits(user?.id ?? null);
@@ -532,7 +527,6 @@ function Index() {
   const loadedCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const cuisineDataUrls = useCuisineDataUrls();
 
-
   // Reset the bottom sheet to its middle snap for each new restaurant.
   useEffect(() => {
     if (selected) setSheetSnap("half");
@@ -562,10 +556,7 @@ function Index() {
     setShowLegend(false);
   };
 
-  const currentCity = useMemo(
-    () => CITIES.find((c) => c.key === city) ?? null,
-    [city],
-  );
+  const currentCity = useMemo(() => CITIES.find((c) => c.key === city) ?? null, [city]);
 
   const visibleCuisines = useMemo(() => {
     const list = [...PRIMARY_CUISINES];
@@ -592,8 +583,13 @@ function Index() {
   // Viewport reads never touch Google — database only.
   const searchArea = useServerFn(searchViewport);
   const viewportMutation = useMutation({
-    mutationFn: (vars: { south: number; west: number; north: number; east: number; minRating: number }) =>
-      searchArea({ data: vars }),
+    mutationFn: (vars: {
+      south: number;
+      west: number;
+      north: number;
+      east: number;
+      minRating: number;
+    }) => searchArea({ data: vars }),
     onSuccess: (data) => {
       // Merge: already-loaded restaurants are never refetched or duplicated.
       setResults((prev) => {
@@ -628,8 +624,6 @@ function Index() {
   // Hype is intentionally not exposed in the UI for now (signals are too
   // sparse to be useful). The backend logic in `hype.functions.ts` stays.
 
-
-
   const baseFiltered = useMemo(() => {
     let list = results;
     if (cuisine !== "any") {
@@ -650,11 +644,11 @@ function Index() {
     return list;
   }, [results, cuisine, searchText, onlyOpenNow]);
 
-
   const filtered = useMemo(() => {
-    return [...baseFiltered].sort((a, b) => sortRestaurants(a, b, sortBy, userLocation, currentCity));
+    return [...baseFiltered].sort((a, b) =>
+      sortRestaurants(a, b, sortBy, userLocation, currentCity),
+    );
   }, [baseFiltered, sortBy, userLocation, currentCity]);
-
 
   // Refs let the map layer read fresh data without re-rendering React on pan.
   const visitsRef = useRef(visits);
@@ -684,7 +678,10 @@ function Index() {
       styles: minimalMapStyle,
     });
     mapInstance.current = map;
-    map.addListener("click", () => { setSelected(null); setDetailOpen(false); });
+    map.addListener("click", () => {
+      setSelected(null);
+      setDetailOpen(false);
+    });
     map.addListener("idle", () => {
       // Redraw markers directly — no React state update, so panning the map
       // never re-renders the whole screen.
@@ -771,9 +768,7 @@ function Index() {
         if (status !== "OK" || !res?.length) return;
         const wanted = ["neighborhood", "sublocality", "sublocality_level_1"];
         for (const r of res) {
-          const comp = r.address_components?.find((c) =>
-            c.types.some((t) => wanted.includes(t)),
-          );
+          const comp = r.address_components?.find((c) => c.types.some((t) => wanted.includes(t)));
           if (comp) {
             setNeighborhood(comp.long_name);
             return;
@@ -907,9 +902,7 @@ function Index() {
           if (v?.favorite) return 2;
           return (r.userRatingCount ?? 0) > 300 ? 1 : 0;
         };
-        singles = [...singles]
-          .sort((a, b) => score(b) - score(a))
-          .slice(0, MAX_MARKERS);
+        singles = [...singles].sort((a, b) => score(b) - score(a)).slice(0, MAX_MARKERS);
       }
 
       // ── Individual restaurant markers ──
@@ -1028,7 +1021,6 @@ function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id]);
 
-
   // City load — the only path allowed to reach Google
   useEffect(() => {
     if (!city) {
@@ -1040,14 +1032,9 @@ function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, minRating]);
 
-
-
-
   return (
     <div className="h-screen w-screen relative overflow-hidden bg-background">
-      <h1 className="sr-only">
-        Tastemap — votre carte des meilleurs restaurants en France
-      </h1>
+      <h1 className="sr-only">Tastemap — votre carte des meilleurs restaurants en France</h1>
 
       {/* Full-screen map background */}
       <div
@@ -1079,7 +1066,10 @@ function Index() {
         <div className="absolute inset-x-0 top-[190px] z-20 flex justify-center px-4 pointer-events-none">
           <button
             type="button"
-            onClick={() => { haptic(20); searchThisArea(); }}
+            onClick={() => {
+              haptic(20);
+              searchThisArea();
+            }}
             className="pointer-events-auto rounded-full bg-card/95 backdrop-blur border border-border/60 shadow-md px-4 h-11 text-sm font-bold text-foreground inline-flex items-center gap-2 tap-bounce transition animate-pop-in"
           >
             <Search className="h-4 w-4" />
@@ -1105,16 +1095,18 @@ function Index() {
       )}
 
       {/* Genuinely empty result set — distinct from an error */}
-      {mapReady && !loadError && !isLoadingRestaurants && city && results.length > 0 && filtered.length === 0 && (
-        <div className="absolute inset-x-0 bottom-24 z-30 flex justify-center px-4 pointer-events-none">
-          <div className="pointer-events-auto rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-md px-4 py-3 text-sm text-muted-foreground max-w-[320px] text-center">
-            Aucun restaurant ici. Déplacez la carte ou changez vos filtres.
+      {mapReady &&
+        !loadError &&
+        !isLoadingRestaurants &&
+        city &&
+        results.length > 0 &&
+        filtered.length === 0 && (
+          <div className="absolute inset-x-0 bottom-24 z-30 flex justify-center px-4 pointer-events-none">
+            <div className="pointer-events-auto rounded-2xl bg-card/95 backdrop-blur border border-border/60 shadow-md px-4 py-3 text-sm text-muted-foreground max-w-[320px] text-center">
+              Aucun restaurant ici. Déplacez la carte ou changez vos filtres.
+            </div>
           </div>
-        </div>
-      )}
-
-
-
+        )}
 
       {/* Floating top bar — auth only, top right */}
       <div className="absolute top-0 right-0 z-30 pt-[env(safe-area-inset-top)] px-3">
@@ -1128,18 +1120,27 @@ function Index() {
         <div className="mx-auto max-w-3xl px-2 pt-1">
           <div className="flex items-center gap-2 pl-1 pr-14">
             <button
-              onClick={() => { haptic(); setShowCities((v) => !v); }}
+              onClick={() => {
+                haptic();
+                setShowCities((v) => !v);
+              }}
               className="inline-flex items-center gap-1 h-11 pl-3 pr-2.5 rounded-full bg-white/85 backdrop-blur border border-white/70 shadow-sm text-sm font-extrabold text-foreground tap-bounce transition hover:bg-white"
               aria-label="Changer de ville"
             >
               <MapPin className="h-4 w-4 text-[color:var(--duo-green-dark)]" />
               {currentCity?.label ?? "Choisir une ville"}
-              <ChevronDown className={`h-4 w-4 transition-transform ${showCities ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${showCities ? "rotate-180" : ""}`}
+              />
             </button>
 
             {/* Primary: the user's own map. Discovery is the secondary action. */}
             <button
-              onClick={() => { haptic(20); setShowFilters(false); setListMode("mymap"); }}
+              onClick={() => {
+                haptic(20);
+                setShowFilters(false);
+                setListMode("mymap");
+              }}
               className="inline-flex items-center gap-1.5 h-11 pl-3 pr-4 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
             >
               <MapPin className="h-4 w-4" />
@@ -1152,13 +1153,16 @@ function Index() {
             </button>
 
             <button
-              onClick={() => { haptic(20); setShowFilters(false); setListMode("new"); }}
+              onClick={() => {
+                haptic(20);
+                setShowFilters(false);
+                setListMode("new");
+              }}
               className="inline-flex items-center gap-1.5 h-11 pl-2 pr-3.5 rounded-full bg-white/85 backdrop-blur border border-white/70 shadow-sm text-sm font-extrabold text-foreground tap-bounce transition hover:bg-white"
             >
               <NewStickerIcon size={20} />
               Découvrir
             </button>
-
 
             {neighborhood && (
               <span className="hidden sm:inline-flex items-center h-9 px-3 rounded-full bg-white/60 backdrop-blur border border-white/60 text-xs font-bold text-foreground/70 truncate max-w-[160px]">
@@ -1172,7 +1176,11 @@ function Index() {
               {CITIES.map((c) => (
                 <button
                   key={c.key}
-                  onClick={() => { haptic(20); setCity(c.key); setShowCities(false); }}
+                  onClick={() => {
+                    haptic(20);
+                    setCity(c.key);
+                    setShowCities(false);
+                  }}
                   className={`h-11 px-4 rounded-full text-sm font-bold transition ${
                     c.key === city
                       ? "bg-[color:var(--duo-green)] text-white"
@@ -1188,7 +1196,10 @@ function Index() {
           {/* Cuisine shortcuts — compact, full list behind “+” */}
           <div className="mt-1.5 flex gap-1.5 overflow-x-auto no-scrollbar px-1 pb-1 -mx-1">
             <button
-              onClick={() => { haptic(); setCuisine("any"); }}
+              onClick={() => {
+                haptic();
+                setCuisine("any");
+              }}
               className={`shrink-0 inline-flex items-center h-10 px-4 rounded-full text-[13px] font-bold backdrop-blur shadow-sm tap-bounce transition ${
                 cuisine === "any"
                   ? "bg-white text-foreground border-2 border-white ring-2 ring-white/80"
@@ -1203,7 +1214,10 @@ function Index() {
               return (
                 <button
                   key={value}
-                  onClick={() => { haptic(); setCuisine(active ? "any" : value); }}
+                  onClick={() => {
+                    haptic();
+                    setCuisine(active ? "any" : value);
+                  }}
                   className={`shrink-0 inline-flex items-center gap-1.5 h-10 pl-1.5 pr-3.5 rounded-full text-[13px] font-bold backdrop-blur shadow-sm tap-bounce transition ${
                     active
                       ? "bg-white text-foreground border-2 border-white ring-2 ring-white/80"
@@ -1225,11 +1239,16 @@ function Index() {
               );
             })}
             <button
-              onClick={() => { haptic(); setShowAllCuisines((v) => !v); }}
+              onClick={() => {
+                haptic();
+                setShowAllCuisines((v) => !v);
+              }}
               aria-label="Toutes les cuisines"
               className="shrink-0 inline-flex items-center gap-1 h-10 px-3.5 rounded-full bg-white/45 backdrop-blur border border-white/50 text-[13px] font-bold text-foreground/75 shadow-sm hover:bg-white/65 tap-bounce transition"
             >
-              <ChevronDown className={`h-4 w-4 transition-transform ${showAllCuisines ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${showAllCuisines ? "rotate-180" : ""}`}
+              />
               {showAllCuisines ? "Moins" : "Plus"}
             </button>
           </div>
@@ -1242,9 +1261,15 @@ function Index() {
                 return (
                   <button
                     key={value}
-                    onClick={() => { haptic(); setCuisine(active ? "any" : value); setShowAllCuisines(false); }}
+                    onClick={() => {
+                      haptic();
+                      setCuisine(active ? "any" : value);
+                      setShowAllCuisines(false);
+                    }}
                     className={`inline-flex flex-col items-center justify-center gap-0.5 h-[70px] rounded-xl transition ${
-                      active ? "bg-[color:var(--duo-green)]/15 ring-1 ring-[color:var(--duo-green)]" : "hover:bg-muted/60"
+                      active
+                        ? "bg-[color:var(--duo-green)]/15 ring-1 ring-[color:var(--duo-green)]"
+                        : "hover:bg-muted/60"
                     }`}
                   >
                     <img
@@ -1280,8 +1305,8 @@ function Index() {
         <div className="absolute left-3 bottom-3 z-20 pb-[env(safe-area-inset-bottom)]">
           <div className="rounded-2xl bg-white/85 backdrop-blur border border-white/70 shadow-sm px-3 py-2 flex items-center gap-3 animate-pop-in">
             <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-foreground/60">
-              <span className="h-2.5 w-2.5 rounded-full bg-white border border-[#ded3bf]" />
-              À explorer
+              <span className="h-2.5 w-2.5 rounded-full bg-white border border-[#ded3bf]" />À
+              explorer
             </span>
             <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-500">
               <Heart className="h-3 w-3 fill-rose-500" />
@@ -1318,9 +1343,12 @@ function Index() {
             : "bottom-3"
         }`}
       >
-
         <button
-          onClick={() => { haptic(20); setShowFilters(false); setListMode("profile"); }}
+          onClick={() => {
+            haptic(20);
+            setShowFilters(false);
+            setListMode("profile");
+          }}
           aria-label="Mon profil food"
           className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-foreground/80 grid place-items-center hover:bg-white/60 tap-bounce transition"
         >
@@ -1329,7 +1357,8 @@ function Index() {
         <button
           onClick={() => {
             haptic(20);
-            const target = userLocation ?? (currentCity ? { lat: currentCity.lat, lng: currentCity.lng } : null);
+            const target =
+              userLocation ?? (currentCity ? { lat: currentCity.lat, lng: currentCity.lng } : null);
             if (!target || !mapInstance.current) return;
             mapInstance.current.panTo(target);
             mapInstance.current.setZoom(userLocation ? 15 : CITY_ZOOM);
@@ -1340,28 +1369,44 @@ function Index() {
           <Navigation className="h-5 w-5" />
         </button>
         <button
-          onClick={() => { haptic(20); setListMode(null); setShowFilters(true); }}
+          onClick={() => {
+            haptic(20);
+            setListMode(null);
+            setShowFilters(true);
+          }}
           aria-label="Filtres"
           className="h-12 w-12 rounded-full bg-[color:var(--duo-green)] text-white btn-pop grid place-items-center hover:brightness-105 tap-bounce transition"
         >
           <SlidersHorizontal className="h-5 w-5" />
         </button>
         <button
-          onClick={() => { haptic(20); setShowFilters(false); setListMode("favorites"); }}
+          onClick={() => {
+            haptic(20);
+            setShowFilters(false);
+            setListMode("favorites");
+          }}
           aria-label="Enregistrés"
           className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-rose-500 grid place-items-center hover:bg-white/60 tap-bounce transition"
         >
           <Heart className="h-5 w-5" />
         </button>
         <button
-          onClick={() => { haptic(20); setShowFilters(false); setListMode("done"); }}
+          onClick={() => {
+            haptic(20);
+            setShowFilters(false);
+            setListMode("done");
+          }}
           aria-label="Restaurants faits"
           className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-[color:var(--duo-green-dark)] grid place-items-center hover:bg-white/60 tap-bounce transition"
         >
           <Check className="h-5 w-5" strokeWidth={3} />
         </button>
         <button
-          onClick={() => { haptic(20); setShowFilters(false); setListMode("all"); }}
+          onClick={() => {
+            haptic(20);
+            setShowFilters(false);
+            setListMode("all");
+          }}
           aria-label="Liste des restaurants"
           className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-foreground grid place-items-center hover:bg-muted tap-bounce transition"
         >
@@ -1380,7 +1425,10 @@ function Index() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
               <h2 className="font-display font-bold text-sm">Filtres</h2>
               <button
-                onClick={() => { haptic(); setShowFilters(false); }}
+                onClick={() => {
+                  haptic();
+                  setShowFilters(false);
+                }}
                 className="p-1 -m-1 text-muted-foreground hover:text-foreground tap-bounce"
                 aria-label="Fermer"
               >
@@ -1402,7 +1450,6 @@ function Index() {
                     className="pl-8 text-sm"
                   />
                 </div>
-
               </div>
 
               <div>
@@ -1412,10 +1459,7 @@ function Index() {
                 <select
                   aria-label="Choisir une ville"
                   value={city ?? ""}
-
-                  onChange={(e) =>
-                    setCity((e.target.value || null) as CityKey | null)
-                  }
+                  onChange={(e) => setCity((e.target.value || null) as CityKey | null)}
                   className="w-full text-sm px-3 py-2 rounded-md border border-border/60 bg-background/60 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
                 >
                   <option value="">Sélectionnez une ville…</option>
@@ -1426,7 +1470,6 @@ function Index() {
                   ))}
                 </select>
               </div>
-
 
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -1465,7 +1508,6 @@ function Index() {
                 <select
                   aria-label="Trier par"
                   value={sortBy}
-
                   onChange={(e) => setSortBy(e.target.value as SortBy)}
                   className="w-full text-xs px-2 py-2 rounded-md border border-border/60 bg-background/60 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
                 >
@@ -1486,13 +1528,20 @@ function Index() {
                 className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-card border border-border/70 hover:bg-muted tap-bounce transition disabled:opacity-50"
               >
                 {mutation.isPending ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Recherche…</>
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Recherche…
+                  </>
                 ) : (
-                  <><Search className="h-4 w-4" /> Actualiser</>
+                  <>
+                    <Search className="h-4 w-4" /> Actualiser
+                  </>
                 )}
               </button>
               <button
-                onClick={() => { haptic(20); setShowFilters(false); }}
+                onClick={() => {
+                  haptic(20);
+                  setShowFilters(false);
+                }}
                 className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-[color:var(--duo-green)] text-white btn-pop hover:brightness-105 tap-bounce transition"
               >
                 Voir la carte
@@ -1503,173 +1552,176 @@ function Index() {
       )}
 
       {/* List overlay */}
-      {listMode && listMode !== "profile" && (() => {
-        const listItems =
-          listMode === "done"
-            ? filtered.filter((r) => visits[r.id]?.done)
-            : listMode === "favorites"
-              ? filtered.filter((r) => visits[r.id]?.favorite)
-              : listMode === "mymap"
-                ? results
-                    .filter((r) => visits[r.id]?.done || visits[r.id]?.favorite)
-                    // Discovered first, then saved: the map's own hierarchy.
-                    .sort(
-                      (a, b) =>
-                        Number(!!visits[b.id]?.done) - Number(!!visits[a.id]?.done),
-                    )
-                : listMode === "new"
-                  ? [...baseFiltered]
-                      .filter((r) => isNewRestaurant(r))
-                      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-                  : filtered;
-        const titleIcon = listMode === "new" ? <NewStickerIcon size={20} /> : null;
-        const listTitle =
-          listMode === "done"
-            ? "Faits"
-            : listMode === "favorites"
-              ? "Enregistrés"
-              : listMode === "mymap"
-                ? "Ma carte food"
-                : listMode === "new"
-                  ? "Découvrir"
-                  : "Restaurants";
+      {listMode &&
+        listMode !== "profile" &&
+        (() => {
+          const listItems =
+            listMode === "done"
+              ? filtered.filter((r) => visits[r.id]?.done)
+              : listMode === "favorites"
+                ? filtered.filter((r) => visits[r.id]?.favorite)
+                : listMode === "mymap"
+                  ? results
+                      .filter((r) => visits[r.id]?.done || visits[r.id]?.favorite)
+                      // Discovered first, then saved: the map's own hierarchy.
+                      .sort((a, b) => Number(!!visits[b.id]?.done) - Number(!!visits[a.id]?.done))
+                  : listMode === "new"
+                    ? [...baseFiltered]
+                        .filter((r) => isNewRestaurant(r))
+                        .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+                    : filtered;
+          const titleIcon = listMode === "new" ? <NewStickerIcon size={20} /> : null;
+          const listTitle =
+            listMode === "done"
+              ? "Faits"
+              : listMode === "favorites"
+                ? "Enregistrés"
+                : listMode === "mymap"
+                  ? "Ma carte food"
+                  : listMode === "new"
+                    ? "Découvrir"
+                    : "Restaurants";
 
-
-        return (
-        <>
-          <div
-            className="absolute inset-0 z-30 bg-black/30 backdrop-blur-sm"
-            onClick={() => setListMode(null)}
-          />
-          <div className="absolute z-40 left-2 right-2 bottom-2 top-20 sm:left-4 sm:right-auto sm:top-4 sm:bottom-4 sm:w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl overflow-hidden flex flex-col animate-pop-in">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
-              <h2 className="font-display font-bold text-sm inline-flex items-center gap-1.5">
-                {titleIcon}{listTitle} <span className="text-muted-foreground font-semibold">· {listItems.length}</span>
-              </h2>
-              <button
-                onClick={() => { haptic(); setListMode(null); }}
-                className="p-1 -m-1 text-muted-foreground hover:text-foreground tap-bounce"
-                aria-label="Fermer"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-auto divide-y divide-border/50">
-              {mutation.isPending && results.length === 0 && (
-                <div className="p-6 text-center text-sm text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-                  Chargement…
-                </div>
-              )}
-              {!mutation.isPending && listItems.length === 0 && (
-                <div className="p-6 text-center text-sm text-muted-foreground">
-                  {!city
-                    ? "Sélectionnez une ville pour lancer la recherche."
-                    : listMode === "done"
-                      ? "Aucun restaurant marqué fait pour l'instant."
-                      : listMode === "favorites"
-                        ? "Aucun restaurant en favori pour l'instant."
-                        : listMode === "mymap"
-                          ? "Ta carte est encore vierge. Touche un resto sur la carte et enregistre-le."
-                          : listMode === "new"
-                            ? "Aucune nouveauté pour l'instant."
-                            : "Aucun restaurant trouvé."}
-
-
-                </div>
-              )}
-
-              {listItems.map((r) => {
-                const done = !!visits[r.id]?.done;
-                const favorite = !!visits[r.id]?.favorite;
-                return (
+          return (
+            <>
+              <div
+                className="absolute inset-0 z-30 bg-black/30 backdrop-blur-sm"
+                onClick={() => setListMode(null)}
+              />
+              <div className="absolute z-40 left-2 right-2 bottom-2 top-20 sm:left-4 sm:right-auto sm:top-4 sm:bottom-4 sm:w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl overflow-hidden flex flex-col animate-pop-in">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
+                  <h2 className="font-display font-bold text-sm inline-flex items-center gap-1.5">
+                    {titleIcon}
+                    {listTitle}{" "}
+                    <span className="text-muted-foreground font-semibold">
+                      · {listItems.length}
+                    </span>
+                  </h2>
                   <button
-                    key={r.id}
                     onClick={() => {
-                      setSelected(r);
-                      setDetailOpen(true);
-                      mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
-                      mapInstance.current?.setZoom(15);
+                      haptic();
                       setListMode(null);
                     }}
-                    className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-muted/60 transition ${
-                      selected?.id === r.id ? "bg-muted/70" : ""
-                    }`}
+                    className="p-1 -m-1 text-muted-foreground hover:text-foreground tap-bounce"
+                    aria-label="Fermer"
                   >
-                    <div className="relative flex-shrink-0">
-                      {r.photoUrls[0] ? (
-                        <img
-                          src={r.photoUrls[0]}
-                          alt={r.name}
-                          className="h-14 w-14 rounded-lg object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="h-14 w-14 rounded-lg bg-muted grid place-items-center">
-                          <MapPin className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
-                      {done && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[color:var(--duo-green)] text-white grid place-items-center ring-2 ring-card animate-pop-in">
-                          <Check className="h-3 w-3" strokeWidth={3} />
-                        </span>
-                      )}
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-auto divide-y divide-border/50">
+                  {mutation.isPending && results.length === 0 && (
+                    <div className="p-6 text-center text-sm text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
+                      Chargement…
                     </div>
-                    <div className="min-w-0 flex-1 flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium truncate">{r.name}</div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {r.primaryType ?? "Restaurant"}
+                  )}
+                  {!mutation.isPending && listItems.length === 0 && (
+                    <div className="p-6 text-center text-sm text-muted-foreground">
+                      {!city
+                        ? "Sélectionnez une ville pour lancer la recherche."
+                        : listMode === "done"
+                          ? "Aucun restaurant marqué fait pour l'instant."
+                          : listMode === "favorites"
+                            ? "Aucun restaurant en favori pour l'instant."
+                            : listMode === "mymap"
+                              ? "Ta carte est encore vierge. Touche un resto sur la carte et enregistre-le."
+                              : listMode === "new"
+                                ? "Aucune nouveauté pour l'instant."
+                                : "Aucun restaurant trouvé."}
+                    </div>
+                  )}
+
+                  {listItems.map((r) => {
+                    const done = !!visits[r.id]?.done;
+                    const favorite = !!visits[r.id]?.favorite;
+                    return (
+                      <button
+                        key={r.id}
+                        onClick={() => {
+                          setSelected(r);
+                          setDetailOpen(true);
+                          mapInstance.current?.panTo({ lat: r.lat, lng: r.lng });
+                          mapInstance.current?.setZoom(15);
+                          setListMode(null);
+                        }}
+                        className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-muted/60 transition ${
+                          selected?.id === r.id ? "bg-muted/70" : ""
+                        }`}
+                      >
+                        <div className="relative flex-shrink-0">
+                          {r.photoUrls[0] ? (
+                            <img
+                              src={r.photoUrls[0]}
+                              alt={r.name}
+                              className="h-14 w-14 rounded-lg object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="h-14 w-14 rounded-lg bg-muted grid place-items-center">
+                              <MapPin className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          {done && (
+                            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[color:var(--duo-green)] text-white grid place-items-center ring-2 ring-card animate-pop-in">
+                              <Check className="h-3 w-3" strokeWidth={3} />
+                            </span>
+                          )}
                         </div>
-                        <div className="mt-1 flex items-center gap-2 text-xs">
-                          {r.rating != null && (
-                            <span className="flex items-center gap-0.5">
-                              <Star className="h-3 w-3 fill-amber-400 stroke-amber-400" />
-                              {r.rating.toFixed(1)}
-                              {r.userRatingCount != null && (
-                                <span className="text-muted-foreground ml-1">
-                                  ({r.userRatingCount})
+                        <div className="min-w-0 flex-1 flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium truncate">{r.name}</div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {r.primaryType ?? "Restaurant"}
+                            </div>
+                            <div className="mt-1 flex items-center gap-2 text-xs">
+                              {r.rating != null && (
+                                <span className="flex items-center gap-0.5">
+                                  <Star className="h-3 w-3 fill-amber-400 stroke-amber-400" />
+                                  {r.rating.toFixed(1)}
+                                  {r.userRatingCount != null && (
+                                    <span className="text-muted-foreground ml-1">
+                                      ({r.userRatingCount})
+                                    </span>
+                                  )}
                                 </span>
                               )}
-                            </span>
-                          )}
-                          {isNewRestaurant(r) && (
-                            <span className="inline-flex items-center gap-0.5 text-sky-600 font-medium">
-                              <NewStickerIcon size={14} /> Nouveau
-                            </span>
-                          )}
-                          {r.openNow === true && (
-                            <span className="text-emerald-600">Ouvert</span>
-                          )}
-                          {r.openNow === false && (
-                            <span className="text-muted-foreground">Fermé</span>
-                          )}
+                              {isNewRestaurant(r) && (
+                                <span className="inline-flex items-center gap-0.5 text-sky-600 font-medium">
+                                  <NewStickerIcon size={14} /> Nouveau
+                                </span>
+                              )}
+                              {r.openNow === true && (
+                                <span className="text-emerald-600">Ouvert</span>
+                              )}
+                              {r.openNow === false && (
+                                <span className="text-muted-foreground">Fermé</span>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              haptic(favorite ? 12 : 20);
+                              applyVisit(r.id, { favorite: !favorite });
+                            }}
+                            className="p-1.5 rounded-full hover:bg-muted tap-bounce transition flex-shrink-0"
+                            aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                          >
+                            <Heart
+                              className={`h-4 w-4 transition ${
+                                favorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground"
+                              }`}
+                            />
+                          </button>
                         </div>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          haptic(favorite ? 12 : 20);
-                          applyVisit(r.id, { favorite: !favorite });
-                        }}
-                        className="p-1.5 rounded-full hover:bg-muted tap-bounce transition flex-shrink-0"
-                        aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-                      >
-                        <Heart
-                          className={`h-4 w-4 transition ${
-                            favorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground"
-                          }`}
-                        />
                       </button>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </>
-        );
-      })()}
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          );
+        })()}
 
       {/* Profile — who I am as an explorer. No map, no restaurant lists here. */}
       {listMode === "profile" && (
@@ -1691,8 +1743,14 @@ function Index() {
           restaurant={selected}
           visit={visits[selected.id] ?? { done: false, comment: "", favorite: false }}
           onUpdate={(patch) => applyVisit(selected.id, patch)}
-          onDetails={() => { haptic(); setDetailOpen(true); }}
-          onClose={() => { haptic(); setSelected(null); }}
+          onDetails={() => {
+            haptic();
+            setDetailOpen(true);
+          }}
+          onClose={() => {
+            haptic();
+            setSelected(null);
+          }}
         />
       )}
 
@@ -1707,18 +1765,22 @@ function Index() {
           onSnapChange={setSheetSnap}
           distanceKm={
             userLocation || currentCity
-              ? haversineDistance(userLocation ?? { lat: currentCity!.lat, lng: currentCity!.lng }, selected)
+              ? haversineDistance(
+                  userLocation ?? { lat: currentCity!.lat, lng: currentCity!.lng },
+                  selected,
+                )
               : null
           }
           fromUser={!!userLocation}
           onUpdate={(patch) => applyVisit(selected.id, patch)}
-          onClose={() => { setDetailOpen(false); setSelected(null); }}
+          onClose={() => {
+            setDetailOpen(false);
+            setSelected(null);
+          }}
         />
       )}
 
-
       <WelcomeGate />
-
     </div>
   );
 }
@@ -1755,9 +1817,15 @@ function QuickCard({
           <CuisineIcon cuisines={r.cuisines} preferred={preferredCuisine} size={34} />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="font-display font-extrabold text-[15px] leading-tight truncate">{r.name}</h3>
+          <h3 className="font-display font-extrabold text-[15px] leading-tight truncate">
+            {r.name}
+          </h3>
           <p className="text-[13px] text-muted-foreground truncate">
-            {done ? "Sur ta carte · Découvert" : saved ? "Sur ta carte · À tester" : (r.primaryType ?? "Restaurant")}
+            {done
+              ? "Sur ta carte · Découvert"
+              : saved
+                ? "Sur ta carte · À tester"
+                : (r.primaryType ?? "Restaurant")}
           </p>
         </div>
         <button
@@ -1771,7 +1839,10 @@ function QuickCard({
 
       <div className="mt-3 flex items-center gap-2">
         <button
-          onClick={() => { haptic(saved ? 12 : 24); onUpdate({ favorite: !saved }); }}
+          onClick={() => {
+            haptic(saved ? 12 : 24);
+            onUpdate({ favorite: !saved });
+          }}
           className={`flex-1 h-12 rounded-2xl inline-flex items-center justify-center gap-2 text-[15px] font-extrabold tap-bounce transition ${
             saved
               ? "bg-rose-50 text-rose-600 border-2 border-rose-300"
@@ -1782,7 +1853,10 @@ function QuickCard({
           {saved ? "Enregistré" : "Enregistrer"}
         </button>
         <button
-          onClick={() => { haptic(done ? 12 : 24); onUpdate({ done: !done }); }}
+          onClick={() => {
+            haptic(done ? 12 : 24);
+            onUpdate({ done: !done });
+          }}
           className={`flex-1 h-12 rounded-2xl inline-flex items-center justify-center gap-2 text-[15px] font-extrabold tap-bounce transition ${
             done
               ? "bg-[color:var(--duo-green)] text-white btn-pop"
@@ -1821,13 +1895,6 @@ function WelcomeGate() {
   return <Onboarding onDone={() => setShow(false)} />;
 }
 
-
-
-
-
-
-
-
 /**
  * Profile — "who I am as a food explorer": identity and statistics only.
  * The exploration itself (map + saved/discovered places) lives in Ma carte.
@@ -1855,8 +1922,12 @@ function ProfilePanel({
     const c = pickCuisine(r.cuisines);
     cuisineCount.set(c, (cuisineCount.get(c) ?? 0) + 1);
   });
-  const topCuisines = Array.from(cuisineCount.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4);
-  const cityProgress = restaurants.length ? Math.round((done.length / restaurants.length) * 100) : 0;
+  const topCuisines = Array.from(cuisineCount.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4);
+  const cityProgress = restaurants.length
+    ? Math.round((done.length / restaurants.length) * 100)
+    : 0;
 
   const Stat = ({ value, label }: { value: string; label: string }) => (
     <div className="rounded-2xl bg-muted/50 px-3 py-3 text-center">
@@ -1872,7 +1943,10 @@ function ProfilePanel({
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
           <h2 className="font-display font-bold text-sm">Mon profil</h2>
           <button
-            onClick={() => { haptic(); onClose(); }}
+            onClick={() => {
+              haptic();
+              onClose();
+            }}
             className="p-1 -m-1 text-muted-foreground hover:text-foreground tap-bounce"
             aria-label="Fermer"
           >
@@ -1923,7 +1997,10 @@ function ProfilePanel({
               </h3>
               <div className="flex flex-wrap gap-2">
                 {topCuisines.map(([c, n]) => (
-                  <span key={c} className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 pl-1 pr-3 py-1 text-sm">
+                  <span
+                    key={c}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 pl-1 pr-3 py-1 text-sm"
+                  >
                     <CuisineIcon cuisines={[c]} size={26} />
                     {CUISINE_META[c].label}
                     <span className="text-muted-foreground">· {n}</span>
@@ -1934,7 +2011,10 @@ function ProfilePanel({
           )}
 
           <button
-            onClick={() => { haptic(20); onOpenMap(); }}
+            onClick={() => {
+              haptic(20);
+              onOpenMap();
+            }}
             className="w-full h-11 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
           >
             Voir ma carte food
@@ -1977,11 +2057,7 @@ function DetailCard({
   useEffect(() => setComment(visit.comment), [visit.comment, r.id]);
 
   const heightClass =
-    snap === "collapsed"
-      ? "h-[118px]"
-      : snap === "expanded"
-        ? "h-[86vh]"
-        : "h-[52vh]";
+    snap === "collapsed" ? "h-[118px]" : snap === "expanded" ? "h-[86vh]" : "h-[52vh]";
 
   const cycle = () => {
     haptic(12);
@@ -2017,7 +2093,6 @@ function DetailCard({
         </div>
       )}
       <div className={`px-4 pb-4 ${snap === "collapsed" ? "pt-0" : "pt-4"} overflow-y-auto`}>
-
         <div className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/60 backdrop-blur border border-white/50">
             <CuisineIcon cuisines={r.cuisines} preferred={preferredCuisine} size={32} />
@@ -2029,7 +2104,10 @@ function DetailCard({
             </p>
           </div>
           <button
-            onClick={() => { haptic(); onClose(); }}
+            onClick={() => {
+              haptic();
+              onClose();
+            }}
             className="text-muted-foreground hover:text-foreground p-1 -m-1 tap-bounce flex-shrink-0"
             aria-label="Fermer"
           >
@@ -2040,18 +2118,26 @@ function DetailCard({
         {/* Personal actions stay the primary content of the sheet */}
         <div className="mt-3 flex items-center gap-2">
           <button
-            onClick={() => { haptic(visit.favorite ? 12 : 24); onUpdate({ favorite: !visit.favorite }); }}
+            onClick={() => {
+              haptic(visit.favorite ? 12 : 24);
+              onUpdate({ favorite: !visit.favorite });
+            }}
             className={`flex-1 h-11 rounded-2xl inline-flex items-center justify-center gap-2 text-sm font-extrabold tap-bounce transition ${
               visit.favorite
                 ? "bg-rose-50 text-rose-600 border-2 border-rose-300"
                 : "bg-white text-foreground border-2 border-border/70 hover:bg-muted/60"
             }`}
           >
-            <Heart className={`h-4.5 w-4.5 ${visit.favorite ? "fill-rose-500 text-rose-500" : ""}`} />
+            <Heart
+              className={`h-4.5 w-4.5 ${visit.favorite ? "fill-rose-500 text-rose-500" : ""}`}
+            />
             {visit.favorite ? "Enregistré" : "Enregistrer"}
           </button>
           <button
-            onClick={() => { haptic(visit.done ? 12 : 24); onUpdate({ done: !visit.done }); }}
+            onClick={() => {
+              haptic(visit.done ? 12 : 24);
+              onUpdate({ done: !visit.done });
+            }}
             className={`flex-1 h-11 rounded-2xl inline-flex items-center justify-center gap-2 text-sm font-extrabold tap-bounce transition ${
               visit.done
                 ? "bg-[color:var(--duo-green)] text-white btn-pop"
@@ -2069,21 +2155,18 @@ function DetailCard({
               <Star className="h-4 w-4 fill-amber-400 stroke-amber-400" />
               {r.rating.toFixed(1)}
               {r.userRatingCount != null && (
-                <span className="text-amber-600/70 font-normal">
-                  ({r.userRatingCount})
-                </span>
+                <span className="text-amber-600/70 font-normal">({r.userRatingCount})</span>
               )}
             </span>
           )}
           {r.priceLevel && (
-            <span className="text-muted-foreground font-medium">
-              {priceLabel(r.priceLevel)}
-            </span>
+            <span className="text-muted-foreground font-medium">{priceLabel(r.priceLevel)}</span>
           )}
           {distanceKm != null && (
             <span className="text-muted-foreground font-medium inline-flex items-center gap-1">
               <Navigation className="h-3.5 w-3.5" />
-              {formatDistance(distanceKm)}{fromUser ? "" : " du centre"}
+              {formatDistance(distanceKm)}
+              {fromUser ? "" : " du centre"}
             </span>
           )}
           <span
@@ -2128,7 +2211,10 @@ function DetailCard({
         {r.weekdayDescriptions.length > 0 && (
           <div className="mt-2">
             <button
-              onClick={() => { haptic(); setShowHours((v) => !v); }}
+              onClick={() => {
+                haptic();
+                setShowHours((v) => !v);
+              }}
               className="inline-flex items-center gap-1 text-xs text-foreground/70 hover:text-foreground bg-muted/60 px-2.5 py-1.5 rounded-full tap-bounce transition"
             >
               <CalendarClock className="h-3.5 w-3.5" />
@@ -2191,8 +2277,6 @@ function DetailCard({
   );
 }
 
-
-
 function priceLabel(level: string) {
   const map: Record<string, string> = {
     PRICE_LEVEL_FREE: "Gratuit",
@@ -2212,19 +2296,39 @@ const minimalMapStyle: google.maps.MapTypeStyle[] = [
   { elementType: "labels.text.stroke", stylers: [{ color: "#FFF9F0" }, { weight: 3 }] },
   { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
   { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
-  { featureType: "administrative.neighborhood", elementType: "labels.text.fill", stylers: [{ color: "#8a7a63" }, { visibility: "on" }] },
-  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#4a3f30" }] },
+  {
+    featureType: "administrative.neighborhood",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#8a7a63" }, { visibility: "on" }],
+  },
+  {
+    featureType: "administrative.locality",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#4a3f30" }],
+  },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#CDECC3" }, { visibility: "on" }] },
+  {
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [{ color: "#CDECC3" }, { visibility: "on" }],
+  },
   { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
   { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
   { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e8dfcc" }] },
   { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "road.local", elementType: "geometry", stylers: [{ color: "#FFF9F0" }, { visibility: "simplified" }] },
+  {
+    featureType: "road.local",
+    elementType: "geometry",
+    stylers: [{ color: "#FFF9F0" }, { visibility: "simplified" }],
+  },
   { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
   { featureType: "road.arterial", elementType: "labels", stylers: [{ visibility: "on" }] },
-  { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#8a7a63" }] },
+  {
+    featureType: "road.arterial",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#8a7a63" }],
+  },
   { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#FFE0A6" }] },
   { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#e8c47a" }] },
   { featureType: "road.highway", elementType: "labels", stylers: [{ visibility: "on" }] },

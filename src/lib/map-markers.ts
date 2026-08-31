@@ -51,8 +51,7 @@ export function markerIcon(input: MarkerIconInput): MarkerVisual {
   const base = state === "done" ? 44 : state === "saved" ? 40 : 26;
   const size = active ? base + 6 : base;
   const iconOpacity = state === "new" ? 0.72 : 1;
-  const bg =
-    state === "done" ? "#E4FBC6" : state === "saved" ? "#FFE9F0" : "#ffffff";
+  const bg = state === "done" ? "#E4FBC6" : state === "saved" ? "#FFE9F0" : "#ffffff";
   const bgOpacity = state === "new" ? 0.7 : 1;
   const ring =
     state === "done"
@@ -90,7 +89,6 @@ export function markerIcon(input: MarkerIconInput): MarkerVisual {
   ${doneBadge}
   ${savedBadge}
 </svg>`.trim();
-
 
   const visual: MarkerVisual = {
     url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,

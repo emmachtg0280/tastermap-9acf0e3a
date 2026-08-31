@@ -22,13 +22,13 @@ Recommended model instead:
 
 How each interaction resolves:
 
-| Interaction | Data source | Google calls |
-|---|---|---|
-| Open a city | one server read: `places` joined to fresh `places_cache` rows for that city | 0 if cache warm; only stale/missing rows refreshed |
-| Pan | client-side filter on already-loaded city set; new area → bounds query against the DB | 0, unless the area was never indexed |
-| Zoom | clustering on the loaded set (same logic as today) | 0 |
-| Select a restaurant | cached payload; photos fetched through the existing `/api/public/place-photo` proxy at click time | 0–1 (photo proxy only) |
-| Return later | same city read; rows past TTL refreshed in one batch job | ~N_stale/30 per day |
+| Interaction         | Data source                                                                                       | Google calls                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Open a city         | one server read: `places` joined to fresh `places_cache` rows for that city                       | 0 if cache warm; only stale/missing rows refreshed |
+| Pan                 | client-side filter on already-loaded city set; new area → bounds query against the DB             | 0, unless the area was never indexed               |
+| Zoom                | clustering on the loaded set (same logic as today)                                                | 0                                                  |
+| Select a restaurant | cached payload; photos fetched through the existing `/api/public/place-photo` proxy at click time | 0–1 (photo proxy only)                             |
+| Return later        | same city read; rows past TTL refreshed in one batch job                                          | ~N_stale/30 per day                                |
 
 Refresh rates: identity permanent; name/address/hours/location 30 days; rating and review count 24h–7 days (cheap Place Details field mask); `open_now` and photos always live.
 

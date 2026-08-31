@@ -20,8 +20,7 @@ export default defineTool({
       .from("user_places")
       .select("visited, favorite, personal_rating");
 
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
 
     const rows = data ?? [];
     const done = rows.filter((r) => r.visited).length;

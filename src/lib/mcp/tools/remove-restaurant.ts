@@ -22,8 +22,7 @@ export default defineTool({
       .eq("user_id", ctx.getUserId())
       .eq("place_id", place_id);
 
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
 
     return { content: [{ type: "text", text: `Removed ${place_id}` }] };
   },
