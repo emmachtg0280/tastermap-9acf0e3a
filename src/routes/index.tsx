@@ -206,23 +206,6 @@ function useGoogleMaps() {
   return ready;
 }
 
-function useAuthSession() {
-  const [user, setUser] = useState<null | { id: string; email?: string }>(null);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user ? { id: data.user.id, email: data.user.email } : null);
-      setLoading(false);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ? { id: session.user.id, email: session.user.email } : null);
-      setLoading(false);
-    });
-    return () => listener.subscription.unsubscribe();
-  }, []);
-  return { user, loading };
-}
-
 function useVisits(userId: string | null) {
   const [localVisits, setLocalVisits] = useState<VisitMap>({});
   const queryClient = useQueryClient();
