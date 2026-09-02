@@ -54,6 +54,8 @@ import {
   sortRestaurants,
   type SortBy,
 } from "@/features/restaurants/restaurant-filters";
+import { AuthButton, useAuthSession } from "@/features/auth/use-auth-session";
+import { useGeolocation } from "@/features/map/use-geolocation";
 import { Onboarding, hasSeenOnboarding } from "@/components/onboarding/Onboarding";
 
 import { Badge } from "@/components/ui/badge";
