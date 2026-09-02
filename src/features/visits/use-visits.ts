@@ -155,4 +155,3 @@ export function useVisits(userId: string | null) {
 
   return { visits, update, isLoading: cloudQuery.isLoading };
 }
-
