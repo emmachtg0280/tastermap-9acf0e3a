@@ -104,7 +104,6 @@ const MAX_MARKERS = 220;
 /** Cuisine shortcuts kept visible; the full list lives behind “Plus”. */
 const PRIMARY_CUISINES: Cuisine[] = ["italian", "japanese", "mexican"];
 
-
 /* ── Map state persistence: city, cuisine, center & zoom survive reloads ── */
 const MAP_STATE_KEY = "tastemap.map.v1";
 type MapState = {
