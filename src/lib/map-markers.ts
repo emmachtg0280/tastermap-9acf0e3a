@@ -47,18 +47,19 @@ export function markerIcon(input: MarkerIconInput): MarkerVisual {
   if (cached) return cached;
 
   const { state, active, isNew, dataUrl, inner } = input;
-  // Discovered reads loudest, saved is clearly flagged, undiscovered stays quiet.
-  const base = state === "done" ? 44 : state === "saved" ? 40 : 26;
+  // Keep density practical. Selection overrides the ring, never the saved/visited badge.
+  const base = state === "done" ? 40 : state === "saved" ? 36 : 28;
   const size = active ? base + 6 : base;
-  const iconOpacity = state === "new" ? 0.72 : 1;
-  const bg = state === "done" ? "#E4FBC6" : state === "saved" ? "#FFE9F0" : "#ffffff";
-  const bgOpacity = state === "new" ? 0.7 : 1;
-  const ring =
-    state === "done"
-      ? { color: "#4CB800", width: 3.4 }
+  const iconOpacity = 1;
+  const bg = state === "done" ? "#fff8d6" : state === "saved" ? "#f1fad9" : "#ffffff";
+  const bgOpacity = 1;
+  const ring = active
+    ? { color: "#ff8642", width: 3.5 }
+    : state === "done"
+      ? { color: "#ffd426", width: 3 }
       : state === "saved"
-        ? { color: "#F2789F", width: 3.2 }
-        : { color: "#ded3bf", width: 1 };
+        ? { color: "#a8eb12", width: 3 }
+        : { color: "#85887d", width: 1.5 };
 
   const iconSize = size * (state === "new" ? 0.62 : 0.7);
   const iconOffset = (size - iconSize) / 2;
@@ -68,21 +69,22 @@ export function markerIcon(input: MarkerIconInput): MarkerVisual {
 
   const newBadge =
     isNew && state !== "new"
-      ? `<g><circle cx='7' cy='8' r='6' fill='#FFC94A'/><path d='M7 5.3 l0.8 1.6 l1.8 0.25 l-1.3 1.2 l0.35 1.8 l-1.65 -0.85 l-1.65 0.85 l0.35 -1.8 l-1.3 -1.2 l1.8 -0.25 z' fill='#ffffff' stroke-linejoin='round'/></g>`
+      ? `<g><circle cx='7' cy='8' r='6' fill='#ffd426'/><path d='M7 5.3 l0.8 1.6 l1.8 0.25 l-1.3 1.2 l0.35 1.8 l-1.65 -0.85 l-1.65 0.85 l0.35 -1.8 l-1.3 -1.2 l1.8 -0.25 z' fill='#1a1a1a' stroke-linejoin='round'/></g>`
       : "";
 
   const doneBadge =
     state === "done"
-      ? `<circle cx='${size - 7}' cy='8' r='6.5' fill='#4CB800' stroke='#ffffff' stroke-width='1.8'/><path d='M${size - 9.8} 8 l2 2.2 L${size - 4.6} 5.8' stroke='#ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/>`
+      ? `<circle cx='${size - 7}' cy='8' r='6.5' fill='#ffd426' stroke='#ffffff' stroke-width='1.8'/><path d='M${size - 9.8} 8 l2 2.2 L${size - 4.6} 5.8' stroke='#1a1a1a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/>`
       : "";
   const savedBadge =
     state === "saved"
-      ? `<circle cx='${size - 7}' cy='8' r='6.5' fill='#F2789F' stroke='#ffffff' stroke-width='1.8'/><path d='M${size - 7} 10.6 c-2.4 -1.6 -3.2 -2.7 -3.2 -3.8 a1.7 1.7 0 0 1 3.2 -0.7 a1.7 1.7 0 0 1 3.2 0.7 c0 1.1 -0.8 2.2 -3.2 3.8 z' fill='#ffffff'/>`
+      ? `<circle cx='${size - 7}' cy='8' r='6.5' fill='#a8eb12' stroke='#ffffff' stroke-width='1.8'/><path d='M${size - 7} 10.6 c-2.4 -1.6 -3.2 -2.7 -3.2 -3.8 a1.7 1.7 0 0 1 3.2 -0.7 a1.7 1.7 0 0 1 3.2 0.7 c0 1.1 -0.8 2.2 -3.2 3.8 z' fill='#1a1a1a'/>`
       : "";
 
   const scale = 2;
   const svg = `
 <svg xmlns='http://www.w3.org/2000/svg' width='${size * scale}' height='${(size + 4) * scale}' viewBox='0 0 ${size} ${size + 4}'>
+  ${active ? `<circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 0.75}' fill='none' stroke='#9b3c00' stroke-width='1.5'/>` : ""}
   <circle cx='${size / 2}' cy='${size / 2}' r='${size / 2 - 2}' fill='${bg}' fill-opacity='${bgOpacity}' stroke='${ring.color}' stroke-width='${ring.width}'/>
   ${imageTag}
   ${newBadge}
@@ -99,7 +101,7 @@ export function markerIcon(input: MarkerIconInput): MarkerVisual {
   return visual;
 }
 
-/** Cluster bubble: ring fills green in proportion to discovered restaurants. */
+/** Cluster bubble: ring fills yellow in proportion to discovered restaurants. */
 export function clusterIcon(count: number, discoveredRatio: number): MarkerVisual {
   const size = Math.min(56, 34 + Math.round(Math.log2(count + 1) * 7));
   // Quantize the ratio so near-identical clusters reuse the same asset.
@@ -113,10 +115,10 @@ export function clusterIcon(count: number, discoveredRatio: number): MarkerVisua
   const filled = (step / 10) * c;
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size * 2}' height='${size * 2}' viewBox='0 0 ${size} ${size}'>
   <circle cx='${size / 2}' cy='${size / 2}' r='${r}' fill='#ffffff' fill-opacity='0.94'/>
-  <circle cx='${size / 2}' cy='${size / 2}' r='${r}' fill='none' stroke='#e3d8c4' stroke-width='2.5'/>
-  <circle cx='${size / 2}' cy='${size / 2}' r='${r}' fill='none' stroke='#58CC02' stroke-width='2.5' stroke-linecap='round'
+  <circle cx='${size / 2}' cy='${size / 2}' r='${r}' fill='none' stroke='#e3e5dd' stroke-width='2.5'/>
+  <circle cx='${size / 2}' cy='${size / 2}' r='${r}' fill='none' stroke='#ffd426' stroke-width='2.5' stroke-linecap='round'
     stroke-dasharray='${filled} ${c}' transform='rotate(-90 ${size / 2} ${size / 2})'/>
-  <text x='${size / 2}' y='${size / 2 + 4}' text-anchor='middle' font-family='Nunito, system-ui, sans-serif' font-size='${size * 0.34}' font-weight='800' fill='#4a3f30'>${count}</text>
+  <text x='${size / 2}' y='${size / 2 + 4}' text-anchor='middle' font-family='Plus Jakarta Sans, system-ui, sans-serif' font-size='${size * 0.34}' font-weight='800' fill='#1a1a1a'>${count}</text>
 </svg>`;
   const visual: MarkerVisual = {
     url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,

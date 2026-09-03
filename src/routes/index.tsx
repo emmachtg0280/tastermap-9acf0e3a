@@ -748,14 +748,14 @@ function Index() {
   }, [city, minRating]);
 
   return (
-    <div className="h-screen w-screen relative overflow-hidden bg-background">
+    <div className="tm-map-home h-dvh w-full relative overflow-hidden bg-background">
       <h1 className="sr-only">Tastemap — votre carte des meilleurs restaurants en France</h1>
 
       {/* Full-screen map background */}
       <div
         ref={mapRef}
         className="absolute inset-0 touch-pan-y touch-pan-x"
-        style={{ backgroundColor: "#FFF9F0" }}
+        style={{ backgroundColor: "#f5f5f0" }}
       />
       {!mapReady && (
         <div className="absolute inset-0 grid place-items-center pointer-events-none z-10">
@@ -800,7 +800,7 @@ function Index() {
             <span>Impossible de charger les restaurants pour le moment.</span>
             <button
               type="button"
-              className="rounded-full bg-[color:var(--duo-green)] text-white font-extrabold text-xs px-3 py-2 shadow-sm active:translate-y-[1px]"
+              className="rounded-full bg-primary text-primary-foreground font-extrabold text-xs px-3 py-2 shadow-sm active:translate-y-[1px]"
               onClick={() => city && mutation.mutate({ city, minRating, force: true })}
             >
               Réessayer
@@ -823,27 +823,21 @@ function Index() {
           </div>
         )}
 
-      {/* Floating top bar — auth only, top right */}
-      <div className="absolute top-0 right-0 z-30 pt-[env(safe-area-inset-top)] px-3">
-        <div className="pt-0.5 rounded-full bg-card/80 backdrop-blur border border-white/40 shadow-sm px-2 py-1">
-          <AuthButton />
-        </div>
-      </div>
-
       {/* Top bar — city, neighbourhood context, Discover, cuisine shortcuts */}
-      <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto max-w-3xl px-2 pt-1">
-          <div className="flex items-center gap-2 pl-1 pr-14">
+      <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)] pointer-events-none">
+        <div className="mx-auto max-w-3xl px-3 pt-3 pointer-events-auto">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => {
                 haptic();
                 setShowCities((v) => !v);
               }}
-              className="inline-flex items-center gap-1 h-11 pl-3 pr-2.5 rounded-full bg-white/85 backdrop-blur border border-white/70 shadow-sm text-sm font-extrabold text-foreground tap-bounce transition hover:bg-white"
+              className="tm-chip min-w-0 flex-1 sm:flex-none shadow-float"
               aria-label="Changer de ville"
+              aria-expanded={showCities}
             >
-              <MapPin className="h-4 w-4 text-[color:var(--duo-green-dark)]" />
-              {currentCity?.label ?? "Choisir une ville"}
+              <MapPin className="h-4 w-4 text-brand-ink" />
+              <span className="truncate">{currentCity?.label ?? "Choisir une ville"}</span>
               <ChevronDown
                 className={`h-4 w-4 transition-transform ${showCities ? "rotate-180" : ""}`}
               />
@@ -856,10 +850,10 @@ function Index() {
                 setShowFilters(false);
                 setListMode("mymap");
               }}
-              className="inline-flex items-center gap-1.5 h-11 pl-3 pr-4 rounded-full bg-[color:var(--duo-green)] text-white text-sm font-extrabold btn-pop hover:brightness-105 tap-bounce transition"
+              className="tm-chip border-transparent bg-primary text-primary-foreground hover:bg-primary/90 shadow-float"
             >
               <MapPin className="h-4 w-4" />
-              Ma carte food
+              Ma carte<span className="hidden sm:inline"> food</span>
               {personalCount > 0 && (
                 <span className="ml-0.5 rounded-full bg-white/25 px-1.5 text-xs font-extrabold">
                   {personalCount}
@@ -867,17 +861,9 @@ function Index() {
               )}
             </button>
 
-            <button
-              onClick={() => {
-                haptic(20);
-                setShowFilters(false);
-                setListMode("new");
-              }}
-              className="inline-flex items-center gap-1.5 h-11 pl-2 pr-3.5 rounded-full bg-white/85 backdrop-blur border border-white/70 shadow-sm text-sm font-extrabold text-foreground tap-bounce transition hover:bg-white"
-            >
-              <NewStickerIcon size={20} />
-              Découvrir
-            </button>
+            <div className="tm-auth shrink-0 rounded-full bg-card border border-border shadow-float sm:ml-auto">
+              <AuthButton />
+            </div>
 
             {neighborhood && (
               <span className="hidden sm:inline-flex items-center h-9 px-3 rounded-full bg-white/60 backdrop-blur border border-white/60 text-xs font-bold text-foreground/70 truncate max-w-[160px]">
@@ -898,7 +884,7 @@ function Index() {
                   }}
                   className={`h-11 px-4 rounded-full text-sm font-bold transition ${
                     c.key === city
-                      ? "bg-[color:var(--duo-green)] text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-muted/60 text-foreground/80 hover:bg-muted"
                   }`}
                 >
@@ -909,17 +895,26 @@ function Index() {
           )}
 
           {/* Cuisine shortcuts — compact, full list behind “+” */}
-          <div className="mt-1.5 flex gap-1.5 overflow-x-auto no-scrollbar px-1 pb-1 -mx-1">
+          <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar px-1 py-1 -mx-1">
+            <button
+              onClick={() => {
+                haptic(20);
+                setShowFilters(false);
+                setListMode("new");
+              }}
+              className="tm-chip"
+            >
+              <NewStickerIcon size={20} />
+              Découvrir
+            </button>
+
             <button
               onClick={() => {
                 haptic();
                 setCuisine("any");
               }}
-              className={`shrink-0 inline-flex items-center h-10 px-4 rounded-full text-[13px] font-bold backdrop-blur shadow-sm tap-bounce transition ${
-                cuisine === "any"
-                  ? "bg-white text-foreground border-2 border-white ring-2 ring-white/80"
-                  : "bg-white/45 border border-white/50 text-foreground/75 hover:bg-white/65"
-              }`}
+              aria-pressed={cuisine === "any"}
+              className="tm-chip"
             >
               Tout
             </button>
@@ -933,11 +928,8 @@ function Index() {
                     haptic();
                     setCuisine(active ? "any" : value);
                   }}
-                  className={`shrink-0 inline-flex items-center gap-1.5 h-10 pl-1.5 pr-3.5 rounded-full text-[13px] font-bold backdrop-blur shadow-sm tap-bounce transition ${
-                    active
-                      ? "bg-white text-foreground border-2 border-white ring-2 ring-white/80"
-                      : "bg-white/45 border border-white/50 text-foreground/75 hover:bg-white/65"
-                  }`}
+                  aria-pressed={active}
+                  className="tm-chip pl-2"
                 >
                   <img
                     src={meta.image}
@@ -959,7 +951,8 @@ function Index() {
                 setShowAllCuisines((v) => !v);
               }}
               aria-label="Toutes les cuisines"
-              className="shrink-0 inline-flex items-center gap-1 h-10 px-3.5 rounded-full bg-white/45 backdrop-blur border border-white/50 text-[13px] font-bold text-foreground/75 shadow-sm hover:bg-white/65 tap-bounce transition"
+              aria-expanded={showAllCuisines}
+              className="tm-chip"
             >
               <ChevronDown
                 className={`h-4 w-4 transition-transform ${showAllCuisines ? "rotate-180" : ""}`}
@@ -983,7 +976,7 @@ function Index() {
                     }}
                     className={`inline-flex flex-col items-center justify-center gap-0.5 h-[70px] rounded-xl transition ${
                       active
-                        ? "bg-[color:var(--duo-green)]/15 ring-1 ring-[color:var(--duo-green)]"
+                        ? "bg-saved-surface ring-1 ring-saved-foreground text-saved-foreground"
                         : "hover:bg-muted/60"
                     }`}
                   >
@@ -1007,8 +1000,8 @@ function Index() {
       </div>
 
       {/* Lightweight geographic cue on mobile */}
-      {neighborhood && !selected && (
-        <div className="sm:hidden absolute inset-x-0 bottom-4 z-20 flex justify-center pointer-events-none">
+      {neighborhood && !selected && !showLegend && (
+        <div className="sm:hidden absolute left-3 right-28 bottom-4 z-20 flex justify-center pointer-events-none">
           <span className="rounded-full bg-white/80 backdrop-blur border border-white/60 shadow-sm px-3.5 py-1.5 text-xs font-bold text-foreground/70">
             {neighborhood}
           </span>
@@ -1017,26 +1010,26 @@ function Index() {
 
       {/* Compact map legend — disappears as soon as the map becomes personal */}
       {mapReady && showLegend && !selected && (
-        <div className="absolute left-3 bottom-3 z-20 pb-[env(safe-area-inset-bottom)]">
-          <div className="rounded-2xl bg-white/85 backdrop-blur border border-white/70 shadow-sm px-3 py-2 flex items-center gap-3 animate-pop-in">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-foreground/60">
-              <span className="h-2.5 w-2.5 rounded-full bg-white border border-[#ded3bf]" />À
+        <div className="absolute left-3 right-28 sm:right-auto bottom-3 z-20 pb-[env(safe-area-inset-bottom)]">
+          <div className="tm-card px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-2 animate-pop-in">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+              <span className="h-2.5 w-2.5 rounded-full bg-white border border-[#85887d]" />À
               explorer
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-500">
-              <Heart className="h-3 w-3 fill-rose-500" />
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-saved-foreground">
+              <Heart className="h-3.5 w-3.5 fill-saved stroke-saved-foreground" />
               Enregistré
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[color:var(--duo-green-dark)]">
-              <span className="h-3.5 w-3.5 rounded-full bg-[color:var(--duo-green)] grid place-items-center">
-                <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-visited-foreground">
+              <span className="h-3.5 w-3.5 rounded-full bg-visited grid place-items-center">
+                <Check className="h-2.5 w-2.5 text-visited-foreground" strokeWidth={4} />
               </span>
               Découvert
             </span>
             <button
               onClick={dismissLegend}
               aria-label="Masquer la légende"
-              className="text-foreground/40 hover:text-foreground/70 -mr-1"
+              className="h-8 w-8 grid place-items-center rounded-full text-muted-foreground hover:bg-muted -mr-1 ml-auto"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -1046,10 +1039,10 @@ function Index() {
 
       {/* Floating action buttons — bottom right */}
       <div
-        className={`absolute right-3 z-30 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] transition-[bottom] duration-300 ease-out ${
+        className={`absolute right-3 z-30 grid grid-cols-2 gap-1.5 pb-[env(safe-area-inset-bottom)] transition-[bottom] duration-300 ease-out ${
           selected
             ? !detailOpen
-              ? "bottom-[184px] lg:bottom-3"
+              ? "bottom-[calc(212px+env(safe-area-inset-bottom))] lg:bottom-3"
               : sheetSnap === "collapsed"
                 ? "bottom-[142px] lg:bottom-3"
                 : sheetSnap === "expanded"
@@ -1065,7 +1058,7 @@ function Index() {
             setListMode("profile");
           }}
           aria-label="Mon profil food"
-          className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-foreground/80 grid place-items-center hover:bg-white/60 tap-bounce transition"
+          className="tm-map-action shadow-float"
         >
           <User className="h-5 w-5" />
         </button>
@@ -1079,7 +1072,7 @@ function Index() {
             mapInstance.current.setZoom(userLocation ? 15 : CITY_ZOOM);
           }}
           aria-label="Ma position"
-          className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-[#3B82F6] grid place-items-center hover:bg-white/60 tap-bounce transition"
+          className="tm-map-action shadow-float"
         >
           <Navigation className="h-5 w-5" />
         </button>
@@ -1090,7 +1083,7 @@ function Index() {
             setShowFilters(true);
           }}
           aria-label="Filtres"
-          className="h-12 w-12 rounded-full bg-[color:var(--duo-green)] text-white btn-pop grid place-items-center hover:brightness-105 tap-bounce transition"
+          className="tm-map-action shadow-float bg-primary text-primary-foreground border-transparent hover:bg-primary/90"
         >
           <SlidersHorizontal className="h-5 w-5" />
         </button>
@@ -1101,7 +1094,7 @@ function Index() {
             setListMode("favorites");
           }}
           aria-label="Enregistrés"
-          className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-rose-500 grid place-items-center hover:bg-white/60 tap-bounce transition"
+          className="tm-map-action shadow-float text-saved-foreground"
         >
           <Heart className="h-5 w-5" />
         </button>
@@ -1112,7 +1105,7 @@ function Index() {
             setListMode("done");
           }}
           aria-label="Restaurants faits"
-          className="h-12 w-12 rounded-full bg-white/40 backdrop-blur border border-white/50 shadow-sm text-[color:var(--duo-green-dark)] grid place-items-center hover:bg-white/60 tap-bounce transition"
+          className="tm-map-action shadow-float text-visited-foreground"
         >
           <Check className="h-5 w-5" strokeWidth={3} />
         </button>
@@ -1123,7 +1116,7 @@ function Index() {
             setListMode("all");
           }}
           aria-label="Liste des restaurants"
-          className="h-12 w-12 rounded-full bg-card border border-border/70 shadow-md text-foreground grid place-items-center hover:bg-muted tap-bounce transition"
+          className="tm-map-action shadow-float"
         >
           <Utensils className="h-5 w-5" />
         </button>
@@ -1257,7 +1250,7 @@ function Index() {
                   haptic(20);
                   setShowFilters(false);
                 }}
-                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-[color:var(--duo-green)] text-white btn-pop hover:brightness-105 tap-bounce transition"
+                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-primary text-primary-foreground btn-pop hover:brightness-105 tap-bounce transition"
               >
                 Voir la carte
               </button>
@@ -1377,7 +1370,7 @@ function Index() {
                             </div>
                           )}
                           {done && (
-                            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[color:var(--duo-green)] text-white grid place-items-center ring-2 ring-card animate-pop-in">
+                            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-visited text-visited-foreground grid place-items-center ring-2 ring-card animate-pop-in">
                               <Check className="h-3 w-3" strokeWidth={3} />
                             </span>
                           )}
@@ -1424,7 +1417,9 @@ function Index() {
                           >
                             <Heart
                               className={`h-4 w-4 transition ${
-                                favorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground"
+                                favorite
+                                  ? "fill-saved text-saved-foreground"
+                                  : "text-muted-foreground"
                               }`}
                             />
                           </button>
@@ -1528,53 +1523,53 @@ function WelcomeGate() {
  * Profile — "who I am as a food explorer": identity and statistics only.
  * The exploration itself (map + saved/discovered places) lives in Ma carte.
  */
-// Playful "board game" light map — cream land, pastel water & parks, minimal roads.
+// Restrained map geography: food markers and personal states carry the color.
 const minimalMapStyle: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#FFF9F0" }] },
+  { elementType: "geometry", stylers: [{ color: "#f5f5f0" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#7a6a55" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#FFF9F0" }, { weight: 3 }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#62645c" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#f5f5f0" }, { weight: 3 }] },
   { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
   { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
   {
     featureType: "administrative.neighborhood",
     elementType: "labels.text.fill",
-    stylers: [{ color: "#8a7a63" }, { visibility: "on" }],
+    stylers: [{ color: "#71746b" }, { visibility: "on" }],
   },
   {
     featureType: "administrative.locality",
     elementType: "labels.text.fill",
-    stylers: [{ color: "#4a3f30" }],
+    stylers: [{ color: "#33362e" }],
   },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
   {
     featureType: "poi.park",
     elementType: "geometry",
-    stylers: [{ color: "#CDECC3" }, { visibility: "on" }],
+    stylers: [{ color: "#e6eddf" }, { visibility: "on" }],
   },
   { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
   { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
-  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e8dfcc" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e3e5dd" }] },
   { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
   {
     featureType: "road.local",
     elementType: "geometry",
-    stylers: [{ color: "#FFF9F0" }, { visibility: "simplified" }],
+    stylers: [{ color: "#f5f5f0" }, { visibility: "simplified" }],
   },
   { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
   { featureType: "road.arterial", elementType: "labels", stylers: [{ visibility: "on" }] },
   {
     featureType: "road.arterial",
     elementType: "labels.text.fill",
-    stylers: [{ color: "#8a7a63" }],
+    stylers: [{ color: "#71746b" }],
   },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#FFE0A6" }] },
-  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#e8c47a" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#eeede5" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#d8dacf" }] },
   { featureType: "road.highway", elementType: "labels", stylers: [{ visibility: "on" }] },
-  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#6a5236" }] },
-  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#FFF9F0" }] },
-  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#F7EFDD" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#B8E3F5" }] },
+  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#62645c" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#f5f5f0" }] },
+  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#eef0e8" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#dcecf2" }] },
   { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
 ];
