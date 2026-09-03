@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarClock, Check, ChevronDown, Clock, Heart, MapPin, Navigation, Phone, Star, X } from "lucide-react";
+import {\n  CalendarClock,\n  Check,\n  ChevronDown,\n  Clock,\n  Heart,\n  MapPin,\n  Navigation,\n  Phone,\n  Star,\n  X,\n} from "lucide-react";
 
 import { CuisineIcon } from "@/components/icons/CuisineIcons";
 import { Textarea } from "@/components/ui/textarea";
