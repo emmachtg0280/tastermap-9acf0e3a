@@ -134,6 +134,52 @@ function writeMapState(patch: MapState) {
   }
 }
 
+declare global {
+  interface Window {
+    google?: typeof google;
+    initGMap?: () => void;
+  }
+}
+
+export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Carte des meilleurs restaurants en France · Tastemap" },
+      {
+        name: "description",
+        content:
+          "Découvrez et marquez les meilleurs restaurants de Toulouse, Paris, Lyon, Marseille, Bordeaux et Montpellier sur une carte food interactive.",
+      },
+      { property: "og:title", content: "Carte des meilleurs restaurants en France · Tastemap" },
+      {
+        property: "og:description",
+        content:
+          "Découvrez et marquez les meilleurs restaurants de Toulouse, Paris, Lyon, Marseille, Bordeaux et Montpellier sur une carte food interactive.",
+      },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://tastermap.lovable.app/" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [{ rel: "canonical", href: "https://tastermap.lovable.app/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Carte des meilleurs restaurants en France",
+          url: "https://tastermap.lovable.app/",
+          description:
+            "Carte food interactive des meilleurs restaurants des grandes villes de France.",
+          about: CITIES.map((c) => ({ "@type": "City", name: c.label })),
+        }),
+      },
+    ],
+  }),
+
+  component: Index,
+});
+
 function Index() {
   const restored = useMemo(() => readMapState(), []);
 
