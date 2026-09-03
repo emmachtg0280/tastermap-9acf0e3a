@@ -11,7 +11,9 @@ export function restaurantsInViewport(restaurants: Restaurant[], bounds: MapBoun
   const north = bounds.north + padLat;
   const west = bounds.west - padLng;
   const east = bounds.east + padLng;
-  return restaurants.filter((r) => r.lat >= south && r.lat <= north && r.lng >= west && r.lng <= east);
+  return restaurants.filter(
+    (r) => r.lat >= south && r.lat <= north && r.lng >= west && r.lng <= east,
+  );
 }
 
 export function clusterRestaurants(restaurants: Restaurant[], zoom: number) {
